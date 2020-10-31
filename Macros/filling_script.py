@@ -1,6 +1,7 @@
 from variables import calc_id_mass, calc_ms_mass, calc_cb_mass
 from selections import range_selection_function
-from histogram_filler import create_selection_function
+from histogram_filler import create_selection_function, write_histograms
+import ROOT
 
 #This is a script that fills the histograms for
 def fill_histograms(hist_filler, output_filename):
@@ -16,4 +17,9 @@ def fill_histograms(hist_filler, output_filename):
                                     range_high = 92.1+20.0,\
                                     xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                     ylabel = 'Number Events')
-    hist_filler.DumpHistograms()
+    histograms = hist_filler.DumpHistograms()
+    output_file = ROOT.TFile(output_filename, "RECREATE")
+    for histogram_name in histograms:
+        write_histograms(histograms[histogram_name], output_file)
+
+    output_file.Close()

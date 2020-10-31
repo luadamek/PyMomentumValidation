@@ -10,6 +10,14 @@ import imp
 from root_numpy import fill_hist, fill_profile
 from root_numpy import tree2array
 
+def write_histograms(histogram_dictionary, outFile):
+    outFile.cd()
+    for key in histogram_dictionary:
+        if not outFile.cd(key):
+            outFile.mkdir(key)
+        outFile.cd(key)
+        histogram_dictionary[key].Write()
+
 def get_log_bins(minBin, maxBin, nBins):
     '''Get nBins logarithmically-evenly spaced bins ranging from minBin to maxBin'''
     bins = []

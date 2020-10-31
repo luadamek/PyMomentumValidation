@@ -46,13 +46,16 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         plotting_instructions_python.append("file = args.picklefile")
         plotting_instructions_python.append("name = args.jobname")
         plotting_instructions_python.append("plots = pickle.load(open(file, \"rb\"))[i]")
-        #put the output file in the job directory:
 
-        if extra_args is None: plotting_instructions_python.append("fill_histograms(plots, name + \"_\" + str(i) + \".root\")")
+        #put the output file in the job directory:
+        outfile_name =  "\"" + os.path.join(slurm_directory, job_name + "_{}.root\".format(str(i))")
+
+
+        if extra_args is None: plotting_instructions_python.append("fill_histograms(plots, {})".format(outfile_name)) 
         else:
             extra_args = [" {}={}".format(key, extra_args[key]) for key in extra_args]
             extra_args = "," + ",".join(extra_args)
-            plotting_instructions_python.append("fill_histograms(plots, name + \"_\" + str(i) + \".root\")")
+            plotting_instructions_python.append("fill_histograms(plots, {})".format(outfile_name))
         with open(python_executable, 'w') as f:
             for line in plotting_instructions_python:
                 f.write(line+"\n")
