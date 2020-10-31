@@ -434,7 +434,7 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", filename = Non
         print("getting the xsection weight")
         xsec_weight = get_x_section_weight(filename)
         if verbose: print("X Section Weight Set To " + str(xsec_weight))
-        weights = weights * xsec_weight * lumi_prescaled
+        weights = weights #* xsec_weight * lumi_prescaled
 
     ##calculate everything we need in one go!
     for variable in variables:

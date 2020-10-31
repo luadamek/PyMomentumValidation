@@ -344,6 +344,21 @@ from math import pi
 *............................................................................*
 '''
 
+def cb_mass(event):
+    return event["Pair_CB_Mass"]
+branches = ["Pair_CB_Mass"]
+calc_cb_mass = Calculation(cb_mass, branches)
+
+def id_mass(event):
+    return event["Pair_ID_Mass"]
+branches = ["Pair_ID_Mass"]
+calc_id_mass = Calculation(id_mass, branches)
+
+def ms_mass(event):
+    return event["Pair_MS_Mass"]
+branches = ["Pair_MS_Mass"]
+calc_ms_mass = Calculation(ms_mass, branches)
+
 def weight(event, isData):
     return event["TotalWeight"]
 branches = ["TotalWeight"]

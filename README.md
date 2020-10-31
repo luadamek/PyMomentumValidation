@@ -204,14 +204,13 @@ def fill_histograms(hist_filler, outputRootFileName):
 
 The following lines would prepare a batch job for submission. This job would use 100 condor jobs, and run over a test set of files. The condor jobqueue corresponds to the --queue_flavour flag and can be set to espresso (20mins), longlunch (2hr), workday (8hr), etc. Notice that you have to define the "file flavour". These are defined in utils/utils.py and include a list of files separated by channels. Histograms will be filled for each channel independently by the histogram filling script. "test" includes channels for "PythiaJetJet", "LowMuData", and "SinglePions".
 ```
-python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 10 --job_name test --queue_flavour 02\:00:\00 --file_flavour v03 --filling_script Macros\/filling_scripy.py
+python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 50 --job_name test --queue_flavour 02\:00:\00 --file_flavour v03 --filling_script Macros\/filling_script.py 
 ```
 ## Test one of the jobs locally
 ```
-source condor/test/test_scripts/plot_local.sh 1 condor/test/Submission/test.pickle test
+python test_in_dir.py
 ```
 
 ## Submit all of the batch jobs
 ```
-condor_submit condor/test/test_scripts/condor_test.sub
 ```

@@ -7,7 +7,7 @@ import pickle
 import argparse
 from batchsub import Job, JobSet
 
-def submit_jobs(tree_name, job_name, n_jobs, flavour, file_flavour, filling_script, slurm_directories, extra_args=None):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, extra_args=None):
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
 
@@ -33,7 +33,7 @@ def submit_jobs(tree_name, job_name, n_jobs, flavour, file_flavour, filling_scri
 
         #create the python script that is needed for plotting
         plotting_instructions_python = []
-        plotting_instructions_python.append("from histogram_filling import HistogramFiller")
+        plotting_instructions_python.append("from histogram_filler import HistogramFiller")
         plotting_instructions_python.append("from {} import fill_histograms".format(filling_script.split("/")[-1].split(".")[0]))
         plotting_instructions_python.append("import pickle")
         plotting_instructions_python.append("import argparse")
@@ -96,6 +96,7 @@ def submit_jobs(tree_name, job_name, n_jobs, flavour, file_flavour, filling_scri
                     assert  len(partitions[channel][f]) == n_jobs
                     partition[channel][f] =  partitions[channel][f][i]
             hist_filler = HistogramFiller(trees, tree_name, calc_weight, selection_string = "", partitions = partition)
+            filler_list.append(hist_filler)
         #create a pickle file for each submission
         pickle.dump(filler_list, open(filler_file, "wb" ) )
         print("Created the submission file. Ready to go!")
@@ -104,7 +105,7 @@ def submit_jobs(tree_name, job_name, n_jobs, flavour, file_flavour, filling_scri
         for i in range(0, len(filler_list)):
             commands  = []
             commands.append("cd {}".format(os.getenv("MomentumValidationDir")))
-            commands.append("python {py_exec} --num={num} --picklefile={picklefile} --jobName={jobName}".format(py_exec=python_executable, num=i, jobName = name + "_" + str(i)))
+            commands.append("python {py_exec} --num={num} --picklefile={picklefile} --jobName={jobName}".format(py_exec=python_executable, num=i, jobName = job_name + "_" + str(i), picklefile=filler_file))
             job = Job(job_name + "_" + str(i), os.path.join(slurm_directory, "job_{}".format(i)), commands, time = queue_flavour, memory="8000M")
             jobset.add_job(job)
 
@@ -128,13 +129,13 @@ if __name__ == "__main__":
         tree_name = args.tree_name
         job_name = args.job_name
         n_jobs = args.n_jobs
-        flavour = args.queue_flavour
+        queue_flavour = args.queue_flavour
         file_flavour = args.file_flavour
         filling_script = args.filling_script
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
         if args.extra_args == "": args.extra_args = None
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, flavour, file_flavour, filling_script, slurm_directories, None)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, None)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
 
