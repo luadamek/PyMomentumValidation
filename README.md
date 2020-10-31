@@ -158,4 +158,60 @@ cmake .. && make
 cd ../../
 ```
 
+## Package Philosophy
+A plotting job is defined in a script such as macros/fill_script.py, which must have a function called fill_histograms. fill_histograms takes a HistogramFiller instance, an output rootfile name, and fills histograms. Take a look inside of the script fill_scipt.py to get an idea of how this works. From a user's perspective, one does not have to worry about creating an instance of a "HistogramFiller" or defining the name of the output rootfile. The scripts responsible for shipping jobs to condor handle everything. 
 
+All selections and variables to be plotted are defined as instances of the class "Caclulation". To define a new selection for tracks in a plot, you could write the following function:
+```
+from calculation import Calculation
+def TightIso(trk):
+    return trk["trk_nearest_dR_EM"] > 0.55
+sel_TightIso = Calculation(TightIso, ["trk_nearest_dR_EM"])
+```
+The initialization of Calculation takes a function that calculates the selection (trk_nearest_dR_EM > 0.55), and a list of branches needed to perform the calculation (trk_nearest_dR_EM).
+
+Similarly, one can create a function that calculates E/P
+```
+from calculation import Calculation
+def EOP(trk):
+    return (trk["trk_ClusterEnergy_EM_200"] + trk["trk_ClusterEnergy_HAD_200"])/trk["trk_p"]
+branches = ["trk_ClusterEnergy_EM_200", "trk_ClusterEnergy_HAD_200", "trk_p"]
+calc_EOP = Calculation(EOP, branches)
+```
+
+To fill an EOP histogram for all tracks passing the TightIso selection, define a histogram filling script like macros/fill_script_test.py .
+```
+def fill_histograms(hist_filler, outputRootFileName):
+    outFile = ROOT.TFile(outputRootFileName, "RECREATE")
+
+    #count the number of tracks in each channel
+    histogram_name = "EOP"
+    selections = [sel_TightIso]
+    trkCountHist = hist_filler.book_histogram_fill(histogram_name,\
+                                                         calc_EOP,\
+                                                         selections = selections,\
+                                                         bins = 100,\
+                                                         range_low = -0.5,\
+                                                         range_high = +3.5,\
+                                                         xlabel ='E/P',\
+                                                         ylabel = 'Number of Tracks')
+    histograms = hist_filler.DumpHistograms()
+    for histogram_name in histograms:
+        write_histograms(histograms[histogram_name], outFile)
+
+    outFile.Close()
+```
+
+The following lines would prepare a batch job for submission. This job would use 100 condor jobs, and run over a test set of files. The condor jobqueue corresponds to the --queue_flavour flag and can be set to espresso (20mins), longlunch (2hr), workday (8hr), etc. Notice that you have to define the "file flavour". These are defined in utils/utils.py and include a list of files separated by channels. Histograms will be filled for each channel independently by the histogram filling script. "test" includes channels for "PythiaJetJet", "LowMuData", and "SinglePions".
+```
+python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 10 --job_name test --queue_flavour 02\:00:\00 --file_flavour v03 --filling_script Macros\/filling_scripy.py
+```
+## Test one of the jobs locally
+```
+source condor/test/test_scripts/plot_local.sh 1 condor/test/Submission/test.pickle test
+```
+
+## Submit all of the batch jobs
+```
+condor_submit condor/test/test_scripts/condor_test.sub
+```

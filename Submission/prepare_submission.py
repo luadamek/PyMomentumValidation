@@ -1,6 +1,6 @@
 import utils
 import os
-from histogram_filling import HistogramFiller
+from histogram_filler import HistogramFiller
 from variables import calc_weight
 import ROOT
 import pickle
@@ -13,7 +13,7 @@ def submit_jobs(tree_name, job_name, n_jobs, flavour, file_flavour, filling_scri
 
         import pickle as pkl
         if extra_args is not None:
-            with open(args.extra_args, "rb") as f:
+            with open(extra_args, "rb") as f:
                 extra_args = pkl.load(f)
 
         files = utils.get_files(file_flavour)
@@ -100,14 +100,18 @@ def submit_jobs(tree_name, job_name, n_jobs, flavour, file_flavour, filling_scri
         pickle.dump(filler_list, open(filler_file, "wb" ) )
         print("Created the submission file. Ready to go!")
 
-        jobset = JobSet(name)
+        jobset = JobSet(job_name)
         for i in range(0, len(filler_list)):
             commands  = []
             commands.append("cd {}".format(os.getenv("MomentumValidationDir")))
             commands.append("python {py_exec} --num={num} --picklefile={picklefile} --jobName={jobName}".format(py_exec=python_executable, num=i, jobName = name + "_" + str(i)))
-            job = Job(args.name + "_" + str(i), os.path.join(slurm_directory, "job_{}".format(i)), commands, time = queue_flavour, memory="8000M")
+            job = Job(job_name + "_" + str(i), os.path.join(slurm_directory, "job_{}".format(i)), commands, time = queue_flavour, memory="8000M")
             jobset.add_job(job)
-        return jobset
+
+        jobset_file = os.path.join(slurm_directory, "jobset.pkl")
+        with open(jobset_file, "wb") as f:
+            pkl.dump(jobset, f)
+        return jobset_file, slurm_directory
 
 if __name__ == "__main__":
         parser = argparse.ArgumentParser(description='Submit plotting batch jobs for the MuonMomentumAnalysis plotting')
@@ -127,8 +131,11 @@ if __name__ == "__main__":
         flavour = args.queue_flavour
         file_flavour = args.file_flavour
         filling_script = args.filling_script
-        slurm_directories = ["/project/ladamek/momentumvalidationoutput/", args.job_name]
+        slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
+        if args.extra_args == "": args.extra_args = None
 
-        joblist = submit_jobs(tree_name, job_name, n_jobs, flavour, file_flavour, filling_script, slurm_directories, args.extra_args)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, flavour, file_flavour, filling_script, slurm_directories, None)
+
+        print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
 
 

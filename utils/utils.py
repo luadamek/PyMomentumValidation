@@ -19,7 +19,7 @@ def get_files(flavour):
 
     return to_return
 
-def tchain_files_together(tree_name, channel_to_filelist, on_eos = True):
+def tchain_files_together(tree_name, channel_to_filelist, on_eos = False):
     '''
     Given a tree_name, and a dictionary of channel to file list, return a dictionary of channel to filename to tchain.
     '''

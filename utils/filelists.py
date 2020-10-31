@@ -1,13 +1,12 @@
-#the location of the files on eos
+#the location of the directories on eos
+import os
 if os.getenv("USER") == "ladamek":
     dir_v03="/project/def-psavard/ForLukas/muonptcalib_v03_combined/merged/"
 
-def merge_basedir_into_files(basedir, files):
-    with_directory = []
-    for el in files:
-        with_directory.append(os.path.join(basedir, el))
-    return with_directory
+directories = {}
+directories["v03"] = dir_v03
 
+files = {}
 files["v03"] = {}
-files["v03"]["Data"] = merge_basedir_into_files( dir_v03,  ["data_{}.root".format(el) for el in ["1516", "17", "18"])
-files["v03"]["DY_MC"] = merge_basedir_into_files( dir_v03,  ["DYmumu_mc16{}.root".format(el) for el in ["a", "d", "e"])
+files["v03"]["Data"] = ["data_{}.root".format(el) for el in ["1516", "17", "18"]]
+files["v03"]["MC"] = ["DYmumu_mc16{}.root".format(el) for el in ["a", "d", "e"]]
