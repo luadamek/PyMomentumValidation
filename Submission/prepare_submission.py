@@ -5,7 +5,7 @@ from variables import calc_weight
 import ROOT
 import pickle
 import argparse
-from constraint_batchsub import Job, JobSet
+from batchsub import Job, JobSet
 
 def submit_jobs(tree_name, job_name, n_jobs, flavour, file_flavour, filling_script, slurm_directories, extra_args=None):
         project_dir = os.getenv("MomentumValidationDir")
