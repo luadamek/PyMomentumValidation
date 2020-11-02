@@ -99,12 +99,19 @@ class HistogramFiller:
         self.selections_for_channels = {}
         self.trees = trees
         self.channels = list(trees.keys())
+        self.calibrations = {}
+        self.all_calibrations = []
         self.subchannels = {} #dictionary of new_channel to dictionary of old_channel and selections
 
         for channel in self.trees:
             self.channel_files[channel] = []
             for f in self.trees[channel]:
                 self.channel_files[channel].append(f)
+
+    def apply_calibration_for_channel(self, channel, calibration):
+        if channel not in calibrations: self.calibrations[channel] = []
+        self.calibrations[channel].append(calibration)
+        self.all_calibrations.append(calibration)
 
     def apply_selection_for_channel(self, channel, selections):
         if channel not in self.selections_for_channels:
@@ -136,7 +143,11 @@ class HistogramFiller:
         '''
         print("\n"*2)
         print("Getting branches for channel {}".format(channel))
-        branches = get_needed_branches(variables, selections)
+        calibrations = []
+        if channel in self.calibrations:
+            print("Calibrating channel {}".format(channel))
+            calibrations.append(self.calibrations[channel])
+        branches = get_needed_branches(variables, selections, calibrations)
 
         #get the parition of the ttree to be read
         partition = None
@@ -149,7 +160,7 @@ class HistogramFiller:
         tree = self.trees[channel][filename]
 
         print("Reading entries from {} until {}".format(partition[0], partition[1]))
-        result = GetData(partition = partition, bare_branches = branches, channel = channel, filename = filename, tree = tree, treename = self.tree_name, variables=variables, weight_calculator = self.weight_calculator, selections = selections, selection_string = self.selection_string, verbose = self.verbose)
+        result = GetData(partition = partition, bare_branches = branches, channel = channel, filename = filename, tree = tree, treename = self.tree_name, variables=variables, weight_calculator = self.weight_calculator, selections = selections, selection_string = self.selection_string, verbose = self.verbose, calibrations=calibrations)
 
         #Get the selections, variables and weights
         selection_dict = result["selection_dict"]
@@ -253,6 +264,47 @@ class HistogramFiller:
                 fill_hist(histogram_dictionary[channel], to_fill, to_weight)
         return histogram_dictionary
 
+    def fill_2d_tprofile_histograms(self, histogram_name, data, variable_x, variable_y, variable_z, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", zlabel="", error_option=""):
+        '''the 2-d histgram with variable_x and variable_y drawn'''
+        name_to_fill_x = variable_x.name
+        name_to_fill_y = variable_y.name
+        name_to_fill_z = variable_z.name
+        variables = [variable_x, variable_y, variable_z]
+        histogram_dictionary = {}
+        for channel in self.channels:
+            if (type(bins_x) == list and type(bins_y) == list):
+                bins_array_x = array('d',bins_x)
+                bins_array_y = array('d',bins_y)
+                histogram_dictionary[channel] = ROOT.TProfile2D(histogram_name + channel, histogram_name + channel, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y)
+            elif (type(bins_x) != list and type(bins_y) != list):
+                histogram_dictionary[channel] = ROOT.TProfile2D(histogram_name + channel, histogram_name + channel, bins_x, range_low_x + 0.0000001, range_high_x - 0.000001, bins_y, range_low_y+0.0000001, range_high_y + 0.0000001)
+            else:
+                raise ValueError("both of the bins_x and bins_y variables need to be the same type. Both integers, or both lists")
+            histogram_dictionary[channel].GetXaxis().SetTitle(xlabel)
+            histogram_dictionary[channel].GetYaxis().SetTitle(ylabel)
+            histogram_dictionary[channel].GetZaxis().SetTitle(zlabel)
+            histogram_dictionary[channel].GetZaxis().SetTitleSize(0.035)
+            histogram_dictionary[channel].GetZaxis().SetTitleOffset(1.35)
+            histogram_dictionary[channel].Sumw2()
+            histogram_dictionary[channel].SetErrorOption(error_option)
+
+        for channel in self.channels:
+            for filename in self.channel_files[channel]:
+                variable_dict, selection_dict, weights = data[channel][filename]
+                total_selection = np.ones(len(weights)) > 0.0
+                for selection in selections:
+                    total_selection &= selection_dict[selection.name]
+                to_weight = weights[total_selection]
+                n_sel = len(to_weight)
+                to_fill = np.zeros((n_sel,3))
+                to_fill[:,0] = variable_dict[name_to_fill_x][total_selection]
+                to_fill[:,1] = variable_dict[name_to_fill_y][total_selection]
+                to_fill[:,2] = variable_dict[name_to_fill_z][total_selection]
+                if self.verbose: print(to_fill)
+                if self.verbose: print(to_weight)
+                if self.verbose: print("Filling Variable " + variable.name)
+                fill_profile(histogram_dictionary[channel], to_fill, to_weight)
+        return histogram_dictionary
 
     def fill_tprofile_histograms(self, histogram_name, data, variable_x, variable_y, selections = [], bins = 1, range_low = 0.000001, range_high=1. - 0.00001,  xlabel ="", ylabel="",):
         '''Get a TProfile histogram with variable_y profiled against variable_x, after selections selections have been applied'''
@@ -335,6 +387,25 @@ class HistogramFiller:
         if variable_y.name not in [var.name for var in self.all_variables]:
             self.all_variables.append(variable_y)
 
+    def book_2dtprofile_fill(self, histogram_name, variable_x, variable_y, variable_z, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", zlabel="", error_option=""):
+        if histogram_name not in self.histogram_filling_functions:
+            self.histogram_filling_functions[histogram_name] = lambda data : self.fill_2d_tprofile_histograms(histogram_name, data, variable_x, variable_y, variable_z, selections = selections, bins_x = bins_x, range_low_x =range_low_x, range_high_x=range_high_x,  xlabel =xlabel, bins_y=bins_y, range_low_y=range_low_y, range_high_y=range_high_y, ylabel = ylabel, zlabel=zlabel, error_option=error_option)
+        else:
+            raise ValueError("histogram name already exists")
+
+        for selection in selections:
+            if selection.name not in [sel.name for sel in self.all_selections]:
+                self.all_selections.append(selection)
+
+        if variable_x.name not in [var.name for var in self.all_variables]:
+            self.all_variables.append(variable_x)
+
+        if variable_y.name not in [var.name for var in self.all_variables]:
+            self.all_variables.append(variable_y)
+
+        if variable_z.name not in [var.name for var in self.all_variables]:
+            self.all_variables.append(variable_z)
+
     def DumpHistograms(self):
         data = {}
         for channel in self.channels:
@@ -392,7 +463,7 @@ def getIsData(filename):
     '''
     return ("Data" in filename.split("/")[-1] or "data" in filename.split("/")[-1] or "Data" in filename.split("/")[-2] or "data" in filename.split("/")[-2])
 
-def GetData(partition = (0, 0), bare_branches = [], channel = "", filename = None, tree = None, treename = None, variables = [], weight_calculator = None, selections = [], selection_string = "",  verbose = False):
+def GetData(partition = (0, 0), bare_branches = [], channel = "", filename = None, tree = None, treename = None, variables = [], weight_calculator = None, selections = [], selection_string = "",  verbose = False, calibrations = []):
     '''
     A function for retrieving data
     partition -- a tuple of length 2. Retrieve tree entries from partition[0] until partition[1]
@@ -444,6 +515,8 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", filename = Non
         if verbose: print("X Section Weight Set To " + str(xsec_weight))
         weights = weights #* xsec_weight * lumi_prescaled
 
+    for c in calibrations: c.calibrate(data)
+
     ##calculate everything we need in one go!
     for variable in variables:
         if verbose: print("calculating variables for " + variable.name)
@@ -466,7 +539,7 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", filename = Non
     f.Close()
     return return_dict
 
-def get_needed_branches(variables, selections):
+def get_needed_branches(variables, selections, calibrations):
     '''given a list of variables and selections, get all of the branches that should be read from the tree'''
     branches = []
 
@@ -477,6 +550,11 @@ def get_needed_branches(variables, selections):
 
     for selection in selections:
         for branch in selection.branches:
+            if branch not in branches:
+                branches.append(branch)
+
+    for calibration in calibrations:
+        for branch in calibration.branches:
             if branch not in branches:
                 branches.append(branch)
 

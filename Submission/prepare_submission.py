@@ -108,6 +108,8 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         for i in range(0, len(filler_list)):
             commands  = []
             commands.append("cd {}".format(os.getenv("MomentumValidationDir")))
+            commands.append("export USER=ladamek")
+            commands.append("source ./setup.sh")
             commands.append("python {py_exec} --num={num} --picklefile={picklefile} --jobName={jobName}".format(py_exec=python_executable, num=i, jobName = job_name + "_" + str(i), picklefile=filler_file))
             job = Job(job_name + "_" + str(i), os.path.join(slurm_directory, "job_{}".format(i)), commands, time = queue_flavour, memory="8000M")
             jobset.add_job(job)
@@ -141,5 +143,17 @@ if __name__ == "__main__":
         jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, None)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
+        #submit the jobs, and wait until completion
+        import pickle as pkl
+        jobset = pkl.load(open(jobset_file, "rb"))
+        jobset.submit()
+        import time
+        while not jobset.check_completion():
+            print("Checking compleition")
+            time.sleep(100)
+        import glob
+        to_merge = glob.glob(os.path.join(slurm_directory, "job_name*.root"))
+        os.system("hadd {final_file} ".format(final_file = os.path.join(slurm_directory, "Output.root")) + " ".join(to_merge))
+        print("SUCCESS!")
 
 

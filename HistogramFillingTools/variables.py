@@ -359,7 +359,97 @@ def ms_mass(event):
 branches = ["Pair_MS_Mass"]
 calc_ms_mass = Calculation(ms_mass, branches)
 
+def pos_cb_pt(event):
+    return event["Pos_CB_Pt"]
+branches = ["Pos_CB_Pt"]
+calc_pos_cb_pt = Calculation(pos_cb_pt, branches)
+
+def pos_id_pt(event):
+    return event["Pos_ID_Pt"]
+branches = ["Pos_ID_Pt"]
+calc_pos_id_pt = Calculation(pos_id_pt, branches)
+
+def pos_ms_pt(event):
+    return event["Pos_MS_Pt"]
+branches = ["Pos_MS_Pt"]
+calc_pos_ms_pt = Calculation(pos_ms_pt, branches)
+
+def neg_cb_pt(event):
+    return event["Neg_CB_Pt"]
+branches = ["Neg_CB_Pt"]
+calc_neg_cb_pt = Calculation(neg_cb_pt, branches)
+
+def neg_id_pt(event):
+    return event["Neg_ID_Pt"]
+branches = ["Neg_ID_Pt"]
+calc_neg_id_pt = Calculation(neg_id_pt, branches)
+
+def neg_ms_pt(event):
+    return event["Neg_MS_Pt"]
+branches = ["Neg_MS_Pt"]
+calc_neg_ms_pt = Calculation(neg_ms_pt, branches)
+
 def weight(event, isData):
     return event["TotalWeight"]
 branches = ["TotalWeight"]
 calc_weight = WeightCalculation(weight, branches)
+
+def pos_cb_eta(event):
+    return event["Pos_CB_Eta"]
+branches = ["Pos_CB_Eta"]
+calc_pos_cb_eta = Calculation(pos_cb_eta, branches)
+
+def pos_id_eta(event):
+    return event["Pos_ID_Eta"]
+branches = ["Pos_ID_Eta"]
+calc_pos_id_eta = Calculation(pos_id_eta, branches)
+
+def pos_ms_eta(event):
+    return event["Pos_MS_Eta"]
+branches = ["Pos_MS_Eta"]
+calc_pos_ms_eta = Calculation(pos_ms_eta, branches)
+
+def neg_cb_eta(event):
+    return event["Neg_CB_Eta"]
+branches = ["Neg_CB_Eta"]
+calc_neg_cb_eta = Calculation(neg_cb_eta, branches)
+
+def neg_id_eta(event):
+    return event["Neg_ID_Eta"]
+branches = ["Neg_ID_Eta"]
+calc_neg_id_eta = Calculation(neg_id_eta, branches)
+
+def neg_ms_eta(event):
+    return event["Neg_MS_Eta"]
+branches = ["Neg_MS_Eta"]
+calc_neg_ms_eta = Calculation(neg_ms_eta, branches)
+
+def pos_cb_phi(event):
+    return event["Pos_CB_Phi"]
+branches = ["Pos_CB_Phi"]
+calc_pos_cb_phi = Calculation(pos_cb_phi, branches)
+
+def pos_id_phi(event):
+    return event["Pos_ID_Phi"]
+branches = ["Pos_ID_Phi"]
+calc_pos_id_phi = Calculation(pos_id_phi, branches)
+
+def pos_ms_phi(event):
+    return event["Pos_MS_Phi"]
+branches = ["Pos_MS_Phi"]
+calc_pos_ms_phi = Calculation(pos_ms_phi, branches)
+
+def neg_cb_phi(event):
+    return event["Neg_CB_Phi"]
+branches = ["Neg_CB_Phi"]
+calc_neg_cb_phi = Calculation(neg_cb_phi, branches)
+
+def neg_id_phi(event):
+    return event["Neg_ID_Phi"]
+branches = ["Neg_ID_Phi"]
+calc_neg_id_phi = Calculation(neg_id_phi, branches)
+
+def neg_ms_phi(event):
+    return event["Neg_MS_Phi"]
+branches = ["Neg_MS_Phi"]
+calc_neg_ms_phi = Calculation(neg_ms_phi, branches)

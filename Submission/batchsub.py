@@ -162,6 +162,7 @@ class JobSet:
     def check_completion(self):
        for job in self.jobs:
            if not job.check_completion(): return False
+       return True
 
     def check_for_errors(self):
         has_error = False

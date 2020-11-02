@@ -51,62 +51,14 @@ source venv_PyMomentumValidation/bin/activate
 ```
 Creating the venv with lcg doesn't work for some reason if you're on a worker node. Make sure you're on the login node. 
 
-
-## Install a lot of common software packages used by physics analyses @ CERN
-```
-pip install --upgrade pip
-git clone https://github.com/joeycarter/atlas-plots.git
-cd atlas-plots
-pip install .
-cd ..
-git clone https://github.com/xrootd/xrootd.git
-cd xrootd/bindings/python/
-git checkout stable-4.11.x
-python setup_standalone.py install
-cd ../../../
-pip install uproot
-pip install guppy3
-pip install pdfkit
-pip install tables
-pip install -U feather-format
-```
-
-
-## NTuple Locations
-HZZ nTuples
-```
-/project/def-psavard/MASSSCRATCHDIR/eos/atlas/atlascerngroupdisk/phys-higgs/HSG2/H4l/
-```
-
-Hmumu nTuples
-```
-/project/def-psavard/hmumu_harish_files/eos/atlas/atlascerngroupdisk/phys-higgs/HSG2/Hmumu/common_ntuples/v23/
-```
-
 If you cannot access the above files, you can email lukas.adamek@mail.utoronto.ca, and he should look at this documentation and type the following lines into his terminal:
 ```
 setfacl -d -m u:YOURUSERNAME:rwx /home/ladamek/projects/def-psavard/THEDIRECTORY
 ```
 
-
 ## Finally, run the setup script
 ```
 source ./setup.sh
-```
-
-## Check Installations
-You can test that everything has installed correctly with the following lines:
-```
-root -b #for root
-python
-import uproot #for uproot
-import ROOT #for pyroot
-import root_numpy #for root_numpy
-import numpy
-import tensorflow #a popular machine learning library
-import keras # a popular neural network training library
-import xgboost #a popular bdt training library
-exit()
 ```
 
 ## Login
@@ -204,7 +156,7 @@ def fill_histograms(hist_filler, outputRootFileName):
 
 The following lines would prepare a batch job for submission. This job would use 100 condor jobs, and run over a test set of files. The condor jobqueue corresponds to the --queue_flavour flag and can be set to espresso (20mins), longlunch (2hr), workday (8hr), etc. Notice that you have to define the "file flavour". These are defined in utils/utils.py and include a list of files separated by channels. Histograms will be filled for each channel independently by the histogram filling script. "test" includes channels for "PythiaJetJet", "LowMuData", and "SinglePions".
 ```
-python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 50 --job_name test --queue_flavour 02\:00:\00 --file_flavour v03 --filling_script Macros\/filling_script.py 
+python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 50 --job_name test --queue_flavour 00\:10:\00 --file_flavour v03 --filling_script Macros\/filling_script.py 
 ```
 ## Test one of the jobs locally
 ```
