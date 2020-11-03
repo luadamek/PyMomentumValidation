@@ -2,6 +2,30 @@ import numpy as np
 import ROOT
 import array
 
+def draw_text(x, y, text, color=1, size=0.05):
+    '''Draw text.
+    Parameters
+    ----------
+    x : float
+        x position in NDC coordinates
+    y : float
+        y position in NDC coordinates
+    text : string, optional
+        The text
+    color : int, optional
+        Text colour (the default is 1, i.e. black).
+        See https://ROOT.cern.ch/doc/master/classTColor.html.
+        If you know the hex code, rgb values, etc., use ``ROOT.TColor.GetColor()``
+    size : float, optional
+        Text size
+        See https://ROOT.cern.ch/doc/master/classTLatex.html
+    '''
+    l = ROOT.TLatex()
+    l.SetTextSize(size)
+    l.SetNDC()
+    l.SetTextColor(color)
+    l.DrawLatex(x, y, text)
+
 def hist_to_tgrapherrors(hist):
     xs = []
     xerrs = []
@@ -20,21 +44,21 @@ def hist_to_tgrapherrors(hist):
 
 alive = []
 object_counter = 0
-def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".pdf", plot_dir = "plots"):
+def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".pdf", plot_dir = "plots", datakey = "data"):
 
     global object_counter
     object_counter += 1
 
     extra_descr += "{}".format(object_counter)
-    from atlasplots import atlas_style as astyle
-    astyle.SetAtlasStyle()
+    from atlasplots import set_atlas_style 
+    set_atlas_style()
     ROOT.gStyle.SetLineWidth(1)
     ROOT.gStyle.SetFrameLineWidth(1)
 
     keep_alive = {}
     integrals = {}
-    data_histogram = histograms["data"]
-    mc_histograms = {key:histograms[key] for key in histograms if "data" not in key}
+    data_histogram = histograms[datakey]
+    mc_histograms = {key:histograms[key] for key in histograms if datakey not in key}
     for channel in histograms:
         integrals[channel] = sum([histograms[channel].GetBinContent(i) \
                               for i in range(1, histograms[channel].GetNbinsX() + 1)])
@@ -72,7 +96,7 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
     if not legend_labels is None:
         for key in ordered_keys[::-1]:
             label = legend_labels[key]
-            if not "data" == key: legend.AddEntry(histograms[key], label, "F")
+            if not datakey == key: legend.AddEntry(histograms[key], label, "F")
 
     legend.SetBorderSize(0)
 
@@ -151,8 +175,8 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
     data_plot.SetMarkerSize(data_plot.GetMarkerSize()*1.5)
     data_plot.Draw("P SAME")
     data_plot.SetLineWidth(data_plot.GetLineWidth()+2)
-    keep_alive["data"] = data_plot
-    legend.AddEntry(data_plot, legend_labels["data"], "LP")
+    keep_alive[datakey] = data_plot
+    legend.AddEntry(data_plot, legend_labels[datakey], "LP")
     legend.Draw()
 
     keep_alive["canvas"] = canvas

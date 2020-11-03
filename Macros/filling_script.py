@@ -31,26 +31,16 @@ def fill_histograms(hist_filler, output_filename, start_from_correction = None):
 
 
     #put this as the default pt binning somewhere
-    pt_bins = []
-    pt_bins.append(18.0)
-    pt_bins.append(26.0)
-    pt_bins.append(36.0)
-    pt_bins.append(45.0)
-    pt_bins.append(65.0)
-    pt_bins.append(100.0)
-    pt_bins.append(150.0)
-    pt_bins.append(200.0)
-    pt_bins.append(350.0)
-    pt_bins.append(600.0)
-    pt_bins.append(800.0)
-    pt_bins.append(1000.0)
-    pt_bins.append(2000.0)
+    from binnings import global_pt_binning
+    pt_bins = global_pt_binning
+
 
     corrections_ID = []
     corrections_CB = []
     corrections_MS = []
 
     eta_bin_options = {"nbins": 32, "etalow":-2.7, "etahigh":+2.7}
+    eta_ID_bin_options = {"nbins": 32, "etalow":-2.5, "etahigh":+2.5}
     phi_bin_options = {"nbins": 30, "philow":-3.142, "phihigh":+3.142}
 
     for i, (pt_bin_lo, pt_bin_high) in enumerate(zip(pt_bins[:-1], pt_bins[1:])):
@@ -75,9 +65,9 @@ def fill_histograms(hist_filler, output_filename, start_from_correction = None):
                                          calc_pos_id_phi,\
                                          calc_id_mass,\
                                          selections = base_selections+[pt_selection_pos_id],\
-                                         bins_x = eta_bin_options["nbins"],\
-                                         range_low_x = eta_bin_options["etalow"],\
-                                         range_high_x = eta_bin_options["etahigh"],\
+                                         bins_x = eta_ID_bin_options["nbins"],\
+                                         range_low_x = eta_ID_bin_options["etalow"],\
+                                         range_high_x = eta_ID_bin_options["etahigh"],\
                                          xlabel = "#eta_{#mu}",\
                                          bins_y=phi_bin_options["nbins"],\
                                          range_low_y=phi_bin_options["philow"],\
@@ -93,9 +83,9 @@ def fill_histograms(hist_filler, output_filename, start_from_correction = None):
                                          calc_neg_id_phi,\
                                          calc_id_mass,\
                                          selections = base_selections+[pt_selection_neg_id],\
-                                         bins_x = eta_bin_options["nbins"],\
-                                         range_low_x = eta_bin_options["etalow"],\
-                                         range_high_x = eta_bin_options["etahigh"],\
+                                         bins_x = eta_ID_bin_options["nbins"],\
+                                         range_low_x = eta_ID_bin_options["etalow"],\
+                                         range_high_x = eta_ID_bin_options["etahigh"],\
                                          xlabel = "#eta_{#mu}",\
                                          bins_y=phi_bin_options["nbins"],\
                                          range_low_y=phi_bin_options["philow"],\

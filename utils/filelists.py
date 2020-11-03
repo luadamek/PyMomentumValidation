@@ -9,4 +9,4 @@ directories["v03"] = dir_v03
 files = {}
 files["v03"] = {}
 files["v03"]["Data"] = ["data_{}.root".format(el) for el in ["1516", "17", "18"]]
-files["v03"]["MC"] = ["DYmumu_mc16{}.root".format(el) for el in ["a", "d", "e"]]
+files["v03"]["MC"] = ["Sig_Z_mc16{}.root".format(el) for el in ["d", "e"]]

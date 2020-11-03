@@ -1,5 +1,7 @@
 import numpy as np
 import numexpr as ne
+import ROOT
+from array import array
 from variables import \
                       calc_pos_id_pt, calc_neg_id_pt,\
                       calc_pos_ms_pt, calc_neg_ms_pt,\
@@ -10,6 +12,77 @@ from variables import \
                       calc_pos_id_phi, calc_neg_id_phi,\
                       calc_pos_ms_phi, calc_neg_ms_phi,\
                       calc_pos_cb_phi, calc_neg_cb_phi
+
+def extract_binning_from_axis(axis):
+    '''
+    Take a TAxis axis and return a list representing all bin edges along axis.
+    '''
+    edges = []
+    for i in range(1, axis.GetNbins()+1):
+        edges.append(axis.GetBinLowEdge(i))
+    edges.append(axis.GetBinUpEdge(axis.GetNbins()))
+    return edges
+
+def extract_binning_from_histogram(hist):
+    edges = {}
+    if isinstance(hist, ROOT.TH1):
+        nedges = 1
+        axes = {"x": hist.GetXaxis()}
+    if isinstance(hist, ROOT.TH2):
+        nedges = 2
+        axes = {"x":hist.GetXaxis(), "y":hist.GetYaxis()}
+    if isinstance(hist, ROOT.TH3):
+        nedges = 3
+        axes = {"x":hist.GetXaxis(), "y": hist.GetYaxis(), "z":hist.GetZaxis()}
+    for axisname in axes:
+        these_edges = extract_binning_from_axis(axes[axisname])
+        edges[axisname] = these_edges
+    return edges
+
+#write a function that takes the positive and negative mass histograms, and calculates the sagitta bias
+def calculate_sagitta_bias(pos_hist, neg_hist, newname = None):
+    #check that both histograms are tprofile 2ds
+    assert isinstance(pos_hist, ROOT.TProfile2D)
+    assert isinstance(neg_hist, ROOT.TProfile2D)
+
+    edges_pos = extract_binning_from_histogram(pos_hist)
+    edges_neg = extract_binning_from_histogram(neg_hist)
+
+    #ok make sure that 
+    for key in edges_pos:
+        assert key in edges_neg
+        for el in edges_pos[key]:
+            assert el in edges_neg[key]
+        for el in edges_neg[key]:
+            assert el in edges_pos[key]
+
+    bins_array_x = array('d',edges_pos["x"])
+    bins_array_y = array('d',edges_neg["y"])
+
+    if newname is None: newname = pos_hist.GetName().replace("Pos_", "Pos_Neg_Sagitta")
+    new_hist = ROOT.TH2D(newname, newname, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y)
+    new_hist.GetXaxis().SetTitle(pos_hist.GetXaxis().GetTitle())
+    new_hist.GetYaxis().SetTitle(pos_hist.GetYaxis().GetTitle())
+    new_hist.GetZaxis().SetTitle("<qM_{#mu#mu}>/<M_{#mu#mu}>")
+    max_content = 0.0
+    for i in range(1, len(edges_pos["x"]) + 1):
+        for j in range(1, len(edges_pos["y"]) + 1):
+            pos_bindex = pos_hist.GetBin(i,j)
+            pos_mean = pos_hist.GetBinContent(pos_bindex)
+            pos_entries = pos_hist.GetBinEntries(pos_bindex)
+            neg_bindex = neg_hist.GetBin(i,j)
+            neg_mean = neg_hist.GetBinContent(neg_bindex)
+            neg_entries = neg_hist.GetBinEntries(neg_bindex)
+            if (pos_entries + neg_entries) > 0.0 and (pos_entries > 0.0) and (neg_entries > 0.0):
+                qm_average = ((pos_mean * pos_entries) - (neg_mean * neg_entries))/(pos_entries + neg_entries)
+                m_average = ((pos_mean * pos_entries) + (neg_mean * neg_entries))/(pos_entries + neg_entries)
+                new_entry = (qm_average)/m_average
+            else: new_entry = 0.0
+            if abs(new_entry) > max_content: max_content=abs(new_entry)
+            new_hist.SetBinContent(i, j, new_entry)
+    new_hist.SetMaximum(max_content)
+    new_hist.SetMinimum(-1.0 * max_content)
+    return new_hist
 
 class SagittaBiasCorrection:
 
@@ -58,22 +131,10 @@ class SagittaBiasCorrection:
             self.branches = list(set(self.branches + v.branches))
 
         histogram = histograms[-1]
+        edges = extract_binning_from_historgam(histogram)
         #load some information about the histogram, such as the bin edges
-        edges_x = []
-        axis = histogram.GetXaxis()
-        for i in range(1, axis.GetNbins()):
-            edges_x.append(axis.GetBinLowEdge(i))
-        edges_x.append(axis.GetBinUpEdge(axis.GetNbins()))
-        self.edges_x = edges_x
-        self.edges_x = np.array(self.edges_x, np.float32)
-
-        edges_y = []
-        axis = histogram.GetYaxis()
-        for i in range(1, axis.GetNbins()):
-            edges_y.append(axis.GetBinLowEdge(i))
-        edges_y.append(axis.GetBinUpEdge(axis.GetNbins()))
-        self.edges_y = edges_y
-        self.edges_y = np.array(edges_y, np.float32)
+        self.edges_x = np.array(edges["x"], np.float32)
+        self.edges_y = np.array(edges["y"], np.float32)
 
         corrections = np.zeros(len(edges_x), len(edges_y))
         for i, j in zip(range(1, len(edges_x + 1)), range(1, len(edges_y + 1))):

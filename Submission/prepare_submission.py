@@ -152,8 +152,8 @@ if __name__ == "__main__":
             print("Checking compleition")
             time.sleep(100)
         import glob
-        to_merge = glob.glob(os.path.join(slurm_directory, "job_name*.root"))
-        os.system("hadd {final_file} ".format(final_file = os.path.join(slurm_directory, "Output.root")) + " ".join(to_merge))
+        to_merge = glob.glob(os.path.join(slurm_directory, "{}*.root".format(job_name)))
+        os.system("hadd -f {final_file} ".format(final_file = os.path.join(slurm_directory, "Output.root")) + " ".join(to_merge))
         print("SUCCESS!")
 
 

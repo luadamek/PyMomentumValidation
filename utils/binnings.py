@@ -1,0 +1,16 @@
+global_pt_binning = []
+global_pt_binning.append(18.0)
+global_pt_binning.append(26.0)
+global_pt_binning.append(36.0)
+global_pt_binning.append(45.0)
+global_pt_binning.append(65.0)
+global_pt_binning.append(100.0)
+global_pt_binning.append(150.0)
+global_pt_binning.append(200.0)
+global_pt_binning.append(350.0)
+global_pt_binning.append(600.0)
+global_pt_binning.append(800.0)
+global_pt_binning.append(1000.0)
+global_pt_binning.append(2000.0)
+
+global_pt_binning_zipped = zip(global_pt_binning[:-1], global_pt_binning[1:])

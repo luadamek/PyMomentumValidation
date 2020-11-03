@@ -40,7 +40,7 @@ ssh USER@gra-login>>NUM<<.computecanada.ca
 ```
 Where >>NUM<< has been replaced by a node number such as 1, 2 or 3.
 
-## Create a python virtual environment with and setup an lcg view.
+## Create a python virtual environment with and setup an lcg view. Install atlas-plots
 ```
 git clone https://gitlab.cern.ch/luadamek/lcg_virtualenv.git
 git clone https://gitlab.cern.ch/luadamek/PyMomentumValidation.git
@@ -48,6 +48,11 @@ setupATLAS -c centos7+batch
 cd PyMomentumValidation
 CMTCONFIG=x86_64-centos7-gcc8-opt ./../lcg_virtualenv/create_lcg_virtualenv venv_PyMomentumValidation LCG_94python3
 source venv_PyMomentumValidation/bin/activate
+git clone https://github.com/joeycarter/atlas-plots.git
+cd atlas-plots
+rm -rf .git
+pip install .
+cd ..
 ```
 Creating the venv with lcg doesn't work for some reason if you're on a worker node. Make sure you're on the login node. 
 

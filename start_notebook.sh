@@ -5,7 +5,7 @@ export ipnip=$(hostname -i | xargs)
 echo -e "
         Copy/Paste this in your local terminal to ssh tunnel with remote
         -----------------------------------------------------------------
-        sshuttle -r $USER@graham.computecanada.ca -v $ipnip/24
+        sshuttle -r $USER@cedar.computecanada.ca -v $ipnip/24
         -----------------------------------------------------------------
 
         Then open a browser on your local machine to the following address
