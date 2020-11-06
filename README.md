@@ -53,6 +53,7 @@ cd atlas-plots
 rm -rf .git
 pip install .
 cd ..
+pip install uproot
 ```
 Creating the venv with lcg doesn't work for some reason if you're on a worker node. Make sure you're on the login node. 
 

@@ -14,10 +14,13 @@ from variables import \
                       calc_pos_ms_phi, calc_neg_ms_phi,\
                       calc_pos_cb_phi, calc_neg_cb_phi
 import numpy as np
+#put this as the default pt binning somewhere
+from binnings import global_pt_binning
+pt_bins = global_pt_binning
 
 def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_options, histsetname):
 
-    phibins = np.linspace(phi_bin_options["philow"], phi_bin_options["phihigh"], phi_bin_options["nbins"] + 1)
+    phi_bins = np.linspace(phi_bin_options["philow"], phi_bin_options["phihigh"], phi_bin_options["nbins"] + 1)
 
     #book a tprofile of the average mass
     mass_ID = "Pair_ID_Mass"
@@ -108,30 +111,28 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
         #book tprofile histograms in each bin
 
         #book a tprofile of the average mass
-        histogram_name_base = "{histsetname}_{charge}_{location}_AverageMassProfile_{count}"
+        histogram_name_base = "{histsetname}_{charge}_{location}_AverageMassProfile_Phi_{count}"
         histogram_name = histogram_name_base.format(charge="Pos", count=i, location="ID", histsetname=histsetname)
         hist_filler.book_tprofile_fill(histogram_name, \
                                               calc_pos_id_eta,\
                                               calc_id_mass,\
                                               selections = base_selections_ID+[phi_selection_pos_id],\
-                                              bins_x = eta_ID_bin_options["nbins"],\
-                                              range_low_x = eta_ID_bin_options["etalow"],\
-                                              range_high_x = eta_ID_bin_options["etahigh"],\
+                                              bins = eta_ID_bin_options["nbins"],\
+                                              range_low = eta_ID_bin_options["etalow"],\
+                                              range_high = eta_ID_bin_options["etahigh"],\
                                               xlabel = "#eta_{#mu}",\
-                                              Ylabel="<M_{#mu#mu}> [Gev]",\
-                                              error_option="")
+                                              ylabel="<M_{#mu#mu}> [Gev]")
 
         histogram_name = histogram_name_base.format(charge="Neg", count=i, location="ID", histsetname=histsetname)
         hist_filler.book_tprofile_fill(histogram_name, \
                                               calc_neg_id_eta,\
                                               calc_id_mass,\
                                               selections = base_selections_ID+[phi_selection_neg_id],\
-                                              bins_x = eta_ID_bin_options["nbins"],\
-                                              range_low_x = eta_ID_bin_options["etalow"],\
-                                              range_high_x = eta_ID_bin_options["etahigh"],\
+                                              bins = eta_ID_bin_options["nbins"],\
+                                              range_low = eta_ID_bin_options["etalow"],\
+                                              range_high = eta_ID_bin_options["etahigh"],\
                                               xlabel = "#eta_{#mu}",\
-                                              ylabel="<M_{#mu#mu}> [Gev]",\
-                                              error_option="")
+                                              ylabel="<M_{#mu#mu}> [Gev]")
 
         #book a tprofile of the average mass
         histogram_name = histogram_name_base.format(charge="Pos", count=i, location="CB", histsetname=histsetname)
@@ -139,23 +140,21 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                               calc_pos_cb_eta,\
                                               calc_cb_mass,\
                                               selections = base_selections_CB+[phi_selection_pos_cb],\
-                                              bins_x = eta_bin_options["nbins"],\
-                                              range_low_x = eta_bin_options["etalow"],\
-                                              range_high_x = eta_bin_options["etahigh"],\
+                                              bins = eta_bin_options["nbins"],\
+                                              range_low = eta_bin_options["etalow"],\
+                                              range_high = eta_bin_options["etahigh"],\
                                               xlabel = "#eta_{#mu}",\
-                                              ylabel="<M_{#mu#mu}> [Gev]",\
-                                              error_option="")
+                                              ylabel="<M_{#mu#mu}> [Gev]")
 
         histogram_name = histogram_name_base.format(charge="Neg", count=i, location="CB", histsetname=histsetname)
         hist_filler.book_tprofile_fill(histogram_name, \
                                               calc_neg_cb_eta,\
                                               calc_cb_mass,\
                                               selections = base_selections_CB+[phi_selection_neg_cb],\
-                                              bins_x = eta_bin_options["nbins"],\
-                                              range_low_x = eta_bin_options["etalow"],\
-                                              range_high_x = eta_bin_options["etahigh"],\
-                                              ylabel="<M_{#mu#mu}> [Gev]",\
-                                              error_option="")
+                                              bins = eta_bin_options["nbins"],\
+                                              range_low = eta_bin_options["etalow"],\
+                                              range_high = eta_bin_options["etahigh"],\
+                                              ylabel="<M_{#mu#mu}> [Gev]")
 
         #book a tprofile of the average mass
         '''
@@ -207,7 +206,7 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                               calc_pos_id_eta,\
                                               calc_pos_id_phi,\
                                               calc_id_mass,\
-                                              selections = base_selections+[pt_selection_pos_id],\
+                                              selections = base_selections_ID+[pt_selection_pos_id],\
                                               bins_x = eta_ID_bin_options["nbins"],\
                                               range_low_x = eta_ID_bin_options["etalow"],\
                                               range_high_x = eta_ID_bin_options["etahigh"],\
@@ -224,7 +223,7 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                               calc_neg_id_eta,\
                                               calc_neg_id_phi,\
                                               calc_id_mass,\
-                                              selections = base_selections+[pt_selection_neg_id],\
+                                              selections = base_selections_ID+[pt_selection_neg_id],\
                                               bins_x = eta_ID_bin_options["nbins"],\
                                               range_low_x = eta_ID_bin_options["etalow"],\
                                               range_high_x = eta_ID_bin_options["etahigh"],\
@@ -242,7 +241,7 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                               calc_pos_cb_eta,\
                                               calc_pos_cb_phi,\
                                               calc_cb_mass,\
-                                              selections = base_selections+[pt_selection_pos_cb],\
+                                              selections = base_selections_CB+[pt_selection_pos_cb],\
                                               bins_x = eta_bin_options["nbins"],\
                                               range_low_x = eta_bin_options["etalow"],\
                                               range_high_x = eta_bin_options["etahigh"],\
@@ -259,7 +258,7 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                               calc_neg_cb_eta,\
                                               calc_neg_cb_phi,\
                                               calc_cb_mass,\
-                                              selections = base_selections+[pt_selection_neg_cb],\
+                                              selections = base_selections_CB+[pt_selection_neg_cb],\
                                               bins_x = eta_bin_options["nbins"],\
                                               range_low_x = eta_bin_options["etalow"],\
                                               range_high_x = eta_bin_options["etahigh"],\
@@ -313,7 +312,7 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
         histogram_name_base = "{histsetname}_{charge}_{location}_Mass_Histogram_{count}"
         histogram_name = histogram_name_base.format(charge="Pos", count=i, location="ID", histsetname=histsetname)
         hist_filler.book_histogram_fill(histogram_name,\
-                                         var,\
+                                         calc_id_mass,\
                                          selections = [pt_selection_pos_id],\
                                          bins = 100,\
                                          range_low = 91.2-20.0,\
@@ -323,7 +322,7 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
 
         histogram_name = histogram_name_base.format(charge="Neg", count=i, location="ID", histsetname=histsetname)
         hist_filler.book_histogram_fill(histogram_name,\
-                                         var,\
+                                         calc_id_mass,\
                                          selections = [pt_selection_neg_id],\
                                          bins = 100,\
                                          range_low = 91.2-20.0,\
@@ -333,7 +332,7 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
 
         histogram_name = histogram_name_base.format(charge="Pos", count=i, location="CB", histsetname=histsetname)
         hist_filler.book_histogram_fill(histogram_name,\
-                                         var,\
+                                         calc_cb_mass,\
                                          selections = [pt_selection_pos_cb],\
                                          bins = 100,\
                                          range_low = 91.2-20.0,\
@@ -343,7 +342,7 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
 
         histogram_name = histogram_name_base.format(charge="Neg", count=i, location="CB", histsetname=histsetname)
         hist_filler.book_histogram_fill(histogram_name,\
-                                         var,\
+                                         calc_cb_mass,\
                                          selections = [pt_selection_neg_cb],\
                                          bins = 100,\
                                          range_low = 91.2-20.0,\
@@ -387,12 +386,6 @@ def fill_histograms(hist_filler, output_filename, start_from_correction = None):
                                     range_high = 92.1+20.0,\
                                     xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                     ylabel = 'Number Events')
-
-
-    #put this as the default pt binning somewhere
-    from binnings import global_pt_binning
-    pt_bins = global_pt_binning
-
 
     corrections_ID = []
     corrections_CB = []

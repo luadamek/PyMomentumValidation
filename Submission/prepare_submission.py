@@ -149,14 +149,15 @@ if __name__ == "__main__":
         jobset = pkl.load(open(jobset_file, "rb"))
         if args.test_job: jobset.jobs[0].run_local()
 
-        jobset.submit()
-        import time
-        while not jobset.check_completion():
-            print("Checking compleition")
-            time.sleep(100)
-        import glob
-        to_merge = glob.glob(os.path.join(slurm_directory, "{}*.root".format(job_name)))
-        os.system("hadd -f {final_file} ".format(final_file = os.path.join(slurm_directory, "Output.root")) + " ".join(to_merge))
-        print("SUCCESS!")
+        else:
+            jobset.submit()
+            import time
+            while not jobset.check_completion():
+                print("Checking compleition")
+                time.sleep(100)
+            import glob
+            to_merge = glob.glob(os.path.join(slurm_directory, "{}*.root".format(job_name)))
+            os.system("hadd -f {final_file} ".format(final_file = os.path.join(slurm_directory, "Output.root")) + " ".join(to_merge))
+            print("SUCCESS!")
 
 
