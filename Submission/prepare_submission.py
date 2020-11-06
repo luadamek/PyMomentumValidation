@@ -128,6 +128,7 @@ if __name__ == "__main__":
         parser.add_argument('--file_flavour', '-ff', dest="file_flavour", type=str, default='inclusive', help='What is the flavour of the jobs that you want to submit?')
         parser.add_argument('--filling_script', '-fs', dest="filling_script", type=str, default='inclusive', help='What is the name of the script that takes the input root file and makes histograms?')
         parser.add_argument('--extra_args', '-ea', dest="extra_args", type=str, default="", help="A pickle filename for where to read extra args to pass to the histogram fillin call")
+        parser.add_argument('--testjob', '-tj', dest="test_job", action="store_true", help="Submit a test job")
         args = parser.parse_args()
 
         #Create a pickle file and list for each submission
@@ -146,6 +147,8 @@ if __name__ == "__main__":
         #submit the jobs, and wait until completion
         import pickle as pkl
         jobset = pkl.load(open(jobset_file, "rb"))
+        if args.test_job: jobset.jobs[0].run_local()
+
         jobset.submit()
         import time
         while not jobset.check_completion():
