@@ -1,7 +1,9 @@
 #the location of the directories on eos
 import os
 if os.getenv("USER") == "ladamek":
-    dir_v03="/project/def-psavard/ForLukas/muonptcalib_v03_combined/merged/"
+
+    if "gra" in os.getenv("HOSTNAME"): dir_v03="/project/def-psavard/ladamek/ForLukas/muonptcalib_v03_combined/merged/"
+    if "cedar": in os.getenv("HOSTNAME"): dir_v03="/project/def-psavard/ForLukas/muonptcalib_v03_combined/merged/"
 
 directories = {}
 directories["v03"] = dir_v03
