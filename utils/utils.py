@@ -116,3 +116,10 @@ def get_entry_steps(root_file, step_size = 10000, tree_name = "tree_incl_all"):
     steps[-1][-1] = all_entries
     return steps
 
+def get_setup_commands():
+    commands  = []
+    commands.append("cd {}".format(os.getenv("MomentumValidationDir")))
+    commands.append("export USER={}".format(os.getenv("USER")))
+    commands.append("source ./setup.sh")
+    return commands
+

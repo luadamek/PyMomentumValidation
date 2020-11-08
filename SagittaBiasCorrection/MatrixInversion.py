@@ -67,12 +67,77 @@ def get_cov_matrices(root_file, start, stop, detector_location, global_binning_p
     mean_e_vector = np.average(e_vector_trans, axis=0)
 
     equal_to = (1.0/float(len(df))) * np.sum( (masses - mean_mass) * (e_vector_trans - mean_e_vector), axis=0)
+
+    print(cov)
+    print(equal_to)
     return cov, equal_to, len(df)
 
-def merge_covariances(list_of_covs,key ):
-    total = sum([el["nentries"] for el in list_of_covs])
-    total_cov = sum([el["nentries"] * el[key] for el in list_of_covs])
-    return total_cov/total
+
+def get_deltas_from_job(outfile_location):
+    import glob
+    import os
+    import pickle as pkl
+    import ROOT
+
+    matrices = glob.glob(os.path.join(outfile_location, "*.pkl"))
+    print(matrices)
+
+    opened = []
+    for m in matrices:
+        with open(m, "rb") as f:
+            print("opening {}".format(m))
+            opened.append(pkl.load(f))
+
+    def merge_covariances(list_of_covs,key ):
+        total = sum([el["nentries"] for el in list_of_covs])
+        total_cov = sum([el["nentries"] * el[key] for el in list_of_covs])
+        return total_cov/total
+
+    def get_binning(binning):
+         print(dir(binning))
+
+
+    cov = merge_covariances(opened, "cov")
+    b = merge_covariances(opened, "b")
+
+    import numpy as np
+    delta = np.linalg.solve(cov, b)
+
+    print(delta)
+
+    #ok now load everything into a histogram
+    binning = opened[0]["pos_binning"]
+
+    x_bins = binning.bin_edges
+    y_bins = binning.subbins[0].bin_edges
+
+    x_var = binning.variable.replace("Pos_", "").replace("Neg_", "")
+    y_var = binning.subbins[0].variable.replace("Pos_", "").replace("Neg_", "")
+
+    delta_hist = ROOT.TH2D("delta", "delta", len(x_bins)-1, min(x_bins), max(x_bins), len(y_bins)-1, min(y_bins), max(y_bins))
+
+    def find_bindex(edges_of_bin, all_edges):
+        bindex = 1
+        found=False
+        for bin_low, bin_high in zip(all_edges[:-1], all_edges[1:]):
+            if bin_low == edges_of_bin[0] and bin_high == edges_of_bin[1]:
+                return bindex
+            bindex += 1
+        assert False
+
+    for i in range(0, len(delta)):
+        edges = binning.edges_global(i)
+        bindex = binning.edges_global
+        edges_dict = {}
+        edges_dict[y_var] = edges[1]
+        edges_dict[x_var] = edges[0]
+        x_bindex = find_bindex(edges_dict[x_var], x_bins)
+        y_bindex = find_bindex(edges_dict[y_var], y_bins)
+        delta_hist.GetXaxis().SetTitle(x_var)
+        delta_hist.GetYaxis().SetTitle(y_var)
+        delta_hist.SetBinContent(x_bindex, y_bindex, delta[i])
+
+    return delta_hist, {"xvar":x_var, "y_var":y_var}
 
 #invert the matrix and solve the problem
 #sagitta = np.linalg.solve(cov, equal_to_vector)
@@ -82,11 +147,11 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description='Calculate the covariance matrices and vectors needed to compute the sagitta bias.')
-    parser.add_argument('filename', type=str, dest='filename')
-    parser.add_argument('start', type=int, dest='start')
-    parser.add_argument('stop', type=int, dest='stop')
-    parser.add_argument('detector_location', type=str, dest='detector_location')
-    parser.add_argument('outout_filename', type=str, dest='output_filename')
+    parser.add_argument('--filename', type=str, dest='filename')
+    parser.add_argument('--start', type=int, dest='start')
+    parser.add_argument('--stop', type=int, dest='stop')
+    parser.add_argument('--detector_location', type=str, dest='detector_location')
+    parser.add_argument('--output_filename', type=str, dest='output_filename')
     args = parser.parse_args()
 
     cov, equal_to, nentries = get_cov_matrices(args.filename, args.start, args.stop, args.detector_location, global_binning_pos, global_binning_neg)
@@ -96,7 +161,7 @@ if __name__ == "__main__":
 
     with open(args.output_filename, "wb") as f:
         import pickle as pkl
-        pkl.dump({"cov":cov, "b":equal_to, "nentries":nentries, "pos_binning": global_binning_pos, "neg_binning": global_binning_neg})
+        pkl.dump({"cov":cov, "b":equal_to, "nentries":nentries, "pos_binning": global_binning_pos, "neg_binning": global_binning_neg}, f)
     print("__FINISHED__")
 
 
