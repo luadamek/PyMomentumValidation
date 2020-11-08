@@ -1,20 +1,19 @@
 import utils
 import os
 from histogram_filler import HistogramFiller
-from variables import calc_weight
+from variables import calc_weight, calc_pos_id_eta, calc_pos_id_phi, calc_neg_id_eta, calc_neg_id_phi
 import ROOT
 import pickle
 import argparse
 from batchsub import Job, JobSet
+from MatrixInversion import get_deltas_from_job
+from BiasCorrection import SagittaBiasCorrection
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, extra_args=None):
+#histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "",)
+
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_matrix_calibrations):
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
-
-        import pickle as pkl
-        if extra_args is not None:
-            with open(extra_args, "rb") as f:
-                extra_args = pkl.load(f)
 
         files = utils.get_files(file_flavour)
         trees = utils.tchain_files_together(args.tree_name, files)
@@ -30,6 +29,28 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         executable = os.path.join(slurm_directory, "plot.sh")
         executable_local = os.path.join(slurm_directory, "plot_local.sh")
         python_executable = os.path.join(slurm_directory, "plot.py")
+
+        if load_matrix_calibrations:
+            to_load = load_matrix_calibrations.split(",")
+            calibrations = []
+            for el in to_load:
+                deltas, variables, detector_location = get_deltas_from_job(el)
+                xvar_name = variables["x_var"]
+                yvar_name = variables["y_var"]
+                print(xvar_name)
+                if xvar_name == "ID_Eta":
+                    xvar_pos = calc_pos_id_eta
+                    xvar_neg = calc_neg_id_eta
+                else: raise ValueError()
+                if yvar_name == "ID_Phi":
+                    yvar_pos = calc_pos_id_phi
+                    yvar_neg = calc_neg_id_phi
+                else: raise ValueError()
+                calibrations.append(SagittaBiasCorrection([deltas], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = detector_location))
+            import pickle as pkl
+            calibrations_file = os.path.join(slurm_directory, "calibrations.pkl")
+            with open(calibrations_file, "wb") as f:
+                 pkl.dump(calibrations, f)
 
         #create the python script that is needed for plotting
         plotting_instructions_python = []
@@ -51,11 +72,9 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         outfile_name =  "\"" + os.path.join(slurm_directory, job_name + "_{}.root\".format(str(i))")
 
 
-        if extra_args is None: plotting_instructions_python.append("fill_histograms(plots, {})".format(outfile_name)) 
+        if not load_matrix_calibrations: plotting_instructions_python.append("fill_histograms(plots, {})".format(outfile_name)) 
         else:
-            extra_args = [" {}={}".format(key, extra_args[key]) for key in extra_args]
-            extra_args = "," + ",".join(extra_args)
-            plotting_instructions_python.append("fill_histograms(plots, {})".format(outfile_name))
+            plotting_instructions_python.append("fill_histograms(plots, {}, calibrations = \"{}\")".format(outfile_name, calibrations_file))
         with open(python_executable, 'w') as f:
             for line in plotting_instructions_python:
                 f.write(line+"\n")
@@ -127,7 +146,7 @@ if __name__ == "__main__":
         parser.add_argument('--queue_flavour', '-queue_flavour', dest="queue_flavour", type=str, default='tomorrow', help='What slurm queue should the jobs run on?')
         parser.add_argument('--file_flavour', '-ff', dest="file_flavour", type=str, default='inclusive', help='What is the flavour of the jobs that you want to submit?')
         parser.add_argument('--filling_script', '-fs', dest="filling_script", type=str, default='inclusive', help='What is the name of the script that takes the input root file and makes histograms?')
-        parser.add_argument('--extra_args', '-ea', dest="extra_args", type=str, default="", help="A pickle filename for where to read extra args to pass to the histogram fillin call")
+        parser.add_argument('--load_matrix_calibrations', '-lmc', dest="load_matrix_calibrations", type=str, default='', help='a comma separated list of directories from which to load calibrations')
         parser.add_argument('--testjob', '-tj', dest="test_job", action="store_true", help="Submit a test job")
         args = parser.parse_args()
 
@@ -139,9 +158,8 @@ if __name__ == "__main__":
         file_flavour = args.file_flavour
         filling_script = args.filling_script
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
-        if args.extra_args == "": args.extra_args = None
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, None)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

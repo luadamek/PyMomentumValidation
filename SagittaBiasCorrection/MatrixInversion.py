@@ -103,10 +103,9 @@ def get_deltas_from_job(outfile_location):
     import numpy as np
     delta = np.linalg.solve(cov, b)
 
-    print(delta)
-
     #ok now load everything into a histogram
     binning = opened[0]["pos_binning"]
+    detector_location = opened[0]["detector_location"]
 
     x_bins = binning.bin_edges
     y_bins = binning.subbins[0].bin_edges
@@ -137,7 +136,7 @@ def get_deltas_from_job(outfile_location):
         delta_hist.GetYaxis().SetTitle(y_var)
         delta_hist.SetBinContent(x_bindex, y_bindex, delta[i])
 
-    return delta_hist, {"xvar":x_var, "y_var":y_var}
+    return delta_hist, {"x_var":x_var, "y_var":y_var}, detector_location
 
 #invert the matrix and solve the problem
 #sagitta = np.linalg.solve(cov, equal_to_vector)
@@ -161,7 +160,7 @@ if __name__ == "__main__":
 
     with open(args.output_filename, "wb") as f:
         import pickle as pkl
-        pkl.dump({"cov":cov, "b":equal_to, "nentries":nentries, "pos_binning": global_binning_pos, "neg_binning": global_binning_neg}, f)
+        pkl.dump({"cov":cov, "b":equal_to, "nentries":nentries, "pos_binning": global_binning_pos, "neg_binning": global_binning_neg, "detector_location":args.detector_location}, f)
     print("__FINISHED__")
 
 

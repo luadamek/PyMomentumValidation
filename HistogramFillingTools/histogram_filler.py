@@ -109,7 +109,7 @@ class HistogramFiller:
                 self.channel_files[channel].append(f)
 
     def apply_calibration_for_channel(self, channel, calibration):
-        if channel not in calibrations: self.calibrations[channel] = []
+        if channel not in self.calibrations: self.calibrations[channel] = []
         self.calibrations[channel].append(calibration)
         self.all_calibrations.append(calibration)
 
@@ -146,7 +146,7 @@ class HistogramFiller:
         calibrations = []
         if channel in self.calibrations:
             print("Calibrating channel {}".format(channel))
-            calibrations.append(self.calibrations[channel])
+            calibrations += self.calibrations[channel]
         branches = get_needed_branches(variables, selections, calibrations)
 
         #get the parition of the ttree to be read

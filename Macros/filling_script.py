@@ -2,7 +2,7 @@ from variables import calc_id_mass, calc_ms_mass, calc_cb_mass
 from selections import range_selection_function
 from histogram_filler import create_selection_function, write_histograms
 import ROOT
-from IterativeBiasCorrection import SagittaBiasCorrection
+from BiasCorrection import SagittaBiasCorrection
 from variables import \
                       calc_pos_id_pt, calc_neg_id_pt,\
                       calc_pos_ms_pt, calc_neg_ms_pt,\
@@ -373,7 +373,15 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
         '''
 
 #This is a script that fills the histograms for
-def fill_histograms(hist_filler, output_filename, start_from_correction = None):
+def fill_histograms(hist_filler, output_filename, calibrations = None):
+    #book a calibration for the sagitta bias correction
+    if calibrations is not None:
+        import pickle as pkl
+        with open(calibrations, "rb") as f:
+            calibrations = pkl.load(f)
+        for c in calibrations:
+            hist_filler.apply_calibration_for_channel("Data", c)
+
     for varname, var in zip(["ID", "CB"], [calc_id_mass, calc_cb_mass]):
         histogram_name = "{}_mass".format(varname)
         variable_name_for_selection = "Pair_{}_Mass".format(varname)
@@ -387,9 +395,8 @@ def fill_histograms(hist_filler, output_filename, start_from_correction = None):
                                     xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                     ylabel = 'Number Events')
 
-    corrections_ID = []
-    corrections_CB = []
-    corrections_MS = []
+
+
 
     binnings = []
     this_binning = {}
