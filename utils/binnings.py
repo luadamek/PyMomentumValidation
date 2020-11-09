@@ -15,6 +15,28 @@ global_pt_binning.append(2000.0)
 
 global_pt_binning_zipped = zip(global_pt_binning[:-1], global_pt_binning[1:])
 
+binnings = []
+this_binning = {}
+this_binning["name"] = "coarsest"
+this_binning["EtaMS"] = {"nbins": 12, "etalow":-2.7, "etahigh":+2.7}
+this_binning["EtaID"] = {"nbins": 12, "etalow":-2.5, "etahigh":+2.5}
+this_binning["Phi"] = {"nbins": 8, "philow":-3.142, "phihigh":+3.142}
+binnings.append(this_binning)
+
+this_binning = {}
+this_binning["name"] = "finer"
+this_binning["EtaMS"] = {"nbins": 27, "etalow":-2.7, "etahigh":+2.7}
+this_binning["EtaID"] = {"nbins": 25, "etalow":-2.5, "etahigh":+2.5}
+this_binning["Phi"] = {"nbins": 16, "philow":-3.142, "phihigh":+3.142}
+binnings.append(this_binning)
+
+this_binning = {}
+this_binning["name"] = "finest"
+this_binning["EtaMS"] = {"nbins": 27, "etalow":-2.7, "etahigh":+2.7}
+this_binning["EtaID"] = {"nbins": 25, "etalow":-2.5, "etahigh":+2.5}
+this_binning["Phi"] = {"nbins": 32, "philow":-3.142, "phihigh":+3.142}
+binnings.append(this_binning)
+
 import numpy as np
 
 class Binning:

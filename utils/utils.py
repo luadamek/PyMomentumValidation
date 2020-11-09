@@ -19,6 +19,31 @@ def get_files(flavour):
 
     return to_return
 
+
+def draw_text(x, y, text, color=ROOT.kBlack, size=0.05):
+    '''Draw text.
+    Parameters
+    ----------
+    x : float
+        x position in NDC coordinates
+    y : float
+        y position in NDC coordinates
+    text : string, optional
+        The text
+    color : int, optional
+        Text colour (the default is 1, i.e. black).
+        See https://ROOT.cern.ch/doc/master/classTColor.html.
+        If you know the hex code, rgb values, etc., use ``ROOT.TColor.GetColor()``
+    size : float, optional
+        Text size
+        See https://ROOT.cern.ch/doc/master/classTLatex.html
+    '''
+    l = ROOT.TLatex()
+    l.SetTextSize(size)
+    l.SetNDC()
+    l.SetTextColor(color)
+    l.DrawLatex(x, y, text)
+
 def tchain_files_together(tree_name, channel_to_filelist, on_eos = False):
     '''
     Given a tree_name, and a dictionary of channel to file list, return a dictionary of channel to filename to tchain.

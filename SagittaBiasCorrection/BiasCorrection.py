@@ -137,9 +137,11 @@ class SagittaBiasCorrection:
         self.edges_y = np.array(edges["y"], np.float32)
 
         corrections = np.zeros((len(self.edges_x), len(self.edges_y)))
-        for i, j in zip(range(1, len(self.edges_x + 1)), range(1, len(self.edges_y + 1))):
-            corrections[i-1, j-1] = sum([el.GetBinContent(i, j) for el in self.histograms])
+        for i in range(1, len(self.edges_x ) + 1):
+            for j in range(1, len(self.edges_y) + 1):
+                corrections[i-1, j-1] = sum([el.GetBinContent(i, j) for el in self.histograms])
         self.corrections = corrections
+        print(self.corrections)
 
     def calibrate(self, data):
         print("CALIBRATING VARIABLES")
@@ -177,10 +179,24 @@ class SagittaBiasCorrection:
         pos_selection = np.logical_and.reduce([el.eval(data) for el in self.pos_selections])
         neg_selection = np.logical_and.reduce([el.eval(data) for el in self.neg_selections])
 
-        #apply the calibration to the ntuple
-        data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection] / (1.0 + ((1.0) * data[pos_pt_name][pos_selection] * correction_for_data_pos))
+        #print("Corrections: ")
+        #input(self.corrections)
+        #input(pos_selection)
+        #input(neg_selection)
+        #print(np.any(pos_selection))
+        #print(np.any(neg_selection))
+        #print("data_before_correction")
+        #input(data[pos_pt_name][pos_selection])
+        #input(data[neg_pt_name][neg_selection])
 
-        data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection] / (1.0 + ((-1.0) * data[neg_pt_name][neg_selection] * correction_for_data_neg))
+        #apply the calibration to the ntuple
+        data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection] / (1.0 - ((1.0) * data[pos_pt_name][pos_selection] * correction_for_data_pos))
+
+        data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection] / (1.0 - ((-1.0) * data[neg_pt_name][neg_selection] * correction_for_data_neg))
+        #print("data_after_correction")
+        #input(data[pos_pt_name][pos_selection])
+        #input(data[neg_pt_name][neg_selection])
+        #input()
 
         extra_corrections = ["Pair_{}_Mass", "Pair_{}_Pt", "Pair_{}_Eta", "Pair_{}_Phi"]
 

@@ -1,6 +1,7 @@
 import numpy as np
 import ROOT
 import array
+import os
 
 def draw_text(x, y, text, color=1, size=0.05):
     '''Draw text.
@@ -40,22 +41,19 @@ def hist_to_tgrapherrors(hist):
     xerrs = array.array('d', xerrs)
     ys = array.array('d', ys)
     yerrs = array.array('d', yerrs)
-    return ROOT.TGraphErrors(len(xs),xs,ys,xerrs,yerrs)
+    graph = ROOT.TGraphErrors(len(xs),xs,ys,xerrs,yerrs)
+    graph.SetName("Graph_{}".format(hist.GetName()))
+    return graph
 
 alive = []
-object_counter = 0
 def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".pdf", plot_dir = "plots", datakey = "data"):
 
-    global object_counter
-    object_counter += 1
 
-    extra_descr += "{}".format(object_counter)
     from atlasplots import set_atlas_style 
     set_atlas_style()
     ROOT.gStyle.SetLineWidth(1)
     ROOT.gStyle.SetFrameLineWidth(1)
 
-    keep_alive = {}
     integrals = {}
     data_histogram = histograms[datakey]
     mc_histograms = {key:histograms[key] for key in histograms if datakey not in key}
@@ -70,7 +68,6 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
 
     #ok the histograms are now plotted in ascending order. Lets make a THStack
     stack = ROOT.THStack("histograms", "histograms")
-    keep_alive["stack"] = stack
     summed = None
     for key in ordered_keys:
         if not colours is None:
@@ -84,8 +81,6 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
             summed.Add(mc_histograms[key])
         mc_histograms[key].SetFillStyle(1001)
         stack.Add(mc_histograms[key])
-    keep_alive["stacked_histograms"] = histograms
-    keep_alive["summed"] = summed
 
     maximum = max(summed.GetMaximum() * 1.2, data_histogram.GetMaximum() * 1.2)
     minimum = min(summed.GetMinimum() /1.2, data_histogram.GetMinimum()/1.2)
@@ -108,7 +103,7 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
     ratio_hist.SetLineColor(ROOT.kBlack)
     ratio_hist.SetMarkerColor(ROOT.kBlack)
 
-    identifier = extra_descr + "__" + " ".join([histograms[key].GetName() for key in histograms])
+    identifier = " ".join([histograms[key].GetName() for key in histograms])
     canvas = ROOT.TCanvas("canv" + identifier, "canv " + identifier, 2 * 800 , 2 * 600)
     canvas.Draw()
     canvas.cd()
@@ -160,8 +155,6 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
     ratio_hist_for_axes.GetYaxis().SetTitleOffset(stack.GetYaxis().GetTitleOffset()/(scale_ratio))
     ratio_hist_for_axes.SetMaximum(ratio_max)
     ratio_hist_for_axes.SetMinimum(ratio_min)
-    keep_alive["ratio_hist_for_axes"] = ratio_hist_for_axes
-    keep_alive["ratio_hist"] = ratio_hist
 
     summed.SetFillStyle(3135)
     summed.SetMarkerSize(0.0)
@@ -175,69 +168,116 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
     data_plot.SetMarkerSize(data_plot.GetMarkerSize()*1.5)
     data_plot.Draw("P SAME")
     data_plot.SetLineWidth(data_plot.GetLineWidth()+2)
-    keep_alive[datakey] = data_plot
     legend.AddEntry(data_plot, legend_labels[datakey], "LP")
     legend.Draw()
-
-    keep_alive["canvas"] = canvas
-    keep_alive["stack"] = stack
-    keep_alive["data_histogram"] = data_histogram
-    keep_alive["mc_histograms"] = mc_histograms
-    keep_alive["top pad"] = top
-    keep_alive["bottom pad"] = bottom
-    keep_alive["ratio_histogram"] = ratio_hist
-    keep_alive["summed_histograms"] = summed
-    keep_alive["legend"] = legend
 
     bottom.cd()
     ##Draw a set of solid and dotted lines on the ratio plot to guide the reader's eyes
     straight_line = ROOT.TF1("line1" + identifier, str(1.0) , -10e6, + 10e6)
     straight_line.SetLineWidth(2)
     straight_line.Draw("Same")
-    keep_alive["middle line"] = straight_line
 
     straight_line_up = ROOT.TF1("line2" + identifier,  str(1.0 + (2.0 * (ratio_max - 1.0)/4)) , -10e6, + 10e6)
     straight_line_up.SetLineWidth(1)
     straight_line_up.SetLineStyle(1)
     straight_line_up.Draw("Same")
-    keep_alive["line half up"] = straight_line_up
 
     straight_line_up2 = ROOT.TF1("line3" + identifier,  str(1.0 + (1.0 * (ratio_max - 1.0)/4)) , -10e6, + 10e6)
     straight_line_up2.SetLineWidth(1)
     straight_line_up2.SetLineStyle(3)
     straight_line_up2.Draw("Same")
-    keep_alive["line quarter up"] = straight_line_up2
 
     straight_line_up3 = ROOT.TF1("line4" + identifier,  str(1.0 + (3.0 * (ratio_max - 1.0)/4)) , -10e6, + 10e6)
     straight_line_up3.SetLineWidth(1)
     straight_line_up3.SetLineStyle(3)
     straight_line_up3.Draw("Same")
-    keep_alive["line three quarters up"] = straight_line_up3
 
     straight_line_down3 = ROOT.TF1("line5" + identifier,  str(1.0 - (3.0 * (ratio_max - 1.0)/4)) , -10e6, + 10e6)
     straight_line_down3.SetLineWidth(1)
     straight_line_down3.SetLineStyle(3)
     straight_line_down3.Draw("Same")
-    keep_alive["line three quarters down"] = straight_line_down3
 
     straight_line_down = ROOT.TF1("line6" + identifier,  str(1.0 - (2.0 * (ratio_max - 1.0)/4)) , -10e6, + 10e6)
     straight_line_down.SetLineWidth(1)
     straight_line_down.SetLineStyle(1)
     straight_line_down.Draw("Same")
-    keep_alive["half down"] = (straight_line_down)
 
     straight_line_down2 = ROOT.TF1("line7" + identifier,  str(1.0 - (1.0 * (ratio_max - 1.0)/4)) , -10e6, + 10e6)
     straight_line_down2.SetLineWidth(1)
     straight_line_down2.SetLineStyle(3)
     straight_line_down2.Draw("Same")
-    keep_alive["quarter down"] = straight_line_down2
     #bottom.Draw()
 
+    global alive
+    alive.append(locals())
     if to_return: return canvas, keep_alive
     else:
-         import os
          if not os.path.exists(plot_dir):
              os.makedirs(plot_dir)
          canvas.Print(os.path.join(plot_dir, identifier + ftype))
-         global alive
-         alive.append(keep_alive)
+
+
+
+def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".pdf", plot_dir = "plots"):
+
+    from atlasplots import set_atlas_style
+    set_atlas_style()
+    ROOT.gStyle.SetLineWidth(1)
+    ROOT.gStyle.SetFrameLineWidth(1)
+
+    to_plot = {key:hist_to_tgrapherrors(histograms[key]) for key in histograms}
+    if colours is not None: [to_plot[key].SetMarkerColor(colours[key]) for key in to_plot]
+    if styles is not None: [to_plot[key].SetMarkerStyle(styles[key]) for key in to_plot]
+    for key in to_plot: to_plot[key].SetMarkerSize(to_plot[key].GetMarkerSize()*1.5)
+    for key in to_plot: to_plot[key].GetXaxis().SetTitleSize(to_plot[key].GetXaxis().GetTitleSize()*2.0)
+    for key in to_plot: to_plot[key].GetYaxis().SetTitleSize(to_plot[key].GetYaxis().GetTitleSize()*2.0)
+
+    legend = ROOT.TLegend(*legend_coordinates)
+    if not legend_labels is None:
+        for key in histograms:
+            label = legend_labels[key]
+            legend.AddEntry(to_plot[key], label, "P")
+    legend.SetBorderSize(0)
+
+    identifier = " ".join([to_plot[key].GetName() for key in to_plot])
+    canvas = ROOT.TCanvas("canv" + identifier, "canv " + identifier, 2 * 800 , 2 * 600)
+    canvas.Draw()
+    canvas.cd()
+
+    canvas.SetTopMargin(canvas.GetTopMargin()*1.1)
+    canvas.SetBottomMargin(canvas.GetBottomMargin()*1.1)
+    canvas.SetRightMargin(canvas.GetRightMargin()*1.1)
+    canvas.SetLeftMargin(canvas.GetLeftMargin()*1.1)
+
+    mins = []
+    maxs = []
+    for i, key in enumerate(to_plot):
+        stack = histograms[key]
+        mins.append(stack.GetMinimum())
+        maxs.append(stack.GetMaximum())
+
+    minimum = min(mins)
+    maximum = max(maxs)
+
+    for i, key in enumerate(to_plot):
+        stack = to_plot[key]
+        bin_width = histograms[key].GetBinLowEdge(3) - histograms[key].GetBinLowEdge(2)
+        stack.GetYaxis().SetTitle(y_axis_label)
+        stack.GetXaxis().SetTitle(x_axis_label)
+        stack.SetMaximum(maximum + (0.6 * (maximum-minimum)))
+        stack.SetMinimum(minimum)
+        if i == 0: stack.Draw("AP")
+        else: stack.Draw("P SAME")
+       
+
+    legend.Draw("SAME")
+
+    if logy: canvas.SetLogy()
+
+    global alive
+    alive.append(locals())
+    if to_return: return canvas, keep_alive
+    else:
+         if not os.path.exists(plot_dir):
+             os.makedirs(plot_dir)
+         canvas.Print(os.path.join(plot_dir, identifier + ftype))

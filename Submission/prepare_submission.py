@@ -8,6 +8,7 @@ import argparse
 from batchsub import Job, JobSet
 from MatrixInversion import get_deltas_from_job
 from BiasCorrection import SagittaBiasCorrection
+import pickle as pkl
 
 #histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "",)
 
@@ -47,7 +48,6 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
                     yvar_neg = calc_neg_id_phi
                 else: raise ValueError()
                 calibrations.append(SagittaBiasCorrection([deltas], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = detector_location))
-            import pickle as pkl
             calibrations_file = os.path.join(slurm_directory, "calibrations.pkl")
             with open(calibrations_file, "wb") as f:
                  pkl.dump(calibrations, f)
