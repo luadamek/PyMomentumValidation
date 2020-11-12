@@ -2,6 +2,25 @@ import numpy as np
 import ROOT
 import array
 import os
+from atlasplots import set_atlas_style, atlas_label
+
+def draw_2d_histogram(histogram, description = "", normalize = True, output_location=""):
+    if normalize:
+        extrema = [ abs(histogram.GetMaximum()), abs(histogram.GetMinimum())]
+        histogram.SetMaximum(max(*extrema))
+        histogram.SetMinimum(min(*[-1.0 * el for el in extrema]))
+    canvas = ROOT.TCanvas("Canvas_" + histogram.GetName())
+    histogram.Draw("COLZ")
+    histogram.GetYaxis().SetTitleOffset(0.7*histogram.GetYaxis().GetTitleOffset())
+    canvas.SetTopMargin(0.1)
+    if description: atlas_label(0.15, 0.94, "Internal   {}".format(description))
+    else: atlas_label(0.2, 0.94, "Internal")
+    canvas.SetRightMargin(0.25)
+    histogram.GetZaxis().SetTitleOffset(1.2 * histogram.GetZaxis().GetTitleOffset())
+    canvas.SetBottomMargin(0.25)
+    canvas.Draw()
+    ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
+    canvas.Print(os.path.join(output_location, canvas.GetName() + ".pdf"))
 
 def draw_text(x, y, text, color=1, size=0.05):
     '''Draw text.
@@ -46,7 +65,7 @@ def hist_to_tgrapherrors(hist):
     return graph
 
 alive = []
-def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".pdf", plot_dir = "plots", datakey = "data"):
+def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".pdf", plot_dir = "plots", datakey = "data", extra_str = None):
 
 
     from atlasplots import set_atlas_style 
@@ -82,10 +101,11 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
         mc_histograms[key].SetFillStyle(1001)
         stack.Add(mc_histograms[key])
 
-    maximum = max(summed.GetMaximum() * 1.2, data_histogram.GetMaximum() * 1.2)
+    maximum = max(summed.GetMaximum() * 1.4, data_histogram.GetMaximum() * 1.2)
     minimum = min(summed.GetMinimum() /1.2, data_histogram.GetMinimum()/1.2)
     stack.SetMaximum(maximum)
     stack.SetMinimum(min(0.001,minimum))
+
 
     legend = ROOT.TLegend(*legend_coordinates)
     if not legend_labels is None:
@@ -126,6 +146,10 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
 
     ratio_hist.Draw("P SAME")
     bottom.SetBottomMargin(0.4)
+    #ratio_hist.GetXaxis().SetTitleOffset(2.0*ratio_hist.GetXaxis().GetTitleOffset())
+    #ratio_hist.GetYaxis().SetTitleOffset(2.0*ratio_hist.GetYaxis().GetTitleOffset())
+    #ratio_hist.GetXaxis().SetTitleSize(1.5*ratio_hist.GetXaxis().GetTitleSize())
+    #ratio_hist.GetYaxis().SetTitleSize(1.5*ratio_hist.GetYaxis().GetTitleSize())
 
     top.cd()
     data_histogram.SetMarkerSize(0.5)
@@ -141,6 +165,11 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
     if logy:
         stack.SetMinimum(smallest_positive / 2.0)
     stack.Draw("HIST")
+    x_size = stack.GetXaxis().GetTitleSize() * 1.6
+    stack.GetYaxis().SetTitleSize(x_size)
+    stack.GetXaxis().SetTitleSize(x_size)
+    stack.GetYaxis().SetTitleOffset(stack.GetYaxis().GetTitleOffset() * 1.3)
+    stack.GetXaxis().SetTitleOffset(stack.GetXaxis().GetTitleOffset() * 1.6)
     bin_width = stack.GetStack().Last().GetBinLowEdge(3) - stack.GetStack().Last().GetBinLowEdge(2)
     units = x_axis_label.split(" ")[-1].replace("[","").replace("]","") #get the units of the x-axis
     stack.GetYaxis().SetTitle("{} / {:.2f} {}".format(y_axis_label, bin_width, units))
@@ -170,6 +199,7 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
     data_plot.SetLineWidth(data_plot.GetLineWidth()+2)
     legend.AddEntry(data_plot, legend_labels[datakey], "LP")
     legend.Draw()
+    atlas_label(0.15, 0.90, "Internal")
 
     bottom.cd()
     ##Draw a set of solid and dotted lines on the ratio plot to guide the reader's eyes

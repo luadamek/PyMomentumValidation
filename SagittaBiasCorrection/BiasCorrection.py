@@ -136,48 +136,62 @@ class SagittaBiasCorrection:
         self.edges_x = np.array(edges["x"], np.float32)
         self.edges_y = np.array(edges["y"], np.float32)
 
-        corrections = np.zeros((len(self.edges_x), len(self.edges_y)))
-        for i in range(1, len(self.edges_x ) + 1):
-            for j in range(1, len(self.edges_y) + 1):
+        corrections = np.zeros((len(self.edges_x)-1, len(self.edges_y)-1))
+        for i in range(1, len(self.edges_x )):
+            for j in range(1, len(self.edges_y)):
                 corrections[i-1, j-1] = sum([el.GetBinContent(i, j) for el in self.histograms])
         self.corrections = corrections
         print(self.corrections)
 
     def calibrate(self, data):
         print("CALIBRATING VARIABLES")
+        nbins_x = len(self.edges_x) -1
         bindex_x_pos = np.digitize(self.pos_varx.eval(data), self.edges_x) - 1
         underflow_x_pos = bindex_x_pos == -1
-        overflow_x_pos = bindex_x_pos == len(self.edges_x)
+        overflow_x_pos = bindex_x_pos == nbins_x
         bindex_x_pos[underflow_x_pos] = 0
-        bindex_x_pos[overflow_x_pos] = len(self.edges_x)-1
+        bindex_x_pos[overflow_x_pos] = nbins_x - 1
 
         bindex_x_neg = np.digitize(self.neg_varx.eval(data), self.edges_x) - 1
         underflow_x_neg = bindex_x_neg == -1
-        overflow_x_neg = bindex_x_neg == len(self.edges_x)
+        overflow_x_neg = bindex_x_neg == nbins_x
         bindex_x_neg[underflow_x_neg] = 0
-        bindex_x_neg[overflow_x_neg] = len(self.edges_x)-1
+        bindex_x_neg[overflow_x_neg] = nbins_x - 1
 
-        bindex_y_pos = np.digitize(self.pos_varx.eval(data), self.edges_y) - 1
+        nbins_y = len(self.edges_y) -1
+        bindex_y_pos = np.digitize(self.pos_vary.eval(data), self.edges_y) - 1
         underflow_y_pos = bindex_y_pos == -1
-        overflow_y_pos = bindex_y_pos == len(self.edges_y)
+        overflow_y_pos = bindex_y_pos == nbins_y
         bindex_y_pos[underflow_y_pos] = 0
-        bindex_y_pos[overflow_y_pos] = len(self.edges_y)-1
+        bindex_y_pos[overflow_y_pos] = nbins_y - 1
 
-        bindex_y_neg = np.digitize(self.neg_varx.eval(data), self.edges_y) - 1
+        bindex_y_neg = np.digitize(self.neg_vary.eval(data), self.edges_y) - 1
         underflow_y_neg = bindex_y_neg == -1
-        overflow_y_neg = bindex_y_neg == len(self.edges_y)
+        overflow_y_neg = bindex_y_neg == nbins_y
         bindex_y_neg[underflow_y_neg] = 0
-        bindex_y_neg[overflow_y_neg] = len(self.edges_y)-1
+        bindex_y_neg[overflow_y_neg] = nbins_y - 1
 
-        correction_for_data_neg = self.corrections[bindex_x_neg, bindex_y_neg]
+        #don't correct overflow!
+        not_overflow_pos = np.logical_and.reduce([np.logical_not(el) for el in [underflow_x_pos, underflow_y_pos,  overflow_x_pos, overflow_y_pos]])
+        not_overflow_neg = np.logical_and.reduce([np.logical_not(el) for el in [underflow_x_neg, underflow_y_neg, overflow_x_neg, overflow_y_neg]])
+        not_overflow = np.logical_and(not_overflow_pos, not_overflow_neg)
+
+        print("The amount of overflow, positive:")
+        print(min(self.edges_x), max(self.edges_x))
+        print(np.sum(1 * np.logical_not(not_overflow_pos)))
+        print("The amount of overflow, negative:")
+        print(min(self.edges_y), max(self.edges_y))
+        print(np.sum(1 * np.logical_not(not_overflow_neg)))
+
         correction_for_data_pos = self.corrections[bindex_x_pos, bindex_y_pos]
+        correction_for_data_neg = self.corrections[bindex_x_neg, bindex_y_neg]
 
         #ok, now correct the pT
         pos_pt_name = "Pos_{}_Pt".format(self.flavour)
         neg_pt_name = "Neg_{}_Pt".format(self.flavour)
 
-        pos_selection = np.logical_and.reduce([el.eval(data) for el in self.pos_selections])
-        neg_selection = np.logical_and.reduce([el.eval(data) for el in self.neg_selections])
+        pos_selection = np.logical_and.reduce([el.eval(data) for el in self.pos_selections] + [not_overflow_pos])
+        neg_selection = np.logical_and.reduce([el.eval(data) for el in self.neg_selections] + [not_overflow_neg])
 
         #print("Corrections: ")
         #input(self.corrections)
@@ -190,9 +204,9 @@ class SagittaBiasCorrection:
         #input(data[neg_pt_name][neg_selection])
 
         #apply the calibration to the ntuple
-        data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection] / (1.0 - ((1.0) * data[pos_pt_name][pos_selection] * correction_for_data_pos))
+        data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection] / (1.0 + ((1.0) * data[pos_pt_name][pos_selection] * correction_for_data_pos[pos_selection]))
 
-        data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection] / (1.0 - ((-1.0) * data[neg_pt_name][neg_selection] * correction_for_data_neg))
+        data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection] / (1.0 + ((-1.0) * data[neg_pt_name][neg_selection] * correction_for_data_neg[neg_selection]))
         #print("data_after_correction")
         #input(data[pos_pt_name][pos_selection])
         #input(data[neg_pt_name][neg_selection])
@@ -201,13 +215,18 @@ class SagittaBiasCorrection:
         extra_corrections = ["Pair_{}_Mass", "Pair_{}_Pt", "Pair_{}_Eta", "Pair_{}_Phi"]
 
         print(dir(data))
-        do_extra_corrections = any([ (el.format(self.flavour) in data.dtype.names) for el in extra_corrections])
+        if hasattr(data, "dtype"): keys =  data.dtype.names
+        else: keys = list(data.keys())
+        do_extra_corrections = any([ (el.format(self.flavour) in keys) for el in extra_corrections])
         print("CALIBRATED PTS")
 
         if do_extra_corrections:
             to_correct_selection = np.logical_or(pos_selection, neg_selection)
+            around_z = np.abs(data["Pair_{}_Mass".format(self.flavour)] - 91.2) < 10.0
+
+            pre_std = np.std(data["Pair_{}_Mass".format(self.flavour)][to_correct_selection & around_z])
             to_correct_data = {}
-            for key in data.dtype.names:
+            for key in keys:
                 to_correct_data[key] = data[key][to_correct_selection]
             pos_pt = self.pos_pt_var.eval(to_correct_data)
             neg_pt = self.neg_pt_var.eval(to_correct_data)
@@ -222,21 +241,22 @@ class SagittaBiasCorrection:
             neg_pz = neg_pt * np.sinh(self.neg_eta_var.eval(to_correct_data))
 
             dimuon_pt_str = "sqrt( (pos_px**2) + (neg_px**2))"
-            if "Pair_{}_Mass".format(self.flavour) in data.dtype.names:
+            if "Pair_{}_Mass".format(self.flavour) in keys:
                 pos_p_str = "sqrt( (pos_px ** 2) + (pos_py ** 2) + (pos_pz ** 2))"
                 neg_p_str = "sqrt( (neg_px ** 2) + (neg_py ** 2) + (neg_pz ** 2))"
 
                 mass_sqrd = ne.evaluate("( ( {p_pos} + {p_neg}) ** 2 ) - ( (pos_px + neg_px) ** 2 ) - ( (pos_py + neg_py) ** 2 ) - ( (pos_pz + neg_pz) ** 2 )".format(p_pos=pos_p_str, p_neg=neg_p_str))
                 data["Pair_{}_Mass".format(self.flavour)][to_correct_selection] = np.sign(mass_sqrd) * np.sqrt(mass_sqrd * np.sign(mass_sqrd))
-                print("CALIBRATED {}".format("Pair_{}_Mass".format(self.flavour)))
+                post_std = np.std(data["Pair_{}_Mass".format(self.flavour)][to_correct_selection & around_z])
+                print("pre: {}, post: {}".format(pre_std, post_std))
 
-            if "Pair_{}_Pt".format(self.flavour) in data.dtype.names:
+            if "Pair_{}_Pt".format(self.flavour) in keys:
                 data["Pair_{}_Pt".format(self.flavour)][to_correct_selection] = ne.evaluate(dimuon_pt_str)
 
-            if "Pair_{}_Phi".format(self.flavour) in data.dtype.names:
+            if "Pair_{}_Phi".format(self.flavour) in keys:
                 data["Pair_{}_Phi".format(self.flavour)][to_correct_selection] = ne.evaluate("arccos((pos_px + neg_px)/({dimuon_pt_str}))".format(dimuon_pt_str))
 
-            if "Pair_{}_Eta".format(self.flavour) in data.dtype.names:
+            if "Pair_{}_Eta".format(self.flavour) in keys:
                 data["Pair_{}_Eta".format(self.flavour)][to_correct_selection] = ne.evaluate("arcsinh((pos_pz + neg_pz)/({dimuon_pt_str}))".format(dimuon_pt_str))
         return data
 

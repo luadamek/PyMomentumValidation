@@ -502,7 +502,7 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", filename = Non
     if data is None:
         raise ValueError("Could not retrieve the data.")
 
-    for c incalibrations: data = c.calibrate(data)
+    for c in calibrations: data = c.calibrate(data)
 
     if verbose: print("Got the data for parition " + str(partition))
 

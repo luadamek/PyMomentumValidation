@@ -20,6 +20,42 @@ pt_bins = global_pt_binning
 
 def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_options, histsetname):
 
+    histogram_name_base = "{histsetname}_{location}_Mass_Histogram_{count}"
+    histogram_name = histogram_name_base.format(count="Inclusive", location="ID", histsetname=histsetname)
+    hist_filler.book_histogram_fill(histogram_name,\
+                                         calc_id_mass,\
+                                         selections = [],\
+                                         bins = 200,\
+                                         range_low = 91.2-10.0,\
+                                         range_high = 91.2+10.0,\
+                                         xlabel ='M_{#mu#mu}^{varname} [GeV]',\
+                                         ylabel = 'Number Events')
+
+    histogram_name_base = "{histsetname}_{location}_Mass_Histogram_{count}"
+    histogram_name = histogram_name_base.format(count="Inclusive", location="CB", histsetname=histsetname)
+    hist_filler.book_histogram_fill(histogram_name,\
+                                         calc_id_mass,\
+                                         selections = [],\
+                                         bins = 200,\
+                                         range_low = 91.2-10.0,\
+                                         range_high = 91.1+10.0,\
+                                         xlabel ='M_{#mu#mu}^{varname} [GeV]',\
+                                         ylabel = 'Number Events')
+
+    '''
+    histogram_name_base = "{histsetname}_{location}_Mass_Histogram_{count}"
+    histogram_name = histogram_name_base.format(count="Inclusive", location="CB", histsetname=histsetname)
+    hist_filler.book_histogram_fill(histogram_name,\
+                                         calc_id_mass,\
+                                         selections = [pt_selection_pos_id],\
+                                         bins = 100,\
+                                         range_low = 91.2-10.0,\
+                                         range_high = 91.2+10.0,\
+                                         xlabel ='M_{#mu#mu}^{varname} [GeV]',\
+                                         ylabel = 'Number Events')
+    '''
+
+
     phi_bins = np.linspace(phi_bin_options["philow"], phi_bin_options["phihigh"], phi_bin_options["nbins"] + 1)
 
     #book a tprofile of the average mass
@@ -315,8 +351,8 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                          calc_id_mass,\
                                          selections = [pt_selection_pos_id],\
                                          bins = 100,\
-                                         range_low = 91.2-20.0,\
-                                         range_high = 92.1+20.0,\
+                                         range_low = 91.2-10.0,\
+                                         range_high = 91.2+10.0,\
                                          xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                          ylabel = 'Number Events')
 
@@ -325,8 +361,8 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                          calc_id_mass,\
                                          selections = [pt_selection_neg_id],\
                                          bins = 100,\
-                                         range_low = 91.2-20.0,\
-                                         range_high = 92.1+20.0,\
+                                         range_low = 91.2-10.0,\
+                                         range_high = 91.2+10.0,\
                                          xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                          ylabel = 'Number Events')
 
@@ -335,8 +371,8 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                          calc_cb_mass,\
                                          selections = [pt_selection_pos_cb],\
                                          bins = 100,\
-                                         range_low = 91.2-20.0,\
-                                         range_high = 92.1+20.0,\
+                                         range_low = 91.2-10.0,\
+                                         range_high = 91.2+10.0,\
                                          xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                          ylabel = 'Number Events')
 
@@ -345,8 +381,8 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                          calc_cb_mass,\
                                          selections = [pt_selection_neg_cb],\
                                          bins = 100,\
-                                         range_low = 91.2-20.0,\
-                                         range_high = 92.1+20.0,\
+                                         range_low = 91.2-10.0,\
+                                         range_high = 91.2+10.0,\
                                          xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                          ylabel = 'Number Events')
 
@@ -356,8 +392,8 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                          var,\
                                          selections = [pt_selection_pos_ms],\
                                          bins = 100,\
-                                         range_low = 91.2-20.0,\
-                                         range_high = 92.1+20.0,\
+                                         range_low = 91.2-10.0,\
+                                         range_high = 91.2+10.0,\
                                          xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                          ylabel = 'Number Events')
 
@@ -366,8 +402,8 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                          var,\
                                          selections = [pt_selection_neg_ms],\
                                          bins = 100,\
-                                         range_low = 91.2-20.0,\
-                                         range_high = 92.1+20.0,\
+                                         range_low = 91.2-10.0,\
+                                         range_high = 91.2+10.0,\
                                          xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                          ylabel = 'Number Events')
         '''
@@ -390,8 +426,8 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                     var,\
                                     selections = [sel_func],\
                                     bins = 100,\
-                                    range_low = 91.2-20.0,\
-                                    range_high = 92.1+20.0,\
+                                    range_low = 91.2-10.0,\
+                                    range_high = 91.2+10.0,\
                                     xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                     ylabel = 'Number Events')
 
