@@ -7,7 +7,6 @@ import ROOT
 def scale_to(to_scale, scale=0.3):
     val_max = abs(to_scale.flat[abs(to_scale).argmax()])
     to_scale = scale/(val_max * 1000.0) * to_scale
-    print(to_scale)
     return to_scale
 
 def get_injection_values_local(eta_edges, phi_edges, detector_location = "ID"):
@@ -33,10 +32,25 @@ def get_injection_values_local(eta_edges, phi_edges, detector_location = "ID"):
     values = scale_to(values)
     return values
 
+def injection_histogram_data(detector_location = "ID"):
+    if detector_location != "ID": raise ValueError()
+    bias = "None"
+    directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Nov13_ID_Data_Inject_{}/OutputFiles".format(bias)
+    subtraction_dir = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Nov13_ID_MC_Inject_{}/OutputFiles".format("None")
+    from MatrixInversion import get_deltas_from_job
+    sagitta_hist, _, __ = get_deltas_from_job(directory)
+    sagitta_hist_subtraction, _, __ = get_deltas_from_job(subtraction_dir)
+    sagitta_hist.Add(sagitta_hist_subtraction, -1.0)
+    return solution_histogram(sagitta_hist)
+
 def get_injection_values_global(eta_edges, phi_edges, detector_location = "ID"):
     values = np.zeros((len(eta_edges)-1, len(phi_edges)-1))
     values -= 0.3
     values = scale_to(values)
+    return values
+
+def get_injection_values_null(eta_edges, phi_edges, detector_location = "ID"):
+    values = np.zeros((len(eta_edges)-1, len(phi_edges)-1))
     return values
 
 def get_injection_values_globalpluslocal(eta_edges, phi_edges, detector_location = "ID"):
@@ -52,7 +66,7 @@ def injection_histogram(values_function, detector_location = "ID"):
     else:
         eta_edges = eta_edges_else
 
-    values = values_function( eta_edges, phi_edges, detector_location = "ID")
+    values = values_function( eta_edges, phi_edges, detector_location = detector_location)
 
     from array import array
     delta_hist = ROOT.TH2D("delta_injection", "delta_injection", len(eta_edges) - 1, array('d',eta_edges), len(phi_edges) - 1, array('d',phi_edges))
@@ -63,6 +77,7 @@ def injection_histogram(values_function, detector_location = "ID"):
     return delta_hist
 
 injection_histogram_local = lambda detector_location = "ID" , _ = get_injection_values_local :  injection_histogram(_, detector_location = detector_location)
+injection_histogram_null = lambda detector_location = "ID" , _ = get_injection_values_null :  injection_histogram(_, detector_location = detector_location)
 injection_histogram_global = lambda detector_location = "ID" , _ = get_injection_values_global :  injection_histogram(_, detector_location = detector_location)
 injection_histogram_globalpluslocal = lambda detector_location = "ID" , _ = get_injection_values_globalpluslocal :  injection_histogram(_, detector_location = detector_location)
 

@@ -239,13 +239,17 @@ class SagittaBiasCorrection:
 
             pos_pz = pos_pt * np.sinh(self.pos_eta_var.eval(to_correct_data))
             neg_pz = neg_pt * np.sinh(self.neg_eta_var.eval(to_correct_data))
+            #copy the code from tlorentz vector
+            #pos_pz = pos_pt/np.tan(2.0*np.arctan(np.exp(-1.0 * self.pos_eta_var.eval(to_correct_data))))
+            #neg_pz = neg_pt/np.tan(2.0*np.arctan(np.exp(-1.0 * self.neg_eta_var.eval(to_correct_data))))
 
             dimuon_pt_str = "sqrt( (pos_px**2) + (neg_px**2))"
+            muon_mass = 105.658/1000.0
+            pos_e_str = "sqrt( (muon_mass**2) + (pos_px ** 2) + (pos_py ** 2) + (pos_pz ** 2))"
+            neg_e_str = "sqrt( (muon_mass**2) + (neg_px ** 2) + (neg_py ** 2) + (neg_pz ** 2))"
             if "Pair_{}_Mass".format(self.flavour) in keys:
-                pos_p_str = "sqrt( (pos_px ** 2) + (pos_py ** 2) + (pos_pz ** 2))"
-                neg_p_str = "sqrt( (neg_px ** 2) + (neg_py ** 2) + (neg_pz ** 2))"
 
-                mass_sqrd = ne.evaluate("( ( {p_pos} + {p_neg}) ** 2 ) - ( (pos_px + neg_px) ** 2 ) - ( (pos_py + neg_py) ** 2 ) - ( (pos_pz + neg_pz) ** 2 )".format(p_pos=pos_p_str, p_neg=neg_p_str))
+                mass_sqrd = ne.evaluate("( ( {p_pos} + {p_neg}) ** 2 ) - ( (pos_px + neg_px) ** 2 ) - ( (pos_py + neg_py) ** 2 ) - ( (pos_pz + neg_pz) ** 2 )".format(p_pos=pos_e_str, p_neg=neg_e_str))
                 data["Pair_{}_Mass".format(self.flavour)][to_correct_selection] = np.sign(mass_sqrd) * np.sqrt(mass_sqrd * np.sign(mass_sqrd))
                 post_std = np.std(data["Pair_{}_Mass".format(self.flavour)][to_correct_selection & around_z])
                 print("pre: {}, post: {}".format(pre_std, post_std))

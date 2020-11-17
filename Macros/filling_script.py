@@ -13,6 +13,7 @@ from variables import \
                       calc_pos_id_phi, calc_neg_id_phi,\
                       calc_pos_ms_phi, calc_neg_ms_phi,\
                       calc_pos_cb_phi, calc_neg_cb_phi
+from selections import sel_pos_leading_id, sel_neg_leading_id
 import numpy as np
 #put this as the default pt binning somewhere
 from binnings import global_pt_binning
@@ -62,9 +63,9 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
     mass_ID = "Pair_ID_Mass"
     mass_CB = "Pair_CB_Mass"
     mass_MS = "Pair_MS_Mass"
-    mass_sel_func_ID = create_selection_function(range_selection_function, [mass_ID], mass_ID, 91.2 - 20.0, 91.2 + 20.0)
-    mass_sel_func_CB = create_selection_function(range_selection_function, [mass_CB], mass_CB, 91.2 - 20.0, 91.2 + 20.0)
-    mass_sel_func_MS = create_selection_function(range_selection_function, [mass_MS], mass_MS, 91.2 - 20.0, 91.2 + 20.0)
+    mass_sel_func_ID = create_selection_function(range_selection_function, [mass_ID], mass_ID, 91.2 - 10.0, 91.2 + 10.0)
+    mass_sel_func_CB = create_selection_function(range_selection_function, [mass_CB], mass_CB, 91.2 - 10.0, 91.2 + 10.0)
+    mass_sel_func_MS = create_selection_function(range_selection_function, [mass_MS], mass_MS, 91.2 - 10.0, 91.2 + 10.0)
     base_selections_ID = [mass_sel_func_ID]
     base_selections_CB = [mass_sel_func_CB]
     base_selections_MS = [mass_sel_func_MS]
@@ -138,6 +139,48 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                               ylabel = "#phi_{#mu}",\
                                               zlabel="<M_{#mu#mu}> [Gev]",\
                                               error_option="")
+
+    from selections import sel_pos_leading_id, sel_neg_leading_id
+    from variables import calc_leading_id_pt, calc_leading_id_phi, calc_leading_id_eta
+
+    #book a tprofile of the average mass
+    histogram_name_base = "{histsetname}_{charge}_{location}_LeadingAverageMassProfile_{count}"
+    histogram_name = histogram_name_base.format(charge="Pos", count=i, location="ID", histsetname=histsetname)
+    hist_filler.book_2dtprofile_fill(histogram_name, \
+                                              calc_leading_id_eta,\
+                                              calc_leading_id_phi,\
+                                              calc_id_mass,\
+                                              selections = base_selections_ID + [sel_pos_leading_id],\
+                                              bins_x = eta_bin_options["nbins"],\
+                                              range_low_x = eta_bin_options["etalow"],\
+                                              range_high_x = eta_bin_options["etahigh"],\
+                                              xlabel = "#eta_{#mu}^{+Lead}",\
+                                              bins_y=phi_bin_options["nbins"],\
+                                              range_low_y=phi_bin_options["philow"],\
+                                              range_high_y=phi_bin_options["phihigh"],\
+                                              ylabel = "#phi_{#mu}^{+Lead}",\
+                                              zlabel="<M_{#mu#mu}> [Gev]",\
+                                              error_option="")
+
+    #book a tprofile of the average mass
+    histogram_name = histogram_name_base.format(charge="Neg", count=i, location="ID", histsetname=histsetname)
+    hist_filler.book_2dtprofile_fill(histogram_name, \
+                                              calc_leading_id_eta,\
+                                              calc_leading_id_phi,\
+                                              calc_id_mass,\
+                                              selections = base_selections_ID + [sel_neg_leading_id],\
+                                              bins_x = eta_bin_options["nbins"],\
+                                              range_low_x = eta_bin_options["etalow"],\
+                                              range_high_x = eta_bin_options["etahigh"],\
+                                              xlabel = "#eta_{#mu}^{-Lead}",\
+                                              bins_y=phi_bin_options["nbins"],\
+                                              range_low_y=phi_bin_options["philow"],\
+                                              range_high_y=phi_bin_options["phihigh"],\
+                                              ylabel = "#phi_{#mu}^{-Lead}",\
+                                              zlabel="<M_{#mu#mu}> [Gev]",\
+                                              error_option="")
+
+
 
     for i, (phi_bin_lo, phi_bin_high) in enumerate(zip(phi_bins[:-1], phi_bins[1:])):
         phi_selection_pos_id = create_selection_function(range_selection_function, ["Pos_ID_Phi"], "Pos_ID_Phi", phi_bin_lo, phi_bin_high)
@@ -459,11 +502,37 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
     for binning in binnings:
         book_histograms(hist_filler, binning["EtaID"], binning["EtaMS"], binning["Phi"], binning["name"])
 
+    for sel, name in zip([sel_pos_leading_id, sel_neg_leading_id], ["poslead", "neglead"]):
+        #make invariant mass histograms for ID tracks
+        histogram_name_base = "MassSpectrum_{identified}"
+        histogram_name = histogram_name_base.format(identified = name)
+        hist_filler.book_histogram_fill(histogram_name,\
+                                             calc_id_mass,\
+                                             selections = [sel],\
+                                             bins = 100,\
+                                             range_low = 91.2-10.0,\
+                                             range_high = 91.2+10.0,\
+                                             xlabel ='M_{#mu#mu}^{ID} [GeV]',\
+                                             ylabel = 'Number Events')
+        '''
+        from variables import calc_id_pt
+        histogram_name_base = "PtSpectrum_{identified}"
+        histogram_name = histogram_name_base.format(identified = name)
+        hist_filler.book_histogram_fill(histogram_name,\
+                                             calc_id_pt,\
+                                             selections = [sel],\
+                                             bins = 100,\
+                                             range_low = 0.0,\
+                                             range_high = 240.0,\
+                                             xlabel ='{P_T}_{#mu#mu}^{ID} [GeV]',\
+                                             ylabel = 'Number Events')
+        '''
 
     histograms = hist_filler.DumpHistograms()
     output_file = ROOT.TFile(output_filename, "RECREATE")
     for histogram_name in histograms:
         write_histograms(histograms[histogram_name], output_file)
+
 
     output_file.Close()
 

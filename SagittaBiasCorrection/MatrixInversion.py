@@ -144,6 +144,7 @@ def convert_df_to_data(df):
 
 def put_data_back_in_df(data, df):
     for c in data:
+        print(c)
         df[c] = data[c]
     return df
 
@@ -162,6 +163,15 @@ def inject_bias(df, region, injection_function):
     df = put_data_back_in_df(data, df)
     return df
 
+def get_histogram_function(inject):
+    from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_null, injection_histogram_data
+    if inject == "Global": injection_function = injection_histogram_global
+    if inject == "GlobalPlusLocal": injection_function = injection_histogram_globalpluslocal
+    if inject == "Local": injection_function = injection_histogram_local
+    if inject == "Null": injection_function = injection_histogram_null
+    if inject == "Data": injection_function = injection_histogram_data
+    return injection_function
+
 if __name__ == "__main__":
     import argparse
 
@@ -174,10 +184,8 @@ if __name__ == "__main__":
     parser.add_argument('--inject', '-i', type=str, dest="inject", default = "", required=False)
     args = parser.parse_args()
 
-    from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal
-    if args.inject == "Global": injection_function = injection_histogram_global
-    if args.inject == "GlobalPlusLocal": injection_function = injection_histogram_globalpluslocal
-    if args.inject == "Local": injection_function = injection_histogram_local
+    if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
+        injection_histogram_function = get_histogram_function(args.inject)
 
     variables = ["Pos_{}_Eta", "Neg_{}_Eta", "Pos_{}_Phi", "Neg_{}_Phi", "Pos_{}_Pt", "Neg_{}_Pt", "Pair_{}_Mass", "TotalWeight"] #all of the variables needed
     selection = "abs(Pair_{}_Mass - 91.2) < 20.0".format(args.detector_location)
@@ -206,7 +214,7 @@ if __name__ == "__main__":
     df = get_dataframe(args.filename, args.start, args.stop, variables, selection)
     print(args.inject)
     if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
-        df = inject_bias(df, args.detector_location, injection_function)
+        df = inject_bias(df, args.detector_location, injection_histogram_function)
     cov, equal_to, nentries = get_cov_matrices(df, global_binning_pos, global_binning_neg, args.detector_location)
 
     if not os.path.exists(os.path.split(args.output_filename)[0]):

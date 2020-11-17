@@ -359,6 +359,21 @@ def ms_mass(event):
 branches = ["Pair_MS_Mass"]
 calc_ms_mass = Calculation(ms_mass, branches)
 
+def cb_pt(event):
+    return event["Pair_CB_Pt"]
+branches = ["Pair_CB_Pt"]
+calc_cb_pt = Calculation(cb_pt, branches)
+
+def id_pt(event):
+    return event["Pair_ID_Pt"]
+branches = ["Pair_ID_Pt"]
+calc_id_pt = Calculation(id_pt, branches)
+
+def ms_pt(event):
+    return event["Pair_MS_Pt"]
+branches = ["Pair_MS_Pt"]
+calc_ms_pt = Calculation(ms_pt, branches)
+
 def pos_cb_pt(event):
     return event["Pos_CB_Pt"]
 branches = ["Pos_CB_Pt"]
@@ -453,3 +468,34 @@ def neg_ms_phi(event):
     return event["Neg_MS_Phi"]
 branches = ["Neg_MS_Phi"]
 calc_neg_ms_phi = Calculation(neg_ms_phi, branches)
+
+def leading_id_pt(event):
+    pos_lead = np.maximum(event["Pos_ID_Pt"], event["Neg_ID_Pt"])
+branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
+calc_leading_id_pt = Calculation(leading_id_pt, branches)
+
+def subleading_id_pt(event):
+    return np.minimum(event["Pos_ID_Pt"], event["Neg_ID_Pt"])
+branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
+calc_subleading_id_pt = Calculation(subleading_id_pt, branches)
+
+from selections import pos_leading_id, neg_leading_id
+def leading_id_eta(event):
+    pos_leading = pos_leading_id(event)
+    neg_leading = np.logical_not(pos_leading)
+    to_return = np.zeros(len(event["Pos_ID_Eta"]))
+    to_return[pos_leading] = event["Pos_ID_Eta"][pos_leading]
+    to_return[neg_leading] = event["Pos_ID_Eta"][neg_leading]
+    return to_return
+branches = ["Pos_ID_Eta", "Neg_ID_Eta"] + ["Pos_ID_Pt", "Neg_ID_Pt"]
+calc_leading_id_eta = Calculation(leading_id_eta, branches)
+
+def leading_id_phi(event):
+    pos_leading = pos_leading_id(event)
+    neg_leading = np.logical_not(pos_leading)
+    to_return = np.zeros(len(event["Pos_ID_Phi"]))
+    to_return[pos_leading] = event["Pos_ID_Phi"][pos_leading]
+    to_return[neg_leading] = event["Pos_ID_Phi"][neg_leading]
+    return to_return
+branches = ["Pos_ID_Phi", "Neg_ID_Phi"] + ["Pos_ID_Pt", "Neg_ID_Pt"]
+calc_leading_id_phi = Calculation(leading_id_phi, branches)
