@@ -171,8 +171,6 @@ class Binning:
             indices[indices == self.get_local_nbins()] = -2
         return indices
 
-    # I don't know what the issue is...
-    #this function needs some serious debugging
     def get_global_bindex(self, frame):
         indices = self.get_local_bindex(frame)
         underflown = indices == -1 #these bins must stay underflown 
@@ -196,7 +194,6 @@ class Binning:
                 check_total += np.sum(1 * s)
             assert check_total + (np.sum(1*overflown) + np.sum(1*underflown)) == len(indices)
 
-            #something is wrong here... what is it? how can I debug it?
             for a, in_bin, i in zip(additions, selections, index):
                 frame_in_bin = frame.loc[in_bin]
                 this_index = self.subbins[i].get_global_bindex(frame_in_bin)
