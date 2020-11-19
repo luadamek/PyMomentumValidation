@@ -19,7 +19,7 @@ def draw_2d_histogram(histogram, description = "", normalize = True, output_loca
     histogram.GetZaxis().SetTitleOffset(1.2 * histogram.GetZaxis().GetTitleOffset())
     canvas.SetBottomMargin(0.25)
     canvas.Draw()
-    ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
+    #ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
     canvas.Print(os.path.join(output_location, canvas.GetName() + ".pdf"))
 
 def draw_text(x, y, text, color=1, size=0.05):

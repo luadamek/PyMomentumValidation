@@ -12,7 +12,7 @@ import pickle as pkl
 
 #histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "",)
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_matrix_calibrations):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_matrix_calibrations, load_matrix_subtractions):
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
 
@@ -33,9 +33,13 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
 
         if load_matrix_calibrations:
             to_load = load_matrix_calibrations.split(",")
+            if load_matrix_subtractions:
+                 to_subtract = load_matrix_subtractions.split(',')
             calibrations = []
-            for el in to_load:
+            for el, sub in zip(to_load, to_subtract):
                 deltas, variables, detector_location = get_deltas_from_job(el)
+                if sub: delta_subtraction, _, __ = get_deltas_from_job(sub)
+                if sub: deltas.Add(delta_subtraction, -1.0) #apply a kinetic bias correction
                 xvar_name = variables["x_var"]
                 yvar_name = variables["y_var"]
                 print(xvar_name)
@@ -147,6 +151,7 @@ if __name__ == "__main__":
         parser.add_argument('--file_flavour', '-ff', dest="file_flavour", type=str, default='inclusive', help='What is the flavour of the jobs that you want to submit?')
         parser.add_argument('--filling_script', '-fs', dest="filling_script", type=str, default='inclusive', help='What is the name of the script that takes the input root file and makes histograms?')
         parser.add_argument('--load_matrix_calibrations', '-lmc', dest="load_matrix_calibrations", type=str, default='', help='a comma separated list of directories from which to load calibrations')
+        parser.add_argument('--load_matrix_subtractions', '-lms', dest="load_matrix_subtractions", type=str, default='', help='a comma separated list of directories from which to load subtractions when correcting deltas')
         parser.add_argument('--testjob', '-tj', dest="test_job", action="store_true", help="Submit a test job")
         args = parser.parse_args()
 
@@ -159,7 +164,7 @@ if __name__ == "__main__":
         filling_script = args.filling_script
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations, args.load_matrix_subtractions)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

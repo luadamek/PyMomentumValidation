@@ -460,6 +460,9 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
             calibrations = pkl.load(f)
         for c in calibrations:
             hist_filler.apply_calibration_for_channel("Data", c)
+            hist_filler.apply_calibration_for_channel("Data1516", c)
+            hist_filler.apply_calibration_for_channel("Data17", c)
+            hist_filler.apply_calibration_for_channel("Data18", c)
 
     for varname, var in zip(["ID", "CB"], [calc_id_mass, calc_cb_mass]):
         histogram_name = "{}_mass".format(varname)
