@@ -216,9 +216,13 @@ def get_files(flavour):
     directory = directories[flavour]
     all_files = files[flavour]
 
+    print(directory)
+
     to_return = {}
     for key in all_files:
         to_return[key] = [os.path.join(directory, f) for f in all_files[key]]
+
+    print(to_return)
 
     return to_return
 
@@ -247,6 +251,15 @@ def draw_text(x, y, text, color=ROOT.kBlack, size=0.05):
     l.SetTextColor(color)
     l.DrawLatex(x, y, text)
 
+def glob_all_files(raw_files):
+    import glob
+    files = []
+    for f in raw_files:
+        if "*" in f: files += glob.glob(f)
+        else: files.append(f)
+    return files
+
+
 def tchain_files_together(tree_name, channel_to_filelist, on_eos = False):
     '''
     Given a tree_name, and a dictionary of channel to file list, return a dictionary of channel to filename to tchain.
@@ -256,7 +269,9 @@ def tchain_files_together(tree_name, channel_to_filelist, on_eos = False):
     print("Chaining files together for {}".format(list(trees.keys())))
     for channel in channel_to_filelist:
         trees[channel] = {}
-        files = channel_to_filelist[channel]
+        raw_files = channel_to_filelist[channel]
+        files = glob_all_files(raw_files)
+
         print("For channel {}, found files {}".format(channel, files))
         for f in files:
             #create the tchain for these files
