@@ -117,12 +117,12 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         for i in range(0, n_jobs):
             partition = {}
             for channel in partitions:
-                partition[channel] = {}
-                for f in partitions[channel]:
-                    assert  len(partitions[channel][f]) == n_jobs
-                    partition[channel][f] =  partitions[channel][f][i]
+                partition[channel] =  partitions[channel][i]
+            assert len(partitions[channel]) == n_jobs
             hist_filler = HistogramFiller(trees, tree_name, calc_weight, selection_string = "", partitions = partition)
+            print("Made histogram filler")
             filler_list.append(hist_filler)
+        print("Created Fillers")
         #create a pickle file for each submission
         pickle.dump(filler_list, open(filler_file, "wb" ) )
         print("Created the submission file. Ready to go!")

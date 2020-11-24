@@ -2,7 +2,10 @@ from calculation import Calculation
 import numpy as np
 
 def range_selection_function(event, variable, range_low, range_hi):
-    return (event[variable] < range_hi) & (range_low < event[variable])
+    if not isinstance(variable, Calculation): return (event[variable] < range_hi) & (range_low < event[variable])
+    else: 
+        vals = variable.eval(event)
+        return (vals < range_hi) & (range_low < vals)
 
 def pos_leading_id(event):
     return event["Pos_ID_Pt"] > event["Neg_ID_Pt"]

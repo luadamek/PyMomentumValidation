@@ -90,8 +90,8 @@ class WeightCalculation:
         self.branches = list_of_branches
         self.reweightDictionary = {}
 
-    def eval(self, data, isData, channel):
-        weights = self.function(data, isData)
+    def eval(self, data, channel):
+        weights = self.function(data)
         if channel in self.reweightDictionary:
             for variables, histogram, selection in zip(self.reweightDictionary[channel]["variables"], self.reweightDictionary[channel]["histograms"], self.reweightDictionary[channel]["selections"]):
                 if len(variables) == 1:

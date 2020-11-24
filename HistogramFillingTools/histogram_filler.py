@@ -86,7 +86,6 @@ class HistogramFiller:
     Handle the filling of histograms.
     '''
     def __init__(self, trees, tree_name, weight_calculator, selection_string = "", partitions = None):
-        self.channel_files = {}
         self.tree_name = tree_name
         self.partitions = partitions
         self.verbose = False
@@ -103,10 +102,6 @@ class HistogramFiller:
         self.all_calibrations = []
         self.subchannels = {} #dictionary of new_channel to dictionary of old_channel and selections
 
-        for channel in self.trees:
-            self.channel_files[channel] = []
-            for f in self.trees[channel]:
-                self.channel_files[channel].append(f)
 
     def apply_calibration_for_channel(self, channel, calibration):
         if channel not in self.calibrations: self.calibrations[channel] = []
@@ -135,9 +130,8 @@ class HistogramFiller:
             if selection.name not in [sel.name for sel in self.all_selections]:
                 self.all_selections.append(selection)
         self.channels.append(subchannel)
-        self.channel_files[subchannel] = self.channel_files[channel]
 
-    def get_data(self, channel, filename, variables, selections):
+    def get_data(self, channel, variables, selections):
         '''
         Given a string channel, string filename, a list of calculation variables and a list of calculations selections, return a dictionary keys selection_dict, variable_dict and weights. selection_dict is a dictionary of key selection name to numpy array of bool. variable_dict is a dictionary of string variable name to numpy array variable. weights is a numpy array of floats
         '''
@@ -154,13 +148,13 @@ class HistogramFiller:
         if self.partitions == None:
             partition = (0, total_entries)
         else:
-            partition = self.partitions[channel][filename]
+            partition = self.partitions[channel]
             if self.verbose: print("Found a partition")
 
-        tree = self.trees[channel][filename]
+        tree = self.trees[channel]
 
         print("Reading entries from {} until {}".format(partition[0], partition[1]))
-        result = GetData(partition = partition, bare_branches = branches, channel = channel, filename = filename, tree = tree, treename = self.tree_name, variables=variables, weight_calculator = self.weight_calculator, selections = selections, selection_string = self.selection_string, verbose = self.verbose, calibrations=calibrations)
+        result = GetData(partition = partition, bare_branches = branches, channel = channel, tree = tree, treename = self.tree_name, variables=variables, weight_calculator = self.weight_calculator, selections = selections, selection_string = self.selection_string, verbose = self.verbose, calibrations=calibrations)
 
         #Get the selections, variables and weights
         selection_dict = result["selection_dict"]
@@ -207,8 +201,7 @@ class HistogramFiller:
             histogram_dictionary[channel].Sumw2()
 
         for channel in self.channels:
-            for filename in self.channel_files[channel]:
-                variable_dict, selection_dict, weights = data[channel][filename]
+                variable_dict, selection_dict, weights = data[channel]
                 total_selection = np.ones(len(weights)) > 0.0
                 for selection in selections:
                     total_selection &= selection_dict[selection.name]
@@ -248,8 +241,7 @@ class HistogramFiller:
             histogram_dictionary[channel].Sumw2()
 
         for channel in self.channels:
-            for filename in self.channel_files[channel]:
-                variable_dict, selection_dict, weights = data[channel][filename]
+                variable_dict, selection_dict, weights = data[channel]
                 total_selection = np.ones(len(weights)) > 0.0
                 for selection in selections:
                     total_selection &= selection_dict[selection.name]
@@ -289,8 +281,7 @@ class HistogramFiller:
             histogram_dictionary[channel].SetErrorOption(error_option)
 
         for channel in self.channels:
-            for filename in self.channel_files[channel]:
-                variable_dict, selection_dict, weights = data[channel][filename]
+                variable_dict, selection_dict, weights = data[channel]
                 total_selection = np.ones(len(weights)) > 0.0
                 for selection in selections:
                     total_selection &= selection_dict[selection.name]
@@ -322,8 +313,7 @@ class HistogramFiller:
             histogram_dictionary[channel].Sumw2()
 
         for channel in self.channels:
-            for filename in self.channel_files[channel]:
-                variable_dict, selection_dict, weights = data[channel][filename]
+                variable_dict, selection_dict, weights = data[channel]
                 total_selection = np.ones(len(weights)) > 0.0
                 for selection in selections:
                     total_selection &= selection_dict[selection.name]
@@ -339,8 +329,8 @@ class HistogramFiller:
                 fill_profile(histogram_dictionary[channel], to_fill, to_weight)
                 if self.verbose: print("Finished filling histogram")
 
-            histogram_dictionary[channel].GetXaxis().SetTitle(xlabel)
-            histogram_dictionary[channel].GetYaxis().SetTitle(ylabel)
+        histogram_dictionary[channel].GetXaxis().SetTitle(xlabel)
+        histogram_dictionary[channel].GetYaxis().SetTitle(ylabel)
         return histogram_dictionary
 
     def book_histogram_fill(self, histogram_name, variable, selections = [], bins = 1, range_low = 0.000001, range_high=1. - 0.00001,  xlabel ="", ylabel = "", HistogramPerFile=False, useWeights = True):
@@ -412,8 +402,7 @@ class HistogramFiller:
             if channel not in self.subchannels:
                 print("Dumping for channel {}".format(channel))
                 data[channel] = {}
-                for filename in self.channel_files[channel]:
-                    data[channel][filename] = self.get_data(channel,filename, self.all_variables, self.all_selections)
+                data[channel] = self.get_data(channel, self.all_variables, self.all_selections)
 
         for subchannel in self.subchannels:
             print("Getting the data for subchannel {}".format(subchannel))
@@ -421,20 +410,19 @@ class HistogramFiller:
             selections = self.subchannels[subchannel]["selections"]
             assert subchannel not in data
             data[subchannel] = {}
-            for filename in data[origin_channel]:
-                variable_dict, selection_dict, weights = data[origin_channel][filename]
-                total_selection = np.ones(len(weights)) > 0.5
-                for sel in selections:
-                    total_selection &= selection_dict[sel.name]
+            variable_dict, selection_dict, weights = data[origin_channel]
+            total_selection = np.ones(len(weights)) > 0.5
+            for sel in selections:
+                total_selection &= selection_dict[sel.name]
 
-                new_variable_dict = {}
-                new_selection_dict = {}
-                for key in variable_dict:
-                    new_variable_dict[key] = variable_dict[key][total_selection]
-                for key in selection_dict:
-                    new_selection_dict[key] = selection_dict[key][total_selection]
-                new_weights = weights[total_selection]
-                data[subchannel][filename] = new_variable_dict, new_selection_dict, new_weights
+            new_variable_dict = {}
+            new_selection_dict = {}
+            for key in variable_dict:
+                new_variable_dict[key] = variable_dict[key][total_selection]
+            for key in selection_dict:
+                new_selection_dict[key] = selection_dict[key][total_selection]
+            new_weights = weights[total_selection]
+            data[subchannel] = new_variable_dict, new_selection_dict, new_weights
 
         histograms = {}
         for histogram_name in self.histogram_filling_functions:
@@ -463,7 +451,7 @@ def getIsData(filename):
     '''
     return ("Data" in filename.split("/")[-1] or "data" in filename.split("/")[-1] or "Data" in filename.split("/")[-2] or "data" in filename.split("/")[-2])
 
-def GetData(partition = (0, 0), bare_branches = [], channel = "", filename = None, tree = None, treename = None, variables = [], weight_calculator = None, selections = [], selection_string = "",  verbose = False, calibrations = []):
+def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, treename = None, variables = [], weight_calculator = None, selections = [], selection_string = "",  verbose = False, calibrations = []):
     '''
     A function for retrieving data
     partition -- a tuple of length 2. Retrieve tree entries from partition[0] until partition[1]
@@ -478,14 +466,11 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", filename = Non
     '''
     assert len(partition) == 2
 
-    isData = getIsData(filename)
     for branch in weight_calculator.branches:
         if branch not in bare_branches:
             bare_branches.append(branch)
     branches = branchDresser(bare_branches)
     if verbose: print(branches)
-
-    if verbose: print("Reading from file " + filename)
 
     data = None
     for i in range(1, 50):
@@ -510,14 +495,7 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", filename = Non
     variable_dict = {}
 
     print("Evaluating weights")
-    weights = weight_calculator.eval(data, isData, channel)
-
-    if not isData:
-        print("getting the xsection weight")
-        xsec_weight = get_x_section_weight(filename)
-        if verbose: print("X Section Weight Set To " + str(xsec_weight))
-        weights = weights #* xsec_weight * lumi_prescaled
-
+    weights = weight_calculator.eval(data, channel)
 
     ##calculate everything we need in one go!
     for variable in variables:

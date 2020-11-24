@@ -1,6 +1,7 @@
 from calculation import Calculation, CalculationDataMC, WeightCalculation
 import numpy as np
 from math import pi
+import numexpr as ne
 
 '''
 ******************************************************************************
@@ -355,8 +356,27 @@ branches = ["Pair_ID_Mass"]
 calc_id_mass = Calculation(id_mass, branches)
 
 def ms_mass(event):
-    return event["Pair_MS_Mass"]
-branches = ["Pair_MS_Mass"]
+    #return event["Pair_MS_Mass"]
+    pos_pt = event["Pos_MS_Pt"]
+    neg_pt = event["Neg_MS_Pt"]
+
+    pos_px = pos_pt * np.cos(event["Pos_MS_Phi"])
+    neg_px = neg_pt * np.cos(event["Neg_MS_Phi"])
+
+    pos_py = pos_pt * np.sin(event["Pos_MS_Phi"])
+    neg_py = neg_pt * np.sin(event["Neg_MS_Phi"])
+
+    pos_pz = pos_pt * np.sinh(event["Pos_MS_Eta"])
+    neg_pz = neg_pt * np.sinh(event["Neg_MS_Eta"])
+
+    dimuon_pt_str = "sqrt( (pos_px**2) + (neg_px**2))"
+    muon_mass = 105.658/1000.0
+    pos_e_str = "sqrt( (muon_mass**2) + (pos_px ** 2) + (pos_py ** 2) + (pos_pz ** 2))"
+    neg_e_str = "sqrt( (muon_mass**2) + (neg_px ** 2) + (neg_py ** 2) + (neg_pz ** 2))"
+
+    mass_sqrd = ne.evaluate("( ( {p_pos} + {p_neg}) ** 2 ) - ( (pos_px + neg_px) ** 2 ) - ( (pos_py + neg_py) ** 2 ) - ( (pos_pz + neg_pz) ** 2 )".format(p_pos=pos_e_str, p_neg=neg_e_str))
+    return np.sign(mass_sqrd) * np.sqrt(mass_sqrd * np.sign(mass_sqrd))
+branches = ["Pos_MS_Pt", "Neg_MS_Pt", "Pos_MS_Phi", "Neg_MS_Phi", "Pos_MS_Eta", "Neg_MS_Eta"]
 calc_ms_mass = Calculation(ms_mass, branches)
 
 def cb_pt(event):
@@ -404,7 +424,7 @@ def neg_ms_pt(event):
 branches = ["Neg_MS_Pt"]
 calc_neg_ms_pt = Calculation(neg_ms_pt, branches)
 
-def weight(event, isData):
+def weight(event):
     return event["TotalWeight"]
 branches = ["TotalWeight"]
 calc_weight = WeightCalculation(weight, branches)
@@ -469,33 +489,88 @@ def neg_ms_phi(event):
 branches = ["Neg_MS_Phi"]
 calc_neg_ms_phi = Calculation(neg_ms_phi, branches)
 
+from selections import pos_leading_id, neg_leading_id
 def leading_id_pt(event):
-    pos_lead = np.maximum(event["Pos_ID_Pt"], event["Neg_ID_Pt"])
+    pos_leading = pos_leading_id(event)
+    neg_leading = neg_leading_id(event)
+    to_return = np.zeros(len(event["Pos_ID_Pt"]))
+    to_return[pos_leading] = event["Pos_ID_Pt"][pos_leading]
+    to_return[neg_leading] = event["Neg_ID_Pt"][neg_leading]
+    return to_return
 branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
 calc_leading_id_pt = Calculation(leading_id_pt, branches)
 
-def subleading_id_pt(event):
-    return np.minimum(event["Pos_ID_Pt"], event["Neg_ID_Pt"])
-branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
-calc_subleading_id_pt = Calculation(subleading_id_pt, branches)
-
-from selections import pos_leading_id, neg_leading_id
 def leading_id_eta(event):
     pos_leading = pos_leading_id(event)
-    neg_leading = np.logical_not(pos_leading)
+    neg_leading = neg_leading_id(event)
     to_return = np.zeros(len(event["Pos_ID_Eta"]))
     to_return[pos_leading] = event["Pos_ID_Eta"][pos_leading]
-    to_return[neg_leading] = event["Pos_ID_Eta"][neg_leading]
+    to_return[neg_leading] = event["Neg_ID_Eta"][neg_leading]
     return to_return
 branches = ["Pos_ID_Eta", "Neg_ID_Eta"] + ["Pos_ID_Pt", "Neg_ID_Pt"]
 calc_leading_id_eta = Calculation(leading_id_eta, branches)
 
 def leading_id_phi(event):
     pos_leading = pos_leading_id(event)
-    neg_leading = np.logical_not(pos_leading)
+    neg_leading = neg_leading_id(event)
     to_return = np.zeros(len(event["Pos_ID_Phi"]))
     to_return[pos_leading] = event["Pos_ID_Phi"][pos_leading]
-    to_return[neg_leading] = event["Pos_ID_Phi"][neg_leading]
+    to_return[neg_leading] = event["Neg_ID_Phi"][neg_leading]
     return to_return
 branches = ["Pos_ID_Phi", "Neg_ID_Phi"] + ["Pos_ID_Pt", "Neg_ID_Pt"]
 calc_leading_id_phi = Calculation(leading_id_phi, branches)
+
+'''
+double Getcostheta(TLorentzVector *lv,TLorentzVector *lv1,TLorentzVector *lv2,int qLead){ 
+  //  TLorentzVector *lv=new TLorentzVector();
+  // lv+=lv1;
+  //lv+=lv2;
+  
+  double costheta = -lv->Pz()/ fabs(lv->Pz());
+  TLorentzVector *lpos=qLead > 0 ? lv1:lv2;
+  TLorentzVector *lneg=qLead < 0 ? lv1:lv2;
+
+  costheta*=2*(getP(lpos,1)*getP(lneg,-1)  - getP(lpos,-1)*getP(lneg,+1)) / (lv->M()*sqrt(lv->M()*lv->M()+lv->Pt()*lv->Pt())); 
+  
+  //delete lv;
+  return costheta;
+'''
+
+import numexpr as ne
+def pair_id_pt(event):
+    px1 = event["Pos_ID_Pt"] * np.cos(event["Pos_ID_Phi"])
+    px2 = event["Neg_ID_Pt"] * np.cos(event["Neg_ID_Phi"])
+
+    py1 = event["Pos_ID_Pt"] * np.sin(event["Pos_ID_Phi"])
+    py2 = event["Neg_ID_Pt"] * np.sin(event["Neg_ID_Phi"])
+
+    return ne.evaluate("sqrt( (px1 + px2)**2 + (py1 + py2)**2)")
+
+def pair_id_eta(event):
+    pz1 = event["Pos_ID_Pt"] * np.sinh(event["Pos_ID_Eta"])
+    pz2 = event["Neg_ID_Pt"] * np.sinh(event["Neg_ID_Eta"])
+
+    pz = pz1 + pz2
+
+    return np.arccosh(pz/pair_id_pt(event))
+
+def get_momentum(event, charge, detector_location):
+    pass
+
+def get_energy(event, charge, detector_location):
+    return event["{}_{}_Pt"]
+
+def getP(event, charge, detector_location):
+    #1/sqrt(2)*(lv->E() + q * lv->Pz())
+    pass
+
+def cos_theta_star_id(event):
+    p_pos = event["Pos_ID_Pt"] * np.cosh(event["Pos_ID_Eta"])
+    p_neg = event["Neg_ID_Pt"] * np.cosh(event["Neg_ID_Eta"])
+
+    #you need the dimuon pT, mass, pz
+    pair_pz = event["Pair_ID_Pt"] * np.sinh(event["Pair_ID_Eta"])
+    pair_eta = pai_id_eta(event)
+
+    cos_theta = -1.0 * pair_pz / abs(pair_pz)
+    cos_theta *= 2.0 * (1.0)
