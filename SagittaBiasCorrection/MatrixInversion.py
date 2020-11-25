@@ -34,7 +34,7 @@ def get_dataframe(root_file, start, stop,  variables, selection):
     #calculate what bin events belong in
 
     df = ur.open(root_file)["MuonMomentumCalibrationTree"].pandas.df(branches = variables, entrystart = start, entrystop = stop)
-    df = df.query(selection) #apply the selection
+    if selection: df = df.query(selection) #apply the selection
     return df
 
 def get_cov_matrices(df, global_binning_pos, global_binning_neg, detector_location):
@@ -156,11 +156,24 @@ def inject_bias(df, region, injection_function):
         neg_varx = calc_neg_id_eta
         pos_vary = calc_pos_id_phi
         neg_vary = calc_neg_id_phi
+    elif region == "MS":
+        pos_varx = calc_pos_ms_eta
+        neg_varx = calc_neg_ms_eta
+        pos_vary = calc_pos_ms_phi
+        neg_vary = calc_neg_ms_phi
     else: raise ValueError()
     correction = SagittaBiasCorrection([injection_histogram],  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = region)
     data = convert_df_to_data(df)
     data = correction.calibrate(data)
     df = put_data_back_in_df(data, df)
+    return df
+
+def add_pair_mass(df):
+    from variables import calc_ms_mass
+    data = convert_df_to_data(df)
+    data["Pair_MS_Mass"] = calc_ms_mass.eval(data)
+    df = put_data_back_in_df(data, df)
+    print(df["Pair_MS_Mass"].values)
     return df
 
 def get_histogram_function(inject):
@@ -188,7 +201,9 @@ if __name__ == "__main__":
         injection_histogram_function = get_histogram_function(args.inject)
 
     variables = ["Pos_{}_Eta", "Neg_{}_Eta", "Pos_{}_Phi", "Neg_{}_Phi", "Pos_{}_Pt", "Neg_{}_Pt", "Pair_{}_Mass", "TotalWeight"] #all of the variables needed
-    selection = "abs(Pair_{}_Mass - 91.2) < 20.0".format(args.detector_location)
+    mean_mass = 91.2 # GeV
+    if args.detector_location == "MS": mean_mass = 86.0 # GeV
+    selection = "abs(Pair_{}_Mass - {}) < 20.0".format(args.detector_location, mean_mass)
     variables = [v.format(args.detector_location) for v in variables]
 
     if args.detector_location == "ID": eta_edges = eta_edges_ID
@@ -211,7 +226,17 @@ if __name__ == "__main__":
     global_binning_neg = Binning("Neg_{}_Eta".format(args.detector_location), eta_edges, neg_eta_subbins)
     global_binning_neg.recursively_include_overflow(False)
 
-    df = get_dataframe(args.filename, args.start, args.stop, variables, selection)
+    do_add_pair_mass = False
+    if "v03" in args.filename and "v2" in args.filename and "Pair_MS_Mass" in variables:
+        variables.remove("Pair_MS_Mass")
+        do_add_pair_mass = True
+
+    df = get_dataframe(args.filename, args.start, args.stop, variables, "")
+    if "v03" in args.filename and "v2" in args.filename and do_add_pair_mass:
+        print("adding the pair mass")
+        df = add_pair_mass(df)
+    df = df.query(selection)
+
     print(args.inject)
     if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
         df = inject_bias(df, args.detector_location, injection_histogram_function)

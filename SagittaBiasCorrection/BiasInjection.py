@@ -33,7 +33,6 @@ def get_injection_values_local(eta_edges, phi_edges, detector_location = "ID"):
     return values
 
 def injection_histogram_data(detector_location = "ID"):
-    if detector_location != "ID": raise ValueError()
     bias = "None"
     directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Nov13_ID_Data_Inject_{}/OutputFiles".format(bias)
     subtraction_dir = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Nov13_ID_MC_Inject_{}/OutputFiles".format("None")
