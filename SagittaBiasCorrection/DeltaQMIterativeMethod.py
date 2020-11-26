@@ -112,7 +112,6 @@ def get_deltas_from_job(outfile_location):
     mean_qmass = merge_covariances(opened, "mean_qm")
     mean_q = merge_covariances(opened, "mean_q")
 
-    #put the deltas back into a histogram
     deltas = (mean_qmass / mean_mass) - (mean_q)
 
     binning_phi = opened[0]["phi_binning_pos"]
@@ -122,10 +121,10 @@ def get_deltas_from_job(outfile_location):
     x_bins = binning_eta.bin_edges
     y_bins = binning_phi.bin_edges
 
-    #delta_hist = ROOT.TH2D("delta", "delta", len(x_bins)-1, min(x_bins), max(x_bins), len(y_bins)-1, min(y_bins), max(y_bins))
     from array import array
     delta_hist = ROOT.TH2D("delta", "delta", len(x_bins) - 1, array('d',x_bins), len(y_bins) - 1, array('d',y_bins))
 
+    #put the deltas back into a histogram
     n_xbins = len(xbins) - 1
     n_ybins = len(ybins) - 1
     for i in range(1, n_xbins + 1):

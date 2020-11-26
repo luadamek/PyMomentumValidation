@@ -424,7 +424,7 @@ def neg_ms_pt(event):
 branches = ["Neg_MS_Pt"]
 calc_neg_ms_pt = Calculation(neg_ms_pt, branches)
 
-def weight(event):
+def weight(event, isData):
     return event["TotalWeight"]
 branches = ["TotalWeight"]
 calc_weight = WeightCalculation(weight, branches)
@@ -520,6 +520,58 @@ def leading_id_phi(event):
 branches = ["Pos_ID_Phi", "Neg_ID_Phi"] + ["Pos_ID_Pt", "Neg_ID_Pt"]
 calc_leading_id_phi = Calculation(leading_id_phi, branches)
 
+
+
+import numexpr as ne
+
+
+def get_momentum(event, charge, detector_location):
+    px = event["{Charge}_{Location}_Pt".format(Charge=charge, Location=detector_location)]\
+    * np.cos(event["{Charge}_{Location}_Phi".format(Charge=charge, Location=detector_location)])
+
+    py = event["{Charge}_{Location}_Pt".format(Charge=charge, Location=detector_location)]\
+    * np.sin(event["{Charge}_{Location}_Phi".format(Charge=charge, Location=detector_location)])
+
+    pz = event["{Charge}_{Location}_Pt".format(Charge=charge, Location=detector_location)]\
+    * np.sinh(event["{Charge}_{Location}_Eta".format(Charge=charge, Location=detector_location)])
+
+    return ne.evaluate("sqrt( ((px)**2) + ((py)**2) + ((pz)**2) )")
+
+def get_px(event, charge, detector_location):
+    return event["{Charge}_{Location}_Pt".format(Charge=charge, Location=detector_location)]\
+    * np.cos(event["{Charge}_{Location}_Phi".format(Charge=charge, Location=detector_location)])
+
+def get_py(event, charge, detector_location):
+    return event["{Charge}_{Location}_Pt".format(Charge=charge, Location=detector_location)]\
+    * np.sin(event["{Charge}_{Location}_Phi".format(Charge=charge, Location=detector_location)])
+
+def get_pz(event, charge, detector_location):
+    return event["{Charge}_{Location}_Pt".format(Charge=charge, Location=detector_location)]\
+    * np.sinh(event["{Charge}_{Location}_Eta".format(Charge=charge, Location=detector_location)])
+
+def get_energy(event, charge, detector_location):
+    p = get_momentum(event, charge, detector_location)
+    muon_mass = 105.658/1000.0
+    return ne.evaluate("sqrt( ( (muon_mass) ** 2 ) + ( ( p ) ** 2 ) )")
+
+def pair_id_pt(event):
+    px1 = get_px(event, "Pos", "ID")
+    px2 = get_px(event, "Neg", "ID")
+
+    py1 = get_py(event, "Pos", "ID")
+    py2 = get_py(event, "Neg", "ID")
+
+    return ne.evaluate("sqrt( (px1 + px2)**2 + (py1 + py2)**2)")
+
+def pair_id_eta(event):
+    pz1 = get_pz(event, "Pos", "ID")
+    pz2 = get_pz(event, "Neg", "ID")
+    pz = pz1 + pz2
+    return np.arccosh(pz/pair_id_pt(event))
+
+def get_four_vector(event, charge, detector_location):
+    return get_energy(event, charge, detector_location), get_px(event, charge, detector_location), get_py(event, charge, detector_location), get_pz(event, charge, detector_location)
+
 '''
 double Getcostheta(TLorentzVector *lv,TLorentzVector *lv1,TLorentzVector *lv2,int qLead){ 
   //  TLorentzVector *lv=new TLorentzVector();
@@ -536,41 +588,32 @@ double Getcostheta(TLorentzVector *lv,TLorentzVector *lv1,TLorentzVector *lv2,in
   return costheta;
 '''
 
-import numexpr as ne
-def pair_id_pt(event):
-    px1 = event["Pos_ID_Pt"] * np.cos(event["Pos_ID_Phi"])
-    px2 = event["Neg_ID_Pt"] * np.cos(event["Neg_ID_Phi"])
+def get_term(e, pz, q):
+    return (1.0 / (2.0**0.5)) * (e + (q * pz))
 
-    py1 = event["Pos_ID_Pt"] * np.sin(event["Pos_ID_Phi"])
-    py2 = event["Neg_ID_Pt"] * np.sin(event["Neg_ID_Phi"])
+def cos_theta_star(event, detector_location):
+    e1, px1, py1, pz1 = get_four_vector(event, "Pos", detector_location)
+    e2, px2, py2, pz2 = get_four_vector(event, "Neg", detector_location)
 
-    return ne.evaluate("sqrt( (px1 + px2)**2 + (py1 + py2)**2)")
-
-def pair_id_eta(event):
-    pz1 = event["Pos_ID_Pt"] * np.sinh(event["Pos_ID_Eta"])
-    pz2 = event["Neg_ID_Pt"] * np.sinh(event["Neg_ID_Eta"])
+    mass_sq = ne.evaluate("( (e1 + e2) ** 2) - ( (px1 + px2)**2) - ( (py1 + py2) ** 2) - ( (pz1 + pz2) ** 2) ")
+    mass = np.sign(mass_sq) * np.sqrt(np.sign(mass_sq) * mass_sq)
+    pt = ne.evaluate("sqrt( ((px1 + px2) **2) + ((py1 + py2)**2) )")
 
     pz = pz1 + pz2
-
-    return np.arccosh(pz/pair_id_pt(event))
-
-def get_momentum(event, charge, detector_location):
-    pass
-
-def get_energy(event, charge, detector_location):
-    return event["{}_{}_Pt"]
-
-def getP(event, charge, detector_location):
-    #1/sqrt(2)*(lv->E() + q * lv->Pz())
-    pass
+    costheta = -1.0 * (pz)/abs(pz)
+    p_pos = (1.0 / (2.0**0.5)) * (e1 + pz1)
+    p_neg = (1.0 / (2.0**0.5)) * (e1 - pz1)
+    costheta *= 2.0 * (get_term(e1, pz1, 1.0) * get_term(e2, pz2, -1.0) - get_term(e1, pz1, -1.0) * get_term(e2, pz2, 1.0)) / ((mass ** 2) + (pt ** 2))
+    return costheta
 
 def cos_theta_star_id(event):
-    p_pos = event["Pos_ID_Pt"] * np.cosh(event["Pos_ID_Eta"])
-    p_neg = event["Neg_ID_Pt"] * np.cosh(event["Neg_ID_Eta"])
+    return cos_theta_star(event, "ID")
+calc_cos_theta_star_id = Calculation(cos_theta_star_id, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"])
 
-    #you need the dimuon pT, mass, pz
-    pair_pz = event["Pair_ID_Pt"] * np.sinh(event["Pair_ID_Eta"])
-    pair_eta = pai_id_eta(event)
+def cos_theta_star_cb(event):
+    return cos_theta_star(event, "CB")
+calc_cos_theta_star_cb = Calculation(cos_theta_star_id, ["Pos_CB_Pt", "Neg_CB_Pt", "Pos_CB_Eta", "Neg_CB_Eta", "Pos_CB_Phi", "Neg_CB_Phi"])
 
-    cos_theta = -1.0 * pair_pz / abs(pair_pz)
-    cos_theta *= 2.0 * (1.0)
+def cos_theta_star_ms(event):
+    return cos_theta_star(event, "MS")
+calc_cos_theta_star_ms = Calculation(cos_theta_star_ms, ["Pos_MS_Pt", "Neg_MS_Pt", "Pos_MS_Eta", "Neg_MS_Eta", "Pos_MS_Phi", "Neg_MS_Phi"])

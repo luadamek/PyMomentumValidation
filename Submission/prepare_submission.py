@@ -1,7 +1,8 @@
 import utils
 import os
 from histogram_filler import HistogramFiller
-from variables import calc_weight, calc_pos_id_eta, calc_pos_id_phi, calc_neg_id_eta, calc_neg_id_phi
+from variables import calc_weight, calc_pos_id_eta, calc_pos_id_phi, calc_neg_id_eta, calc_neg_id_phi,\
+calc_pos_ms_eta, calc_pos_ms_phi, calc_neg_ms_eta, calc_neg_ms_phi
 import ROOT
 import pickle
 import argparse
@@ -46,10 +47,16 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
                 if xvar_name == "ID_Eta":
                     xvar_pos = calc_pos_id_eta
                     xvar_neg = calc_neg_id_eta
+                elif xvar_name == "MS_Eta":
+                    xvar_pos = calc_pos_ms_eta
+                    xvar_neg = calc_neg_ms_eta
                 else: raise ValueError()
                 if yvar_name == "ID_Phi":
                     yvar_pos = calc_pos_id_phi
                     yvar_neg = calc_neg_id_phi
+                elif yvar_name == "MS_Phi":
+                    yvar_pos = calc_pos_ms_phi
+                    yvar_neg = calc_neg_ms_phi
                 else: raise ValueError()
                 calibrations.append(SagittaBiasCorrection([deltas], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = detector_location))
             calibrations_file = os.path.join(slurm_directory, "calibrations.pkl")

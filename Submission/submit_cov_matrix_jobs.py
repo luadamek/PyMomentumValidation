@@ -61,7 +61,7 @@ for root_file in files:
         if inject != "": command += " --inject {}".format(inject)
         these_commands = commands + [command]
 
-        job = Job(this_jobname, this_jobdir, these_commands, time = "00:30:00", memory="15000M")
+        job = Job(this_jobname, this_jobdir, these_commands, time = "00:20:00", memory="15000M")
         jobset.add_job(job)
         job_counter += 1
 

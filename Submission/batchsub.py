@@ -101,6 +101,7 @@ class Job:
 
     def submit(self, updates={}):
         self.check_jobdir_existence()
+        if self.check_completion(): return True
         if self.check_if_running(): return False
         for key in updates:
             setattr(self, key, updates[key])

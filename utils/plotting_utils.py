@@ -19,7 +19,7 @@ def draw_2d_histogram(histogram, description = "", normalize = True, output_loca
     histogram.GetZaxis().SetTitleOffset(1.2 * histogram.GetZaxis().GetTitleOffset())
     canvas.SetBottomMargin(0.25)
     canvas.Draw()
-    #ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
+    ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
     canvas.Print(os.path.join(output_location, canvas.GetName() + ".pdf"))
 
 def draw_text(x, y, text, color=1, size=0.05):
@@ -41,10 +41,31 @@ def draw_text(x, y, text, color=1, size=0.05):
         See https://ROOT.cern.ch/doc/master/classTLatex.html
     '''
     l = ROOT.TLatex()
-    l.SetTextSize(size)
+    l.SetTextSize(22)
     l.SetNDC()
     l.SetTextColor(color)
     l.DrawLatex(x, y, text)
+
+def ATLASLabel(x, y, text=None, color=1, size = None):
+    """Draw the ATLAS Label.
+    Parameters
+    ----------
+    x : float
+        x position in NDC coordinates
+    y : float
+        y position in NDC coordinates
+    text : string, optional
+        Text displayed next to label (the default is None)
+    color : TColor, optional
+        Text colour (the default is 1, i.e. black).
+        See https://ROOT.cern.ch/doc/master/classTColor.html
+    """
+    l = ROOT.TLatex()
+    l.SetNDC()
+    l.SetTextColor(color)
+    if size != None:
+        l.SetTextSize(size)
+    l.DrawLatex(x, y, r"#bf{#it{ATLAS}} " + text)
 
 def hist_to_tgrapherrors(hist):
     xs = []
@@ -102,7 +123,7 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
         stack.Add(mc_histograms[key])
 
     maximum = max(summed.GetMaximum() * 1.4, data_histogram.GetMaximum() * 1.2)
-    minimum = min(summed.GetMinimum() /1.2, data_histogram.GetMinimum()/1.2)
+    minimum = min(summed.GetMinimum() /1.2, data_histogram.GetMinimum() / 1.2)
     stack.SetMaximum(maximum)
     stack.SetMinimum(min(0.001,minimum))
 
@@ -134,7 +155,7 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
 
     canvas.cd()
     top.Draw()
-    top.SetTopMargin(top.GetTopMargin()*1.1)
+    top.SetTopMargin(0.1)
 
     canvas.cd()
     bottom.Draw()
@@ -165,23 +186,28 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
     if logy:
         stack.SetMinimum(smallest_positive / 2.0)
     stack.Draw("HIST")
-    x_size = stack.GetXaxis().GetTitleSize() * 1.6
-    stack.GetYaxis().SetTitleSize(x_size)
-    stack.GetXaxis().SetTitleSize(x_size)
-    stack.GetYaxis().SetTitleOffset(stack.GetYaxis().GetTitleOffset() * 1.3)
-    stack.GetXaxis().SetTitleOffset(stack.GetXaxis().GetTitleOffset() * 1.6)
+    stack.GetYaxis().SetTitleOffset(stack.GetYaxis().GetTitleOffset() * 1.0)
+    stack.GetXaxis().SetTitleOffset(stack.GetXaxis().GetTitleOffset() * 1.4)
+    text_size = 60
+    label_size = 45
+    stack.GetYaxis().SetTitleSize(text_size)
+    stack.GetXaxis().SetTitleSize(text_size)
+    stack.GetYaxis().SetLabelSize(label_size)
+    stack.GetXaxis().SetLabelSize(label_size)
     bin_width = stack.GetStack().Last().GetBinLowEdge(3) - stack.GetStack().Last().GetBinLowEdge(2)
     units = x_axis_label.split(" ")[-1].replace("[","").replace("]","") #get the units of the x-axis
     stack.GetYaxis().SetTitle("{} / {:.2f} {}".format(y_axis_label, bin_width, units))
     if logy: top.SetLogy()
 
-    scale_ratio = (top.GetWh()*top.GetAbsHNDC())/(bottom.GetWh() * bottom.GetAbsHNDC())
-    ratio_hist_for_axes.GetXaxis().SetLabelSize(stack.GetXaxis().GetLabelSize()*(scale_ratio))
-    ratio_hist_for_axes.GetYaxis().SetLabelSize(stack.GetYaxis().GetLabelSize()*(scale_ratio))
-    ratio_hist_for_axes.GetXaxis().SetTitleSize(stack.GetXaxis().GetTitleSize()*(scale_ratio))
-    ratio_hist_for_axes.GetYaxis().SetTitleSize(stack.GetYaxis().GetTitleSize()*(scale_ratio))
-    ratio_hist_for_axes.GetXaxis().SetTitleOffset(stack.GetXaxis().GetTitleOffset()/(0.6*scale_ratio))
-    ratio_hist_for_axes.GetYaxis().SetTitleOffset(stack.GetYaxis().GetTitleOffset()/(scale_ratio))
+    x_factor = top.GetAbsWNDC()/top.GetAbsWNDC();
+    y_factor = top.GetAbsHNDC()/top.GetAbsHNDC();
+
+    ratio_hist_for_axes.GetXaxis().SetLabelSize(label_size)
+    ratio_hist_for_axes.GetYaxis().SetLabelSize(label_size)
+    ratio_hist_for_axes.GetXaxis().SetTitleSize(text_size)
+    ratio_hist_for_axes.GetYaxis().SetTitleSize(text_size)
+    ratio_hist_for_axes.GetXaxis().SetTitleOffset(y_factor * stack.GetXaxis().GetTitleOffset() / x_factor)
+    ratio_hist_for_axes.GetYaxis().SetTitleOffset(x_factor * stack.GetYaxis().GetTitleOffset() / y_factor)
     ratio_hist_for_axes.SetMaximum(ratio_max)
     ratio_hist_for_axes.SetMinimum(ratio_min)
 
@@ -199,7 +225,8 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
     data_plot.SetLineWidth(data_plot.GetLineWidth()+2)
     legend.AddEntry(data_plot, legend_labels[datakey], "LP")
     legend.Draw()
-    atlas_label(0.15, 0.90, "Internal")
+    ATLASLabel(0.25, 0.77, "Internal", size = text_size)
+    legend.SetTextSize(40)
 
     bottom.cd()
     ##Draw a set of solid and dotted lines on the ratio plot to guide the reader's eyes
@@ -259,8 +286,8 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
     if colours is not None: [to_plot[key].SetMarkerColor(colours[key]) for key in to_plot]
     if styles is not None: [to_plot[key].SetMarkerStyle(styles[key]) for key in to_plot]
     for key in to_plot: to_plot[key].SetMarkerSize(to_plot[key].GetMarkerSize()*1.5)
-    for key in to_plot: to_plot[key].GetXaxis().SetTitleSize(to_plot[key].GetXaxis().GetTitleSize()*2.0)
-    for key in to_plot: to_plot[key].GetYaxis().SetTitleSize(to_plot[key].GetYaxis().GetTitleSize()*2.0)
+    for key in to_plot: to_plot[key].GetXaxis().SetTitleSize(22)
+    for key in to_plot: to_plot[key].GetYaxis().SetTitleSize(22)
 
     legend = ROOT.TLegend(*legend_coordinates)
     if not legend_labels is None:
@@ -298,8 +325,7 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
         stack.SetMinimum(minimum)
         if i == 0: stack.Draw("AP")
         else: stack.Draw("P SAME")
-       
-
+    ATLASLabel(0.25, 0.85, "Internal", size = 22)
     legend.Draw("SAME")
 
     if logy: canvas.SetLogy()

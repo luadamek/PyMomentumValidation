@@ -34,8 +34,8 @@ def get_injection_values_local(eta_edges, phi_edges, detector_location = "ID"):
 
 def injection_histogram_data(detector_location = "ID"):
     bias = "None"
-    directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Nov13_ID_Data_Inject_{}/OutputFiles".format(bias)
-    subtraction_dir = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Nov13_ID_MC_Inject_{}/OutputFiles".format("None")
+    directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Nov24_{}_Data_Inject_{}_v03_v2/OutputFiles".format(detector_location,bias)
+    subtraction_dir = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Nov24_{}_MC_Inject_{}_v03_v2/OutputFiles".format(detector_location,bias)
     from MatrixInversion import get_deltas_from_job
     sagitta_hist, _, __ = get_deltas_from_job(directory)
     sagitta_hist_subtraction, _, __ = get_deltas_from_job(subtraction_dir)
