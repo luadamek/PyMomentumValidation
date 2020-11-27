@@ -14,8 +14,13 @@ When working with python it is common to work with virtual environments, informa
 ssh USER@graham.computecanada.ca
 ```
 
+## Connecting to LXPlus
+```
+ssh USER@lxplus.cern.ch
+```
+
 ## Setup
-We tend to work inside of these things called "singularity" containers. These emulate operating systems, such as centos7 or slc6. Currently ATLAS is transitioning from slc6 to centos7, and compute canada requires you to work inside of a container when using ATLAS software. In order to setup ATLAS software, you need to copy the following lines into your .bashrc file.
+Sometimes on systems that are not LXPlus, you need to setup the commands that will allow you to work with ATLAS software. We tend to work inside of these things called singularity containers. These emulate operating systems, such as centos7 or slc6. Currently ATLAS is transitioning from slc6 to centos7, and compute canada requires you to work inside of a container when using ATLAS software. In order to setup ATLAS software, you need to copy the following lines into your ~/.bashrc file.
 
 ```
 if [ -d /project/atlas/Tier3/ ]; then
