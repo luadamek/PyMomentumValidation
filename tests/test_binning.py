@@ -1,10 +1,16 @@
-from ConstraintModelMakingUtils import Binning
+from binnings import Binning
 import utils
 import unittest
 
-retriever = utils.get_v24_retriever()
-fs = retriever.get_root_files(["_ggH125_"])
-df = retriever.get_dataframe(fs, ["lepton_eta", "lepton_pt", "lepton_pt_truth_born"], handle_vector_branches=False)
+#retriever = utils.get_v24_retriever()
+#fs = retriever.get_root_files(["_ggH125_"])
+#df = retriever.get_dataframe(fs, ["Pos_ID_Eta", "Pos_ID_Pt", "Pos_TruthPt"], handle_vector_branches=False)
+files = utils.get_files("v03_v2")
+f = files["MC"][0]
+#(root_file, start, stop,  variables, selection)
+df = utils.get_dataframe(f, 0, 200, ["Pos_ID_Eta", "Pos_ID_Pt", "Pos_TruthPt"], "") #read the first 200 events
+
+
 pt_binning1 = [8.0, 10.0, 20.0, 100.0]
 pt_binning2 = [2.0, 5.0, 80.0, 150.0]
 eta_binning = [0.5, 1.0, 2.0, 2.7]
@@ -14,12 +20,12 @@ import pickle as pkl
 
 subbins = []
 for etal, eteah in zip(eta_binning[:-1], eta_binning[1:]):
-    binning = Binning("lepton_pt", pt_binning1, None)
+    binning = Binning("Pos_ID_Pt", pt_binning1, None)
     subbins.append(binning)
-subbins[-1] = Binning("lepton_pt", pt_binning2, None)
-total_binning = Binning("abs(lepton_eta)", eta_binning, subbins)
+subbins[-1] = Binning("Pos_ID_Pt", pt_binning2, None)
+total_binning = Binning("abs(Pos_ID_Eta)", eta_binning, subbins)
 
-triple_nested_binning = Binning("lepton_pt_truth_born", [0.0, 50.0, 150.0, 250.0], [total_binning, total_binning, binning])
+triple_nested_binning = Binning("Pos_TruthPt", [0.0, 50.0, 150.0, 250.0], [total_binning, total_binning, binning])
 
 class TestBinning(unittest.TestCase):
     def test_nested_binning(self):
@@ -86,7 +92,7 @@ class TestBinning(unittest.TestCase):
     def test_repr(self):
         total_binning.include_overflow = True
         bindex = total_binning.get_global_bindex(df)
-        total_binning.repr_override = "|lepton_eta|"
+        total_binning.repr_override = "|Pos_ID_Eta|"
 
         for bind in range(0, total_binning.get_global_nbins()):
              representation = total_binning.represent_global(bind)

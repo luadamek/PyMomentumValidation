@@ -3,6 +3,7 @@ import ROOT
 import glob
 from filelists import *
 import numexpr as ne
+import uproot as ur
 
 #def f1(a, b) :
 #a, b = 2 * a, 3 * b
@@ -10,6 +11,12 @@ import numexpr as ne
 #local_dict={'c' : np.arange(30, 40)})
 #def calc_mass(pts, etas, phis, masses=0.0):
 #    
+
+def get_dataframe(root_file, start, stop,  variables, selection):
+    #calculate what bin events belong in
+    df = ur.open(root_file)["MuonMomentumCalibrationTree"].pandas.df(branches = variables, entrystart = start, entrystop = stop)
+    if selection: df = df.query(selection) #apply the selection
+    return df
 
 import numpy as np
 from numpy import array, average, dot

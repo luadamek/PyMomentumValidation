@@ -30,12 +30,7 @@ eta_edges_else = np.linspace(-2.7, +2.7 , 27)
 
 phi_edges = np.linspace(-1.0 * math.pi, +1.0 * math.pi, 25)
 
-def get_dataframe(root_file, start, stop,  variables, selection):
-    #calculate what bin events belong in
-
-    df = ur.open(root_file)["MuonMomentumCalibrationTree"].pandas.df(branches = variables, entrystart = start, entrystop = stop)
-    if selection: df = df.query(selection) #apply the selection
-    return df
+from utils import get_dataframe
 
 def get_cov_matrices(df, global_binning_pos, global_binning_neg, detector_location):
     df["pos_bindex"] = global_binning_pos.get_global_bindex(df)
