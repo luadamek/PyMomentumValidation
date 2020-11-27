@@ -1,3 +1,30 @@
+import numpy as np
+from BiasCorrection import SagittaBiasCorrection
+from BiasInjection import injection_histogram
+import math
+
+from variables import \
+                      calc_pos_id_pt, calc_neg_id_pt,\
+                      calc_pos_ms_pt, calc_neg_ms_pt,\
+                      calc_pos_cb_pt, calc_neg_cb_pt,\
+                      calc_pos_id_eta, calc_neg_id_eta,\
+                      calc_pos_ms_eta, calc_neg_ms_eta,\
+                      calc_pos_cb_eta, calc_neg_cb_eta,\
+                      calc_pos_id_phi, calc_neg_id_phi,\
+                      calc_pos_ms_phi, calc_neg_ms_phi,\
+                      calc_pos_cb_phi, calc_neg_cb_phi
+
+from BiasCorrection import SagittaBiasCorrection
+
+eta_edges_ID = np.linspace(-2.5, +2.5 , 25)
+#eta_edges_ID[0] = -2.65
+#eta_edges_ID[-1] = 2.65
+
+eta_edges_else = np.linspace(-2.7, +2.7 , 27)
+#eta_edges_else[0] = -2.85
+#eta_edges_else[-1] = 2.85
+
+phi_edges = np.linspace(-1.0 * math.pi, +1.0 * math.pi, 25)
 def convert_df_to_data(df):
     data = {}
     for c in df.columns:
@@ -10,8 +37,12 @@ def put_data_back_in_df(data, df):
         df[c] = data[c]
     return df
 
+def merge_results(list_of_covs,key ):
+    total = sum([el["nentries"] for el in list_of_covs])
+    total_cov = sum([el["nentries"] * el[key] for el in list_of_covs])
+    return total_cov/total
+
 def inject_bias(df, region, injection_function):
-    from BiasInjection import injection_histogram
     injection_histogram = injection_function(region)
     if region == "ID":
         pos_varx = calc_pos_id_eta
