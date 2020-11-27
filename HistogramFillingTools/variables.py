@@ -424,7 +424,7 @@ def neg_ms_pt(event):
 branches = ["Neg_MS_Pt"]
 calc_neg_ms_pt = Calculation(neg_ms_pt, branches)
 
-def weight(event, isData):
+def weight(event):
     return event["TotalWeight"]
 branches = ["TotalWeight"]
 calc_weight = WeightCalculation(weight, branches)
