@@ -34,7 +34,7 @@ Now it should be possible for you to setup ATLAS software. Start by working insi
 setupATLAS -c centos7+batch
 ```
 
-If setting up ALTAS software did not work for you, try logging into another login node:
+For ComputeCanada, if setting up ALTAS software did not work for you, try logging into another login node:
 ```
 ssh USER@gra-login>>NUM<<.computecanada.ca
 ```
@@ -55,19 +55,14 @@ pip install .
 cd ..
 pip install uproot
 ```
-Creating the venv with lcg doesn't work for some reason if you're on a worker node. Make sure you're on the login node. 
-
-If you cannot access the above files, you can email lukas.adamek@mail.utoronto.ca, and he should look at this documentation and type the following lines into his terminal:
-```
-setfacl -d -m u:YOURUSERNAME:rwx /home/ladamek/projects/def-psavard/THEDIRECTORY
-```
+If you are working on ComputeCanada, creating the venv with lcg doesn't work for some reason if you're on a worker node. Make sure you're on the login node. 
 
 ## Finally, run the setup script
 ```
 source ./setup.sh
 ```
 
-## Login
+## Login on ComputeCanada
 When you normally login, you don't need to install all of the software again. There is a setup script provided that should restore your environment exactly as it was after installing everything. When working on graham, we don't work on the login node, but rather request a specific computing node with the salloc command.
 ```
 ssh USER@graham.computecanada.ca
@@ -122,18 +117,18 @@ A plotting job is defined in a script such as macros/fill_script.py, which must 
 All selections and variables to be plotted are defined as instances of the class "Caclulation". To define a new selection for tracks in a plot, you could write the following function:
 ```
 from calculation import Calculation
-def TightIso(trk):
-    return trk["trk_nearest_dR_EM"] > 0.55
-sel_TightIso = Calculation(TightIso, ["trk_nearest_dR_EM"])
+def TightIso(event):
+    return event["event_nearest_dR_EM"] > 0.55
+sel_TightIso = Calculation(TightIso, ["event_nearest_dR_EM"])
 ```
-The initialization of Calculation takes a function that calculates the selection (trk_nearest_dR_EM > 0.55), and a list of branches needed to perform the calculation (trk_nearest_dR_EM).
+The initialization of Calculation takes a function that calculates the selection (event_nearest_dR_EM > 0.55), and a list of branches needed to perform the calculation (event_nearest_dR_EM).
 
 Similarly, one can create a function that calculates E/P
 ```
 from calculation import Calculation
-def EOP(trk):
-    return (trk["trk_ClusterEnergy_EM_200"] + trk["trk_ClusterEnergy_HAD_200"])/trk["trk_p"]
-branches = ["trk_ClusterEnergy_EM_200", "trk_ClusterEnergy_HAD_200", "trk_p"]
+def EOP(event):
+    return (event["event_ClusterEnergy_EM_200"] + event["event_ClusterEnergy_HAD_200"])/event["event_p"]
+branches = ["event_ClusterEnergy_EM_200", "event_ClusterEnergy_HAD_200", "event_p"]
 calc_EOP = Calculation(EOP, branches)
 ```
 
@@ -145,7 +140,7 @@ def fill_histograms(hist_filler, outputRootFileName):
     #count the number of tracks in each channel
     histogram_name = "EOP"
     selections = [sel_TightIso]
-    trkCountHist = hist_filler.book_histogram_fill(histogram_name,\
+    eventCountHist = hist_filler.book_histogram_fill(histogram_name,\
                                                          calc_EOP,\
                                                          selections = selections,\
                                                          bins = 100,\
@@ -160,15 +155,14 @@ def fill_histograms(hist_filler, outputRootFileName):
     outFile.Close()
 ```
 
-The following lines would prepare a batch job for submission. This job would use 100 condor jobs, and run over a test set of files. The condor jobqueue corresponds to the --queue_flavour flag and can be set to espresso (20mins), longlunch (2hr), workday (8hr), etc. Notice that you have to define the "file flavour". These are defined in utils/utils.py and include a list of files separated by channels. Histograms will be filled for each channel independently by the histogram filling script. "test" includes channels for "PythiaJetJet", "LowMuData", and "SinglePions".
-```
-python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 50 --job_name test --queue_flavour 00\:10:\00 --file_flavour v03 --filling_script Macros\/filling_script.py 
-```
+The following lines would prepare a batch job for submission. This job would use 200 slurm jobs, and run over v03_v2 files. The set of files that this corresponds to is visible in utils/filelists.py. The queue flavour describes the amount of time that the job is set to run for, and it is 10 minutes in the examples below.
+
 ## Test one of the jobs locally
 ```
-python test_in_dir.py
+python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 200 --job_name Nov26_nocalib --queue_flavour 00\:10:\00 --file_flavour v03_v2 --filling_script Macros\/filling_script.py --test
 ```
 
-## Submit all of the batch jobs
+## Submit all of the jobs to the batch system
 ```
+python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 200 --job_name Nov26_nocalib --queue_flavour 00\:10:\00 --file_flavour v03_v2 --filling_script Macros\/filling_script.py
 ```
