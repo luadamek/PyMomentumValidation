@@ -16,3 +16,7 @@ def neg_leading_id(event):
     return np.logical_not(pos_leading_id(event))
 branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
 sel_neg_leading_id = Calculation(neg_leading_id, branches)
+
+def check_safe_event(event, charge, region):
+     string = "{}_{}_Eta".format(charge, region)
+     return (event[string] < 5.0) & (event[string] > -5.0)

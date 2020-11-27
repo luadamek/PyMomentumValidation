@@ -571,7 +571,7 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                              xlabel ='M_{#mu#mu}^{MS} [GeV]',\
                                              ylabel = 'Number Events')
 
-        histogram_name_base = "MassSpectrumJPsi_ID_{identified}"
+        histogram_name_base = "MassSpectrumJPSI_ID_{identified}"
         histogram_name = histogram_name_base.format(identified = name)
         hist_filler.book_histogram_fill(histogram_name,\
                                              calc_id_mass,\
@@ -582,7 +582,7 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                              xlabel ='M_{#mu#mu}^{ID} [GeV]',\
                                              ylabel = 'Number Events')
 
-        histogram_name_base = "MassSpectrumJPsi_MS_{identified}"
+        histogram_name_base = "MassSpectrumJPSI_MS_{identified}"
         histogram_name = histogram_name_base.format(identified = name)
         hist_filler.book_histogram_fill(histogram_name,\
                                              calc_ms_mass,\
@@ -599,9 +599,9 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                              calc_cos_theta_star_id,\
                                              selections = sel + [mass_selZ_func_ID],\
                                              bins = 100,\
-                                             range_low = 91.2-10.0,\
-                                             range_high = 91.2+10.0,\
-                                             xlabel ='M_{#mu#mu}^{ID} [GeV]',\
+                                             range_low = -1.0,\
+                                             range_high = 1.0,\
+                                             xlabel ='cos#theta*',\
                                              ylabel = 'Number Events')
 
         histogram_name_base = "CosThetaStar_MS_{identified}"
@@ -610,9 +610,9 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                              calc_cos_theta_star_ms,\
                                              selections = sel + [mass_selZ_func_MS],\
                                              bins = 100,\
-                                             range_low = 91.2-10.0,\
-                                             range_high = 91.2+10.0,\
-                                             xlabel ='M_{#mu#mu}^{MS} [GeV]',\
+                                             range_low = -1.0,\
+                                             range_high = 1.0,\
+                                             xlabel ='cos#theta*',\
                                              ylabel = 'Number Events')
 
         histogram_name_base = "CosThetaStarJPSI_ID_{identified}"

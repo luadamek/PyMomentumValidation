@@ -79,7 +79,7 @@ if not os.path.exists(output_location): os.makedirs(output_location)
 
 sagitta_histograms = {}
 for region in ["MS", "ID"]:
-    for bias in ["None", "GlobalPlusLocal", "Global" , "Local"]:#, "Null"]:
+    for bias in ["Data", "None", "GlobalPlusLocal", "Global" , "Local"]:#, "Null"]:
             #get the injection histogram for scale
             directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Nov24_{}_MC_Inject_{}_v03_v2/OutputFiles".format(region,bias)
             subtraction_dir = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Nov24_{}_MC_Inject_{}_v03_v2/OutputFiles".format(region,"None")

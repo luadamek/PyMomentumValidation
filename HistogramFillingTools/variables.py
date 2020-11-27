@@ -2,6 +2,17 @@ from calculation import Calculation, CalculationDataMC, WeightCalculation
 import numpy as np
 from math import pi
 import numexpr as ne
+from selections import check_safe_event
+
+def get_selected_event(event, selection):
+    data = {}
+    if hasattr(event, "dtype"):
+        for key in event.dtype.names:
+            data[key] = event[key][selection]
+    else:
+        for key in event:
+            data[key] = event[key][selection]
+    return data
 
 '''
 ******************************************************************************
@@ -356,26 +367,32 @@ branches = ["Pair_ID_Mass"]
 calc_id_mass = Calculation(id_mass, branches)
 
 def ms_mass(event):
-    #return event["Pair_MS_Mass"]
-    pos_pt = event["Pos_MS_Pt"]
-    neg_pt = event["Neg_MS_Pt"]
+    safe =  check_safe_event(event,"Pos", "MS") & check_safe_event(event,"Neg", "MS")
+    to_return = np.zeros(len(event["Pos_MS_Pt"])) - 999.0
+    safe_event = get_selected_event(event, safe)
 
-    pos_px = pos_pt * np.cos(event["Pos_MS_Phi"])
-    neg_px = neg_pt * np.cos(event["Neg_MS_Phi"])
+    #return safe_event["Pair_MS_Mass"]
+    pos_pt = safe_event["Pos_MS_Pt"]
+    neg_pt = safe_event["Neg_MS_Pt"]
 
-    pos_py = pos_pt * np.sin(event["Pos_MS_Phi"])
-    neg_py = neg_pt * np.sin(event["Neg_MS_Phi"])
+    pos_px = pos_pt * np.cos(safe_event["Pos_MS_Phi"])
+    neg_px = neg_pt * np.cos(safe_event["Neg_MS_Phi"])
 
-    pos_pz = pos_pt * np.sinh(event["Pos_MS_Eta"])
-    neg_pz = neg_pt * np.sinh(event["Neg_MS_Eta"])
+    pos_py = pos_pt * np.sin(safe_event["Pos_MS_Phi"])
+    neg_py = neg_pt * np.sin(safe_event["Neg_MS_Phi"])
 
-    dimuon_pt_str = "sqrt( (pos_px**2) + (neg_px**2))"
+    pos_pz = pos_pt * np.sinh(safe_event["Pos_MS_Eta"])
+    neg_pz = neg_pt * np.sinh(safe_event["Neg_MS_Eta"])
+
     muon_mass = 105.658/1000.0
     pos_e_str = "sqrt( (muon_mass**2) + (pos_px ** 2) + (pos_py ** 2) + (pos_pz ** 2))"
     neg_e_str = "sqrt( (muon_mass**2) + (neg_px ** 2) + (neg_py ** 2) + (neg_pz ** 2))"
 
     mass_sqrd = ne.evaluate("( ( {p_pos} + {p_neg}) ** 2 ) - ( (pos_px + neg_px) ** 2 ) - ( (pos_py + neg_py) ** 2 ) - ( (pos_pz + neg_pz) ** 2 )".format(p_pos=pos_e_str, p_neg=neg_e_str))
-    return np.sign(mass_sqrd) * np.sqrt(mass_sqrd * np.sign(mass_sqrd))
+    to_return[safe] = np.sign(mass_sqrd) * np.sqrt(mass_sqrd * np.sign(mass_sqrd))
+
+    return to_return
+
 branches = ["Pos_MS_Pt", "Neg_MS_Pt", "Pos_MS_Phi", "Neg_MS_Phi", "Pos_MS_Eta", "Neg_MS_Eta"]
 calc_ms_mass = Calculation(ms_mass, branches)
 
@@ -520,11 +537,7 @@ def leading_id_phi(event):
 branches = ["Pos_ID_Phi", "Neg_ID_Phi"] + ["Pos_ID_Pt", "Neg_ID_Pt"]
 calc_leading_id_phi = Calculation(leading_id_phi, branches)
 
-
-
 import numexpr as ne
-
-
 def get_momentum(event, charge, detector_location):
     px = event["{Charge}_{Location}_Pt".format(Charge=charge, Location=detector_location)]\
     * np.cos(event["{Charge}_{Location}_Phi".format(Charge=charge, Location=detector_location)])
@@ -592,8 +605,12 @@ def get_term(e, pz, q):
     return (1.0 / (2.0**0.5)) * (e + (q * pz))
 
 def cos_theta_star(event, detector_location):
-    e1, px1, py1, pz1 = get_four_vector(event, "Pos", detector_location)
-    e2, px2, py2, pz2 = get_four_vector(event, "Neg", detector_location)
+    safe =  check_safe_event(event,"Pos", detector_location) & check_safe_event(event,"Neg", detector_location)
+    to_return = np.zeros(len(event["Pos_{}_Pt".format(detector_location)])) - 999.0
+    safe_event = get_selected_event(event, safe)
+
+    e1, px1, py1, pz1 = get_four_vector(safe_event, "Pos", detector_location)
+    e2, px2, py2, pz2 = get_four_vector(safe_event, "Neg", detector_location)
 
     mass_sq = ne.evaluate("( (e1 + e2) ** 2) - ( (px1 + px2)**2) - ( (py1 + py2) ** 2) - ( (pz1 + pz2) ** 2) ")
     mass = np.sign(mass_sq) * np.sqrt(np.sign(mass_sq) * mass_sq)
@@ -604,7 +621,9 @@ def cos_theta_star(event, detector_location):
     p_pos = (1.0 / (2.0**0.5)) * (e1 + pz1)
     p_neg = (1.0 / (2.0**0.5)) * (e1 - pz1)
     costheta *= 2.0 * (get_term(e1, pz1, 1.0) * get_term(e2, pz2, -1.0) - get_term(e1, pz1, -1.0) * get_term(e2, pz2, 1.0)) / ((mass ** 2) + (pt ** 2))
-    return costheta
+
+    to_return[safe] = costheta
+    return to_return
 
 def cos_theta_star_id(event):
     return cos_theta_star(event, "ID")
