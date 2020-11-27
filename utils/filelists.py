@@ -2,9 +2,10 @@
 import os
 if os.getenv("USER") == "ladamek":
 
-    if "gra" in os.getenv("HOSTNAME"): dir_v03="/project/def-psavard/ladamek/ForLukas/muonptcalib_v03_combined/merged/"
+    if "gra" in os.getenv("HOSTNAME"): dir_v03="/project/def-psavard/ladamek/ForLukas/muonptcalib_v03_combined/"
     if "gra" in os.getenv("HOSTNAME"): dir_v03_v2="/project/def-psavard/ladamek/ForLukas/muonptcalib_v03_combined/v2/"
-    if "cedar" in os.getenv("HOSTNAME"): dir_v03="/project/def-psavard/ForLukas/muonptcalib_v03_combined/merged/"
+    if "cedar" in os.getenv("HOSTNAME") or "cdr" in os.getenv("HOSTNAME"): dir_v03="/project/def-psavard/ForLukas/muonptcalib_v03_combined/"
+    if "cedar" in os.getenv("HOSTNAME") or "cdr" in os.getenv("HOSTNAME"): dir_v03_v2="/project/def-psavard/ForLukas/muonptcalib_v03_combined/v2/"
 
 directories = {}
 directories["v03"] = dir_v03
@@ -12,14 +13,14 @@ directories["v03_v2"] = dir_v03_v2
 
 files = {}
 files["v03"] = {}
-files["v03"]["Data"] = ["data_{}.root".format(el) for el in ["1516", "17", "18"]]
-files["v03"]["MC"] = ["Sig_Z_mc16{}.root".format(el) for el in ["d", "e"]]
-files["v03"]["Data1516"] = ["data_{}.root".format(el) for el in ["1516"]]
-files["v03"]["Data17"] = ["data_{}.root".format(el) for el in ["17"]]
-files["v03"]["Data18"] = ["data_{}.root".format(el) for el in ["18"]]
-#files["v03"]["MC"] = ["Sig_Z_mc16{}.root".format(el) for el in ["d", "e"]] #will be updated when available
-files["v03"]["MC17"] = ["Sig_Z_mc16{}.root".format(el) for el in ["d"]]
-files["v03"]["MC18"] = ["Sig_Z_mc16{}.root".format(el) for el in ["e"]]
+files["v03"]["Data"] = ["merge/data_{}.root".format(el) for el in ["1516", "17", "18"]]
+files["v03"]["MC"] = ["merged/Sig_Z_mc16{}.root".format(el) for el in ["d", "e"]]
+files["v03"]["Data1516"] = ["merged/data_{}.root".format(el) for el in ["1516"]]
+files["v03"]["Data17"] = ["merged/data_{}.root".format(el) for el in ["17"]]
+files["v03"]["Data18"] = ["merged/data_{}.root".format(el) for el in ["18"]]
+#files["v03"]["MC"] = ["merged/Sig_Z_mc16{}.root".format(el) for el in ["d", "e"]] #will be updated when available
+files["v03"]["MC17"] = ["merged/Sig_Z_mc16{}.root".format(el) for el in ["d"]]
+files["v03"]["MC18"] = ["merged/Sig_Z_mc16{}.root".format(el) for el in ["e"]]
 
 files["v03_v2"] = {}
 files["v03_v2"]["Data"] = ["data/data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["15", "16", "17", "18"]]
