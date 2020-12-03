@@ -160,6 +160,7 @@ if __name__ == "__main__":
         parser.add_argument('--load_matrix_calibrations', '-lmc', dest="load_matrix_calibrations", type=str, default='', help='a comma separated list of directories from which to load calibrations')
         parser.add_argument('--load_matrix_subtractions', '-lms', dest="load_matrix_subtractions", type=str, default='', help='a comma separated list of directories from which to load subtractions when correcting deltas')
         parser.add_argument('--testjob', '-tj', dest="test_job", action="store_true", help="Submit a test job")
+        parser.add_argument('--inject', "-inj", dest="inject", type=str)
         args = parser.parse_args()
 
         #Create a pickle file and list for each submission
@@ -171,7 +172,7 @@ if __name__ == "__main__":
         filling_script = args.filling_script
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations, args.load_matrix_subtractions)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations, args.load_matrix_subtractions, args.inject)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

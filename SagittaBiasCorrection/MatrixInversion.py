@@ -7,6 +7,8 @@ import os
 from utils import cov as utils_cov
 import uproot as ur
 
+from SagittaBiasUtils import get_df_for_job
+
 from variables import \
                       calc_pos_id_pt, calc_neg_id_pt,\
                       calc_pos_ms_pt, calc_neg_ms_pt,\
@@ -120,7 +122,6 @@ def get_deltas_from_job(outfile_location):
 
     return delta_hist, {"x_var":x_var, "y_var":y_var}, detector_location
 
-
 if __name__ == "__main__":
     import argparse
 
@@ -131,20 +132,11 @@ if __name__ == "__main__":
     parser.add_argument('--detector_location', type=str, dest='detector_location')
     parser.add_argument('--output_filename', type=str, dest='output_filename')
     parser.add_argument('--inject', '-i', type=str, dest="inject", default = "", required=False)
+    parser.add_argument('--resonance', '-r', type=str, dest="resonance", default="Z", required=False)
+    parser.add_argument('--selection', '-s', type=str, dest="selection", default="", required=False)
     args = parser.parse_args()
 
-    if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
-        injection_histogram_function = get_histogram_function(args.inject)
-
-    variables = ["Pos_{}_Eta", "Neg_{}_Eta", "Pos_{}_Phi", "Neg_{}_Phi", "Pos_{}_Pt", "Neg_{}_Pt", "Pair_{}_Mass", "TotalWeight"] #all of the variables needed
-    mean_mass = 91.2 # GeV
-    if args.detector_location == "MS": mean_mass = 86.0 # GeV
-    selection = "abs(Pair_{}_Mass - {}) < 20.0".format(args.detector_location, mean_mass)
-    variables = [v.format(args.detector_location) for v in variables]
-
-    if args.detector_location == "ID": eta_edges = eta_edges_ID
-    else: eta_edges = eta_edges_else
-    phi_edges = phi_edges
+    df, eta_edges, phi_edges = get_df_for_job(args)
 
     #create a phi binning:
     phi_binning_pos = Binning("Pos_{}_Phi".format(args.detector_location), phi_edges, None, repr_override=None)
@@ -162,20 +154,6 @@ if __name__ == "__main__":
     global_binning_neg = Binning("Neg_{}_Eta".format(args.detector_location), eta_edges, neg_eta_subbins)
     global_binning_neg.recursively_include_overflow(False)
 
-    do_add_pair_mass = False
-    if "v03" in args.filename and "v2" in args.filename and "Pair_MS_Mass" in variables:
-        variables.remove("Pair_MS_Mass")
-        do_add_pair_mass = True
-
-    df = get_dataframe(args.filename, args.start, args.stop, variables, "")
-    if "v03" in args.filename and "v2" in args.filename and do_add_pair_mass:
-        print("adding the pair mass")
-        df = add_pair_mass(df)
-    df = df.query(selection)
-
-    print(args.inject)
-    if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
-        df = inject_bias(df, args.detector_location, injection_histogram_function)
     cov, equal_to, nentries = get_cov_matrices(df, global_binning_pos, global_binning_neg, args.detector_location)
 
     if not os.path.exists(os.path.split(args.output_filename)[0]):

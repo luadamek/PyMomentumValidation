@@ -78,19 +78,29 @@ def get_histogram_function(inject):
     if inject == "Data": injection_function = injection_histogram_data
     return injection_function
 
+def get_mass_selection(args):
+    if args.resonance == "Z":
+        mean_mass = 91.2 # GeV
+        if args.detector_location == "MS": mean_mass = 86.0 # GeV
+        selection = "abs(Pair_{}_Mass - {}) < 12.0".format(args.detector_location, mean_mass)
+    elif args.resonance == "JPSI":
+        mean_mass = 3.1 # GeV
+        selection = "abs(Pair_{}_Mass - {}) < 0.3".format(args.detector_location, mean_mass)
+    return selection
+
+from utils import get_dataframe
 def get_df_for_job(args):
     if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
         injection_histogram_function = get_histogram_function(args.inject)
 
     variables = ["Pos_{}_Eta", "Neg_{}_Eta", "Pos_{}_Phi", "Neg_{}_Phi", "Pos_{}_Pt", "Neg_{}_Pt", "Pair_{}_Mass", "TotalWeight"] #all of the variables needed
-    mean_mass = 91.2 # GeV
-    if args.detector_location == "MS": mean_mass = 86.0 # GeV
-    selection = "abs(Pair_{}_Mass - {}) < 20.0".format(args.detector_location, mean_mass)
+
+    selection = get_mass_selection(args)
+
     variables = [v.format(args.detector_location) for v in variables]
 
     if args.detector_location == "ID": eta_edges = eta_edges_ID
     else: eta_edges = eta_edges_else
-    phi_edges = phi_edges
 
     do_add_pair_mass = False
     if "v03" in args.filename and "v2" in args.filename and "Pair_MS_Mass" in variables:
@@ -104,6 +114,7 @@ def get_df_for_job(args):
     if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
         df = inject_bias(df, args.detector_location, injection_histogram_function)
 
-    df = df.query(selection)
+    if args.selection: df = df.query(args.selection)
+    else: df = df.query(selection)
 
     return df, eta_edges, phi_edges
