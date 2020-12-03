@@ -12,6 +12,7 @@ from variables import \
                       calc_pos_id_phi, calc_neg_id_phi,\
                       calc_pos_ms_phi, calc_neg_ms_phi,\
                       calc_pos_cb_phi, calc_neg_cb_phi
+from selections import check_safe_event
 
 def extract_binning_from_axis(axis):
     '''
@@ -221,13 +222,13 @@ class SagittaBiasCorrection:
         print("CALIBRATED PTS")
 
         if do_extra_corrections:
-            to_correct_selection = np.logical_or(pos_selection, neg_selection)
-            around_z = np.abs(data["Pair_{}_Mass".format(self.flavour)] - 91.2) < 10.0
-
-            pre_std = np.std(data["Pair_{}_Mass".format(self.flavour)][to_correct_selection & around_z])
             to_correct_data = {}
             for key in keys:
-                to_correct_data[key] = data[key][to_correct_selection]
+                to_correct_data[key] = data[key]
+            safe =  check_safe_event(to_correct_data,"Pos", self.flavour) & check_safe_event(to_correct_data,"Neg", self.flavour)
+            to_correct_selection = np.logical_or(pos_selection, neg_selection) & safe
+            for key in keys:
+                to_correct_data[key] = to_correct_data[key][to_correct_selection]
             pos_pt = self.pos_pt_var.eval(to_correct_data)
             neg_pt = self.neg_pt_var.eval(to_correct_data)
 
@@ -251,8 +252,6 @@ class SagittaBiasCorrection:
 
                 mass_sqrd = ne.evaluate("( ( {p_pos} + {p_neg}) ** 2 ) - ( (pos_px + neg_px) ** 2 ) - ( (pos_py + neg_py) ** 2 ) - ( (pos_pz + neg_pz) ** 2 )".format(p_pos=pos_e_str, p_neg=neg_e_str))
                 data["Pair_{}_Mass".format(self.flavour)][to_correct_selection] = np.sign(mass_sqrd) * np.sqrt(mass_sqrd * np.sign(mass_sqrd))
-                post_std = np.std(data["Pair_{}_Mass".format(self.flavour)][to_correct_selection & around_z])
-                print("pre: {}, post: {}".format(pre_std, post_std))
 
             if "Pair_{}_Pt".format(self.flavour) in keys:
                 data["Pair_{}_Pt".format(self.flavour)][to_correct_selection] = ne.evaluate(dimuon_pt_str)
