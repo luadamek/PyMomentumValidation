@@ -105,10 +105,16 @@ for ij in inject_corrections:
     output_location = os.path.join(output, descriptor)
     if not os.path.exists(output_location): os.makedirs(output_location)
 
+    this_correction_pkl_file = os.path.join(output_location, "Correction.pkl")
+    with open(this_correction_pkl_file, "wb") as f:
+        import pickle as pkl
+        pkl.dump(correction, f)
+
     root_files = utils.get_files(version)[channel]
     for file_count, root_file in enumerate(root_files):
-        entrysteps = utils.get_entry_steps(root_file, step_size = 10000000, tree_name = "MuonMomentumCalibrationTree")
+        entrysteps = utils.get_entry_steps(root_file, step_size = 2000000, tree_name = "MuonMomentumCalibrationTree")
         for job_count, startstop in enumerate(entrysteps):
+            print(startstop)
             start = startstop[0]
             stop = startstop[1]
             jobname = "stats_job_{}".format(descriptor) + "_file_{}_job_{}".format(file_count, job_count)
@@ -119,10 +125,7 @@ for ij in inject_corrections:
             exec_file = os.path.join(os.getenv("MomentumValidationDir"), "SagittaBiasCorrection/AccumulateStatistics.py")
             this_jobdir = os.path.join(output, descriptor, jobname)
             if not os.path.exists(this_jobdir): os.makedirs(this_jobdir)
-            this_correction_pkl_file = os.path.join(this_jobdir, "Correction.pkl")
-            with open(this_correction_pkl_file, "wb") as f:
-                import pickle as pkl
-                pkl.dump(correction, f)
+
             command = "python {executable} --filename {filename} --start {start} --stop {stop} --detector_location {detector_location} --output_filename {output_filename} --inject {inject} --correct {correction} --resonance {resonance}"
             command = command.format(\
             executable = exec_file,\
@@ -137,7 +140,7 @@ for ij in inject_corrections:
             )
 
 
-            job = Job(jobname, this_jobdir, base_commands + [command], time = "00:04:00", memory="3000M")
+            job = Job(jobname, this_jobdir, base_commands + [command], time = "00:12:00", memory="5000M")
             jobset.add_job(job)
 
 if test: jobset.jobs[0].run_local()
