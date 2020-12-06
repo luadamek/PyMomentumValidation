@@ -99,14 +99,15 @@ class Job:
                 f.write("source {}\n".format(self.run_script_name))
         print("Submission files created")
 
-    def submit(self, updates={}):
+    def submit(self, updates={}, parsed_queue = None):
         self.check_jobdir_existence()
         if self.check_completion(): return True
-        if self.check_if_running(): return False
+        if self.check_if_running(parsed_queue = parsed_queue): return False
         for key in updates:
             setattr(self, key, updates[key])
         self.create_submission_files()
         commands = ["sbatch", "--mem={}".format(self.memory), "--time={}".format(self.time), "--error={}".format(self.errorfile_name), "--output={}".format(self.outputfile_name), self.batch_script_name]
+        print("Submitting {}".format(commands))
         output = do_multiple_subprocess_attempts(commands)
         output = output.decode("utf-8")
         output = output.replace("\n", "")
@@ -131,7 +132,7 @@ class Job:
 
     def check_if_running(self, parsed_queue = None):
         if not self.jobid: return False
-        if not parsed_queue: parsed_queue = get_parsed_slurm_queue()
+        if parsed_queue is None: parsed_queue = get_parsed_slurm_queue()
         for job in parsed_queue:
             if self.jobid == job["JOBID"]:
                 return True
@@ -157,13 +158,18 @@ class JobSet:
         self.jobs.append(job)
 
     def submit(self):
+        queue = get_parsed_slurm_queue()
         for job in self.jobs:
-            job.submit()
+            job.submit(parsed_queue = queue)
 
-    def check_completion(self):
+    def check_completion(self, resub=False):
+       complete = True
+       queue = get_parsed_slurm_queue()
        for job in self.jobs:
-           if not job.check_completion(): return False
-       return True
+           if not job.check_completion():
+               complete = False
+               job.submit(parsed_queue = queue)
+       return complete
 
     def check_for_errors(self):
         has_error = False
