@@ -134,6 +134,8 @@ if __name__ == "__main__":
     parser.add_argument('--inject', '-i', type=str, dest="inject", default = "", required=False)
     parser.add_argument('--resonance', '-r', type=str, dest="resonance", default="Z", required=False)
     parser.add_argument('--selection', '-s', type=str, dest="selection", default="", required=False)
+    parser.add_argument('--range', '-rg', type=float, dest="range", default=10.0, required=False)
+    parser.add_argument('--pt_threshold', '-pth', type=float, dest="pt_threshold", default=-1.0, required=False)
     args = parser.parse_args()
 
     df, eta_edges, phi_edges = get_df_for_job(args)

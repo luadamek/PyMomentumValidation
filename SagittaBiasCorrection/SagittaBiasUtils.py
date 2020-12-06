@@ -82,10 +82,10 @@ def get_mass_selection(args):
     if args.resonance == "Z":
         mean_mass = 91.2 # GeV
         if args.detector_location == "MS": mean_mass = 86.0 # GeV
-        selection = "abs(Pair_{}_Mass - {}) < 12.0".format(args.detector_location, mean_mass)
+        selection = "abs(Pair_{}_Mass - {}) < {}".format(args.detector_location, mean_mass, args.range)
     elif args.resonance == "JPSI":
         mean_mass = 3.1 # GeV
-        selection = "abs(Pair_{}_Mass - {}) < 0.3".format(args.detector_location, mean_mass)
+        selection = "abs(Pair_{}_Mass - {}) < {}".format(args.detector_location, mean_mass, args.range)
     return selection
 
 from utils import get_dataframe
@@ -114,7 +114,16 @@ def get_df_for_job(args):
     if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
         df = inject_bias(df, args.detector_location, injection_histogram_function)
 
-    if args.selection: df = df.query(args.selection)
-    else: df = df.query(selection)
+    if args.selection:
+       print("Applying selection {}".format(args.selection))
+       df = df.query(args.selection)
+    else: 
+       print("Applying selection {}".format(selection))
+       df = df.query(selection)
+
+    if hasattr(args, "pt_threshold"):
+        if args.pt_threshold > 0.0:
+            print("Applying pt threshold {}".format(args.pt_threshold))
+            df = df.query("(Pos_{}_Pt < {}) and (Neg_{}_Pt < {})".format(args.detector_location, args.pt_threshold, args.detector_location, args.pt_threshold))
 
     return df, eta_edges, phi_edges
