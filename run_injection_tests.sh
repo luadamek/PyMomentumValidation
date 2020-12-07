@@ -9,7 +9,7 @@
 
 for pt_threshold in 100 -1
 do
-    for range in 12 16 20
+    for range in 8 10 12 16 20
     do
         for detector_location in ID MS
         do

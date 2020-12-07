@@ -103,6 +103,7 @@ if __name__ == "__main__":
     parser.add_argument('--correct', '-c', type=str, dest="correct", default = "", required=False)
     parser.add_argument('--resonance', '-r', type=str, dest="resonance", default="Z", required=False)
     parser.add_argument('--selection', '-s', type=str, dest="selection", default="", required=False)
+    parser.add_argument('--range', '-rg', type=float, dest="range", default=10.0, required=False)
     args = parser.parse_args()
     args.selection = ""
     print(args)
@@ -128,11 +129,12 @@ if __name__ == "__main__":
 
     post_rms = calculate_rms(df, args)
     post_mean = calculate_mean(df, args)
+    post_mins, post_maxs = get_mins_maxs(df, args, eta_edges, phi_edges)
 
     df = df.query(get_mass_selection(args))
     post_rms_selection = calculate_rms(df, args)
     post_mean_selection = calculate_mean(df, args)
-    post_mins, post_maxs = get_mins_maxs(df, args, eta_edges, phi_edges)
+    post_mins_selection, post_maxs_selection = get_mins_maxs(df, args, eta_edges, phi_edges)
 
     print("Previously... min: {:.4f} max {:.4f}".format(min(pre_var), max(pre_var)))
     print("Afterwards... min: {:.4f} max {:.4f}".format(min(df[var].values), max(df[var].values)))
@@ -143,7 +145,7 @@ if __name__ == "__main__":
     print("Afterwards ...")
     print(post_maxs)
 
-    to_write = {"pre_rms":pre_rms, "post_rms":post_rms, "pos_rms_selection": post_rms_selection,  "pre_mean":pre_mean, "post_mean": post_mean, "args": args, "pos_mean_selection": post_mean_selection, "pre_mins":pre_mins, "pre_maxs":pre_maxs, "post_mins":post_mins, "post_maxs":post_maxs}
+    to_write = {"pre_rms":pre_rms, "post_rms":post_rms, "pos_rms_selection": post_rms_selection,  "pre_mean":pre_mean, "post_mean": post_mean, "args": args, "pos_mean_selection": post_mean_selection, "pre_mins":pre_mins, "pre_maxs":pre_maxs, "post_mins":post_mins, "post_maxs":post_maxs, "post_mins_selection":post_mins_selection, "post_maxs_selection":post_maxs_selection}
 
     with open(args.output_filename, "wb") as f:
         import pickle as pkl

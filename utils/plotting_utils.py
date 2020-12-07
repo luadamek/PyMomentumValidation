@@ -4,7 +4,7 @@ import array
 import os
 from atlasplots import set_atlas_style, atlas_label
 
-def draw_2d_histogram(histogram, description = "", normalize = True, output_location=""):
+def draw_2d_histogram(histogram, description = "", normalize = True, output_location="", palette_override = None):
     if normalize:
         extrema = [ abs(histogram.GetMaximum()), abs(histogram.GetMinimum())]
         histogram.SetMaximum(max(*extrema))
@@ -19,7 +19,8 @@ def draw_2d_histogram(histogram, description = "", normalize = True, output_loca
     histogram.GetZaxis().SetTitleOffset(1.2 * histogram.GetZaxis().GetTitleOffset())
     canvas.SetBottomMargin(0.25)
     canvas.Draw()
-    ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
+    if palette_override is None: ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
+    else: ROOT.gStyle.SetPalette(palette_override)
     canvas.Print(os.path.join(output_location, canvas.GetName() + ".pdf"))
 
 def draw_text(x, y, text, color=1, size=0.05):
@@ -275,7 +276,7 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
 
 
 
-def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".pdf", plot_dir = "plots"):
+def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".pdf", plot_dir = "plots", x_range = None, mins_maxes = None):
 
     from atlasplots import set_atlas_style
     set_atlas_style()
@@ -306,26 +307,43 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
     canvas.SetRightMargin(canvas.GetRightMargin()*1.1)
     canvas.SetLeftMargin(canvas.GetLeftMargin()*1.1)
 
-    mins = []
-    maxs = []
-    for i, key in enumerate(to_plot):
-        stack = histograms[key]
-        mins.append(stack.GetMinimum())
-        maxs.append(stack.GetMaximum())
+    if not mins_maxes:
+        mins = []
+        maxs = []
+        for i, key in enumerate(to_plot):
+            stack = histograms[key]
+            mins.append(stack.GetMinimum())
+            maxs.append(stack.GetMaximum())
 
-    minimum = min(mins)
-    maximum = max(maxs)
+        minimum = min(mins)
+        maximum = max(maxs)
+    else:
+        minimum = mins_maxes[0]
+        maximum = mins_maxes[1]
+
+    text_size = 60
+    label_size = 45
 
     for i, key in enumerate(to_plot):
         stack = to_plot[key]
         bin_width = histograms[key].GetBinLowEdge(3) - histograms[key].GetBinLowEdge(2)
         stack.GetYaxis().SetTitle(y_axis_label)
         stack.GetXaxis().SetTitle(x_axis_label)
+
+        if x_range is not None: stack.GetXaxis().SetRangeUser(*x_range)
         stack.SetMaximum(maximum + (0.6 * (maximum-minimum)))
         stack.SetMinimum(minimum)
+
+        stack.GetYaxis().SetTitleSize(text_size)
+        stack.GetXaxis().SetTitleSize(text_size)
+        stack.GetYaxis().SetLabelSize(label_size)
+        stack.GetXaxis().SetLabelSize(label_size)
         if i == 0: stack.Draw("AP")
         else: stack.Draw("P SAME")
-    ATLASLabel(0.25, 0.85, "Internal", size = 22)
+
+
+    ATLASLabel(0.25, 0.77, "Internal", size = text_size)
+    legend.SetTextSize(40)
     legend.Draw("SAME")
 
     if logy: canvas.SetLogy()

@@ -490,16 +490,15 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
             hist_filler.apply_calibration_for_channel("Data17", c)
             hist_filler.apply_calibration_for_channel("Data18", c)
 
-    for varname, var in zip(["ID", "CB"], [calc_id_mass, calc_cb_mass]):
+    for varname, var in zip(["ID", "CB", "MS"], [calc_id_mass, calc_cb_mass, calc_ms_mass]):
         histogram_name = "{}_mass".format(varname)
         variable_name_for_selection = "Pair_{}_Mass".format(varname)
-        sel_func = create_selection_function(range_selection_function, [variable_name_for_selection], variable_name_for_selection, 91.2 - 50.0, 91.2 + 50.0)
         hist_filler.book_histogram_fill(histogram_name,\
                                     var,\
-                                    selections = [sel_func],\
-                                    bins = 100,\
-                                    range_low = 91.2-10.0,\
-                                    range_high = 91.2+10.0,\
+                                    selections = [],\
+                                    bins = 200,\
+                                    range_low = 91.2-12.0,\
+                                    range_high = 91.2+12.0,\
                                     xlabel ='M_{#mu#mu}^{varname} [GeV]',\
                                     ylabel = 'Number Events')
 
