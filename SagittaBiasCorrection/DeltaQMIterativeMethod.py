@@ -151,13 +151,7 @@ def get_histogram_function(inject):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Calculate the covariance matrices and vectors needed to compute the sagitta bias.')
-    parser.add_argument('--filename', type=str, dest='filename')
-    parser.add_argument('--start', type=int, dest='start')
-    parser.add_argument('--stop', type=int, dest='stop')
-    parser.add_argument('--detector_location', type=str, dest='detector_location')
-    parser.add_argument('--output_filename', type=str, dest='output_filename')
-    parser.add_argument('--inject', '-i', type=str, dest="inject", default = "", required=False)
+    parser = SagittaBiasUtils.get_parser()
     parser.add_argument('--leading_only', '-lo', action="store_true")
     parser.add_argument('--load_corrections', '-lc', type=str, dest="load_injections", default = "", required = False)
     parser.add_argument('--load_subtractions', '-ls', type=str, dest="load_subtractions", default = "", required=False)
