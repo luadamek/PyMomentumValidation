@@ -78,7 +78,22 @@ def get_histogram_function(inject):
     if inject == "Data": injection_function = injection_histogram_data
     return injection_function
 
+def get_parser():
+    import argparse
+    parser = argparse.ArgumentParser(description='a parser that handles options w.r.t. the sagitta bias correction')
+    parser.add_argument('--detector_location', type=str, dest='detector_location')
+    parser.add_argument('--output_filename', type=str, dest='output_filename')
+    parser.add_argument('--inject', '-i', type=str, dest="inject", default = "", required=False)
+    parser.add_argument('--resonance', '-r', type=str, dest="resonance", default="Z", required=False)
+    parser.add_argument('--selection', '-s', type=str, dest="selection", default="", required=False)
+    parser.add_argument('--range', '-rg', type=float, dest="range", default=10.0, required=False)
+    parser.add_argument('--pt_threshold', '-pth', type=float, dest="pt_threshold", default=-1.0, required=False)
+    parser.add_argument('--select_first', '-sf', action="store_true", dest="select_first")
+    parser.add_argument('--corrections', '-c', type=str, dest="corrections", default="", required=False)
+    return parser
+
 def get_mass_selection(args):
+    selection = ""
     if args.resonance == "Z":
         mean_mass = 91.2 # GeV
         if args.detector_location == "MS": mean_mass = 86.0 # GeV
@@ -86,7 +101,23 @@ def get_mass_selection(args):
     elif args.resonance == "JPSI":
         mean_mass = 3.1 # GeV
         selection = "abs(Pair_{}_Mass - {}) < {}".format(args.detector_location, mean_mass, args.range)
+    else: raise ValueError("{} has no selection".format(args.resonance))
     return selection
+
+def apply_selection(df, args):
+    selection = get_mass_selection(args)
+    if args.selection:
+       print("Applying selection {}".format(args.selection))
+       df = df.query(args.selection)
+    else: 
+       print("Applying selection {}".format(selection))
+       df = df.query(selection)
+
+    if hasattr(args, "pt_threshold"):
+        if args.pt_threshold > 0.0:
+            print("Applying pt threshold {}".format(args.pt_threshold))
+            df = df.query("(Pos_{}_Pt < {}) and (Neg_{}_Pt < {})".format(args.detector_location, args.pt_threshold, args.detector_location, args.pt_threshold))
+    return df
 
 from utils import get_dataframe
 def get_df_for_job(args):
@@ -94,8 +125,6 @@ def get_df_for_job(args):
         injection_histogram_function = get_histogram_function(args.inject)
 
     variables = ["Pos_{}_Eta", "Neg_{}_Eta", "Pos_{}_Phi", "Neg_{}_Phi", "Pos_{}_Pt", "Neg_{}_Pt", "Pair_{}_Mass", "TotalWeight"] #all of the variables needed
-
-    selection = get_mass_selection(args)
 
     variables = [v.format(args.detector_location) for v in variables]
 
@@ -111,19 +140,32 @@ def get_df_for_job(args):
     if "v03" in args.filename and "v2" in args.filename and do_add_pair_mass:
         df = add_pair_mass(df)
 
+    #apply the corrections
+    if args.corrections != "":
+        for c in args.corrections.split(","):
+            from MatrixInversion import get_deltas_from_job
+            injection_histogram, _, detector_location = get_deltas_from_job(c)
+            assert args.detector_location == detector_location
+            if detector_location == "ID":
+                pos_varx = calc_pos_id_eta
+                neg_varx = calc_neg_id_eta
+                pos_vary = calc_pos_id_phi
+                neg_vary = calc_neg_id_phi
+            elif detector_location == "MS":
+                pos_varx = calc_pos_ms_eta
+                neg_varx = calc_neg_ms_eta
+                pos_vary = calc_pos_ms_phi
+                neg_vary = calc_neg_ms_phi
+            correction = SagittaBiasCorrection([injection_histogram],  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = detector_location)
+            data = convert_df_to_data(df)
+            data = correction.calibrate(data)
+            df = put_data_back_in_df(data, df)
+
+    if args.select_first: df = apply_selection(df, args)
+
     if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
         df = inject_bias(df, args.detector_location, injection_histogram_function)
 
-    if args.selection:
-       print("Applying selection {}".format(args.selection))
-       df = df.query(args.selection)
-    else: 
-       print("Applying selection {}".format(selection))
-       df = df.query(selection)
-
-    if hasattr(args, "pt_threshold"):
-        if args.pt_threshold > 0.0:
-            print("Applying pt threshold {}".format(args.pt_threshold))
-            df = df.query("(Pos_{}_Pt < {}) and (Neg_{}_Pt < {})".format(args.detector_location, args.pt_threshold, args.detector_location, args.pt_threshold))
+    if not args.select_first: df = apply_selection(df, args)
 
     return df, eta_edges, phi_edges

@@ -11,17 +11,29 @@ import argparse
 #outfile_base = "output_{}.pkl"
 #output_location = "/project/def-psavard/ladamek/sagitta_bias_matrices"
 
+#    parser.add_argument('--detector_location', type=str, dest='detector_location')
+#    parser.add_argument('--output_filename', type=str, dest='output_filename')
+#    parser.add_argument('--inject', '-i', type=str, dest="inject", default = "", required=false)
+#    parser.add_argument('--resonance', '-r', type=str, dest="resonance", default="z", required=false)
+#    parser.add_argument('--selection', '-s', type=str, dest="selection", default="", required=false)
+#    parser.add_argument('--range', '-rg', type=float, dest="range", default=10.0, required=false)
+#    parser.add_argument('--pt_threshold', '-pth', type=float, dest="pt_threshold", default=-1.0, required=false)
+#    parser.add_argument('--select_first', '-sf', action="store_true", required=false, dest="select_first")
+
 parser = argparse.ArgumentParser(description='Parse Arguments')
 parser.add_argument('--outfile_base', type=str, required = False, dest='outfile_base', default = "output_{}.pkl")
 parser.add_argument('--detector_location', type=str, dest='detector_location', required=True)
 parser.add_argument('--output', type=str, dest='output', required=True)
+parser.add_argument('--jobdir', type=str, dest='jobdir', required=True)
 parser.add_argument('--inject', type=str, required=False, dest="inject")
 parser.add_argument('--file_type', type=str, required=True, dest="file_type")
 parser.add_argument('--job_base', type=str, required=True, dest="job_base")
 parser.add_argument('--test', action="store_true", dest="test")
 parser.add_argument('--range', dest="range", required=False, default=10.0, type=float)
 parser.add_argument('--version', type=str, required=True, dest="version")
+parser.add_argument('--select_first', action="store_true", dest="select_first")
 parser.add_argument('--pt_threshold', dest="pt_threshold", type=float, required=False, default=-1.0)
+parser.add_argument('--corrections', '-c', type=str, required=False, dest="corrections", default="")
 args = parser.parse_args()
 
 file_type = args.file_type
@@ -34,8 +46,11 @@ job_base = args.job_base
 version = args.version
 calc_range = args.range
 pt_threshold  = args.pt_threshold
+select_first = args.select_first
+corrections = args.corrections
+jobdir = args.jobdir
 
-job_descr = "{}_{}_{}_Inject_{}_{}_range_{:.4f}_pt_threshold_{:.4f}".format(job_base, detector_location, file_type, inject, version, args.range, args.pt_threshold).replace(".", "_")
+job_descr = "{}_{}_{}_Inject_{}_{}_range_{:.4f}_pt_threshold_{:.4f}_selfirst_{}".format(job_base, detector_location, file_type, inject, version, args.range, args.pt_threshold, str(select_first)).replace(".", "_")
 if job_descr[-1] == "_": job_descr = job_descr[:-1]
 commands = utils.get_setup_commands()
 jobname = "covmatrix_job_{}".format(job_descr) + "_{}"
@@ -52,16 +67,19 @@ for root_file in files:
         root_file = root_file
         exec_file = os.path.join(os.getenv("MomentumValidationDir"), "SagittaBiasCorrection/MatrixInversion.py")
 
-        jobdir = os.path.join(output, job_descr)
-        output_location = os.path.join(jobdir, "OutputFiles")
+        output_dir = os.path.join(output, job_descr)
+        output_location = os.path.join(output_dir, "OutputFiles")
         if not os.path.exists(output_location): os.makedirs(output_location)
         output_filename = outfile_base.format(job_counter)
         output_filename = os.path.join(output_location, output_filename)
 
         this_jobname = jobname.format(job_counter)
-        this_jobdir = os.path.join(jobdir, this_jobname)
+        this_jobdir = os.path.join(jobdir, job_descr)
+        this_jobdir = os.path.join(this_jobdir, this_jobname)
         command = "python {executable} --filename {filename} --start {start} --stop {stop} --detector_location {detector_location} --output_filename {output_filename} --range {range} --pt_threshold {pt_threshold}"
+        if select_first: command += " --select_first"
         command = command.format(executable = exec_file, filename = root_file, start=start, stop=stop, detector_location=detector_location, output_filename = output_filename, range=calc_range, pt_threshold = pt_threshold)
+        if corrections: command += " --corrections {}".format(corrections)
         if inject != "": command += " --inject {}".format(inject)
         these_commands = commands + [command]
 
