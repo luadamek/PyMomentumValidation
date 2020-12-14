@@ -363,6 +363,7 @@ def get_setup_commands():
     commands  = []
     commands.append("cd {}".format(os.getenv("MomentumValidationDir")))
     commands.append("export USER={}".format(os.getenv("USER")))
+    commands.append("echo $PWD")
     commands.append("source ./setup.sh")
     return commands
 

@@ -21,7 +21,7 @@ def draw_2d_histogram(histogram, description = "", normalize = True, output_loca
     canvas.Draw()
     if palette_override is None: ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
     else: ROOT.gStyle.SetPalette(palette_override)
-    canvas.Print(os.path.join(output_location, canvas.GetName() + ".pdf"))
+    canvas.Print(os.path.join(output_location, canvas.GetName() + ".png"))
 
 def draw_text(x, y, text, color=1, size=0.05):
     '''Draw text.
@@ -87,7 +87,7 @@ def hist_to_tgrapherrors(hist):
     return graph
 
 alive = []
-def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".pdf", plot_dir = "plots", datakey = "data", extra_str = None):
+def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".png", plot_dir = "plots", datakey = "data", extra_str = None):
 
 
     from atlasplots import set_atlas_style 
@@ -274,9 +274,7 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
              os.makedirs(plot_dir)
          canvas.Print(os.path.join(plot_dir, identifier + ftype))
 
-
-
-def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".pdf", plot_dir = "plots", x_range = None, mins_maxes = None):
+def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".png", plot_dir = "plots", x_range = None, mins_maxes = None):
 
     from atlasplots import set_atlas_style
     set_atlas_style()
