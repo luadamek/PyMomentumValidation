@@ -39,6 +39,8 @@ def get_cov_matrices(df, global_binning_pos, global_binning_neg, detector_locati
 
     weights = df.eval("TotalWeight").values
     print(weights)
+    print(np.min(weights))
+    print(np.max(weights))
     #calculate the e vector
     e_vector[df["pos_bindex"].values, np.arange(0, len(df))] += df.eval("(Pair_{}_Mass ** 2) * Pos_{}_Pt".format(detector_location, detector_location)).values
     e_vector[df["neg_bindex"].values, np.arange(0, len(df))] -= df.eval("(Pair_{}_Mass ** 2) * Neg_{}_Pt".format(detector_location, detector_location)).values
@@ -58,8 +60,6 @@ def get_cov_matrices(df, global_binning_pos, global_binning_neg, detector_locati
 
     equal_to = (1.0/np.sum(weights)) * np.sum( weights.reshape(weights.shape[0],-1) * ((masses - mean_mass) * (e_vector_trans - mean_e_vector)), axis=0)
 
-    print(cov)
-    print(equal_to)
     return cov, equal_to, np.sum(weights)
 
 from SagittaBiasUtils import merge_results
@@ -120,22 +120,22 @@ def get_deltas_from_job(outfile_location):
         delta_hist.GetYaxis().SetTitle(y_var)
         delta_hist.SetBinContent(x_bindex, y_bindex, delta[i])
 
+    opened = opened[:1] #free memory from all the open matrices
+    if "corrections" in opened[0] and opened[0]["corrections"] != "":
+        corrections = opened[0]["corrections"]
+        del opened #free memory from all of the open matrices
+        for c in corrections.split(","):
+            delta_hist.Add(get_deltas_from_job(c)[0], 1.0)
+
     return delta_hist, {"x_var":x_var, "y_var":y_var}, detector_location
 
 if __name__ == "__main__":
-    import argparse
+    from SagittaBiasUtils import get_parser
 
-    parser = argparse.ArgumentParser(description='Calculate the covariance matrices and vectors needed to compute the sagitta bias.')
+    parser = get_parser()
     parser.add_argument('--filename', type=str, dest='filename')
     parser.add_argument('--start', type=int, dest='start')
     parser.add_argument('--stop', type=int, dest='stop')
-    parser.add_argument('--detector_location', type=str, dest='detector_location')
-    parser.add_argument('--output_filename', type=str, dest='output_filename')
-    parser.add_argument('--inject', '-i', type=str, dest="inject", default = "", required=False)
-    parser.add_argument('--resonance', '-r', type=str, dest="resonance", default="Z", required=False)
-    parser.add_argument('--selection', '-s', type=str, dest="selection", default="", required=False)
-    parser.add_argument('--range', '-rg', type=float, dest="range", default=10.0, required=False)
-    parser.add_argument('--pt_threshold', '-pth', type=float, dest="pt_threshold", default=-1.0, required=False)
     args = parser.parse_args()
 
     df, eta_edges, phi_edges = get_df_for_job(args)
@@ -163,6 +163,6 @@ if __name__ == "__main__":
 
     with open(args.output_filename, "wb") as f:
         import pickle as pkl
-        pkl.dump({"cov":cov, "b":equal_to, "nentries":nentries, "pos_binning": global_binning_pos, "neg_binning": global_binning_neg, "detector_location":args.detector_location}, f)
+        pkl.dump({"cov":cov, "b":equal_to, "nentries":nentries, "pos_binning": global_binning_pos, "neg_binning": global_binning_neg, "detector_location":args.detector_location, "corrections":args.corrections}, f)
     print("__FINISHED__")
 
