@@ -1,5 +1,6 @@
 import subprocess
 import os
+import glob
 
 def finished_token_in(filename):
     if not os.path.exists(filename): return False
@@ -85,7 +86,7 @@ class Job:
         return to_return
 
     def check_jobdir_existence(self):
-        if not os.path.exists(self.jobdir): os.makedirs(jobdir)
+        if not os.path.exists(self.jobdir): os.makedirs(self.jobdir)
 
     def create_submission_files(self):
         print("Creating submission files")
@@ -99,12 +100,19 @@ class Job:
                 f.write("source {}\n".format(self.run_script_name))
         print("Submission files created")
 
+    def remove_submission_files(self):
+        print("Removing submission files")
+        os.system("rm {}".format(self.run_script_name))
+        os.system("rm {}".format(self.batch_script_name))
+
     def submit(self, updates={}, parsed_queue = None):
         self.check_jobdir_existence()
         if self.check_completion(): return True
         if self.check_if_running(parsed_queue = parsed_queue): return False
         for key in updates:
             setattr(self, key, updates[key])
+        #if os.path.exists(self.outputfile_name): os.system("rm {}".format(self.outputfile_name))
+        #if os.path.exists(self.errorfile_name): os.system("rm {}".format(self.errorfile_name))
         self.create_submission_files()
         commands = ["sbatch", "--mem={}".format(self.memory), "--time={}".format(self.time), "--error={}".format(self.errorfile_name), "--output={}".format(self.outputfile_name), self.batch_script_name]
         print("Submitting {}".format(commands))
@@ -127,7 +135,7 @@ class Job:
             return
         if self.check_completion(): return
         self.create_submission_files()
-        os.system("source {}".format(self.run_script_name, self.outputfile_name))
+        os.system("source {} ".format(self.run_script_name))
         return True
 
     def check_if_running(self, parsed_queue = None):
@@ -147,7 +155,10 @@ class Job:
 
     def check_completion(self):
         self.check_jobdir_existence()
-        return finished_token_in(self.outputfile_name)
+        complete = finished_token_in(self.outputfile_name)
+        if complete:
+           self.remove_submission_files() 
+        return complete
 
 class JobSet:
     def __init__(self, name, jobs = []):
@@ -157,18 +168,23 @@ class JobSet:
     def add_job(self, job):
         self.jobs.append(job)
 
-    def submit(self):
+    def submit(self, run_local = False):
         queue = get_parsed_slurm_queue()
         for job in self.jobs:
-            job.submit(parsed_queue = queue)
+            if not run_local: job.submit(parsed_queue = queue)
+            else: job.run_local()
+
 
     def check_completion(self, resub=False):
        complete = True
+       incomplete = []
        queue = get_parsed_slurm_queue()
        for job in self.jobs:
            if not job.check_completion():
                complete = False
                job.submit(parsed_queue = queue)
+               incomplete.append(job.jobname)
+       print(incomplete)
        return complete
 
     def check_for_errors(self):
