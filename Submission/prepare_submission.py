@@ -2,7 +2,8 @@ import utils
 import os
 from histogram_filler import HistogramFiller
 from variables import calc_weight, calc_pos_id_eta, calc_pos_id_phi, calc_neg_id_eta, calc_neg_id_phi,\
-calc_pos_ms_eta, calc_pos_ms_phi, calc_neg_ms_eta, calc_neg_ms_phi
+calc_pos_ms_eta, calc_pos_ms_phi, calc_neg_ms_eta, calc_neg_ms_phi,\
+calc_pos_me_eta, calc_pos_me_phi, calc_neg_me_eta, calc_neg_me_phi
 import ROOT
 import pickle
 import argparse
@@ -50,6 +51,12 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
                 elif xvar_name == "MS_Eta":
                     xvar_pos = calc_pos_ms_eta
                     xvar_neg = calc_neg_ms_eta
+                elif xvar_name == "CB_Eta":
+                    xvar_pos = calc_pos_cb_eta
+                    xvar_neg = calc_neg_cb_eta
+                elif xvar_name == "ME_Eta":
+                    xvar_pos = calc_pos_me_eta
+                    xvar_neg = calc_neg_me_eta
                 else: raise ValueError()
                 if yvar_name == "ID_Phi":
                     yvar_pos = calc_pos_id_phi
@@ -57,6 +64,12 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
                 elif yvar_name == "MS_Phi":
                     yvar_pos = calc_pos_ms_phi
                     yvar_neg = calc_neg_ms_phi
+                elif xvar_name == "CB_Phi":
+                    xvar_pos = calc_pos_cb_phi
+                    xvar_neg = calc_neg_cb_phi
+                elif yvar_name == "ME_Phi":
+                    yvar_pos = calc_pos_me_phi
+                    yvar_neg = calc_neg_me_phi
                 else: raise ValueError()
                 calibrations.append(SagittaBiasCorrection([deltas], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = detector_location))
             calibrations_file = os.path.join(slurm_directory, "calibrations.pkl")
@@ -172,7 +185,7 @@ if __name__ == "__main__":
         filling_script = args.filling_script
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations, args.load_matrix_subtractions, args.inject)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations, args.load_matrix_subtractions)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

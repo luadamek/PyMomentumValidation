@@ -7,14 +7,14 @@ from binnings import global_pt_binning, global_pt_binning_zipped
 from atlasplots import set_atlas_style, atlas_label
 from MatrixInversion import get_deltas_from_job
 import os
-from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, solution_histogram, injection_histogram_data
+from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, solution_histogram, injection_histogram_data, injection_histogram_random
 from plotting_utils import draw_text, draw_2d_histogram
 
 set_atlas_style()
 detector_locations = ["ID", "MS"]
 for detector_location in detector_locations:
-    for function, name in zip([injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_data],\
-                        ["local", "global", "globalpluslocal", "data"]):
+    for function, name in zip([injection_histogram_random, injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_data],\
+                        ["Random", "local", "global", "globalpluslocal", "data"]):
         histogram = function(detector_location)
         histogram = solution_histogram(histogram)
         histogram.SetName("Injection_{}_{}".format(name, detector_location))

@@ -7,26 +7,34 @@
 #parser.add_argument('', action="store_true", dest="test")
 #args = parser.parse_args()
 
-for pt_threshold in 100
+
+#ok apply a selection of 
+jobdir=/scratch/ladamek/sagittabias_matrices
+tight_selection="( abs(Pair_{}_Mass - 91.2) < 12) and (Pos_{}_Pt < 100) and (Pos_{}_Pt < 100)"
+loose_selection="( abs(Pair_{}_Mass - 91.2) < 40) and (Pos_{}_Pt < 500) and (Pos_{}_Pt < 500)"
+for detector_location in ME ID
 do
-    for range in 12
-        #20
-        # 16 12
-    do
-        for detector_location in ID MS
-        do
-	        python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type Data --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base Injection_Dec12_round_1 --detector_location ${detector_location} --version v03_v2 --range ${range} --pt_threshold ${pt_threshold} --output /project/def-psavard/ladamek/sagitta_bias_matrices/
-	        python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type Data --jobdir /project/def-psavard/ladamek/sagitta_bias_matrices --job_base Injection_Dec12_round_2 --detector_location ${detector_location} --version v03_v2 --range ${range} --pt_threshold ${pt_threshold} --corrections /project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec12_round_1_${detector_location}_Data_Inject_None_v03_v2_range_${range}_0000_pt_threshold_${pt_threshold}_0000_selfirst_False/OutputFiles --output /project/def-psavard/ladamek/sagitta_bias_matrices/
-	        python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type Data --jobdir /project/def-psavard/ladamek/sagitta_bias_matrices --job_base Injection_Dec12_round_3 --detector_location ${detector_location} --version v03_v2 --range ${range} --pt_threshold ${pt_threshold} --corrections /project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec12_round_2_${detector_location}_Data_Inject_None_v03_v2_range_${range}_0000_pt_threshold_${pt_threshold}_0000_selfirst_False/OutputFiles --output /project/def-psavard/ladamek/sagitta_bias_matrices/
-	        python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type Data --jobdir /project/def-psavard/ladamek/sagitta_bias_matrices --job_base Injection_Dec12_round_4 --detector_location ${detector_location} --version v03_v2 --range ${range} --pt_threshold ${pt_threshold} --corrections /project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec12_round_3_${detector_location}_Data_Inject_None_v03_v2_range_${range}_0000_pt_threshold_${pt_threshold}_0000_selfirst_False/OutputFiles --output /project/def-psavard/ladamek/sagitta_bias_matrices/
-    	    for inject in Global Local None GlobalPlusLocal
-    	    do
-                echo
-    	        #python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type MC --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base Injection_Dec12_round_1 --detector_location ${detector_location} --version v03_v2 --range ${range} --inject ${inject} --pt_threshold ${pt_threshold} --output /project/def-psavard/ladamek/sagitta_bias_matrices/
-    	        #python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type MC --jobdir /project/def-psavard/ladamek/sagitta_bias_matrices --job_base Injection_Dec12_round_2 --detector_location ${detector_location} --version v03_v2 --range ${range} --inject ${inject} --pt_threshold ${pt_threshold} --corrections /project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec12_round_1_${detector_location}_MC_Inject_${inject}_v03_v2_range_${range}_0000_pt_threshold_${pt_threshold}_0000_selfirst_False/OutputFiles --output /project/def-psavard/ladamek/sagitta_bias_matrices/
-    	        #python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type MC --jobdir /project/def-psavard/ladamek/sagitta_bias_matrices --job_base Injection_Dec12_round_3 --detector_location ${detector_location} --version v03_v2 --range ${range} --inject ${inject} --pt_threshold ${pt_threshold} --corrections /project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec12_round_2_${detector_location}_MC_Inject_${inject}_v03_v2_range_${range}_0000_pt_threshold_${pt_threshold}_0000_selfirst_False/OutputFiles --output /project/def-psavard/ladamek/sagitta_bias_matrices/
-    	        #python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type MC --jobdir /project/def-psavard/ladamek/sagitta_bias_matrices --job_base Injection_Dec12_round_4 --detector_location ${detector_location} --version v03_v2 --range ${range} --inject ${inject} --pt_threshold ${pt_threshold} --corrections /project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec12_round_3_${detector_location}_MC_Inject_${inject}_v03_v2_range_${range}_0000_pt_threshold_${pt_threshold}_0000_selfirst_False/OutputFiles --output /project/def-psavard/ladamek/sagitta_bias_matrices/
-    	    done
-        done
-    done
+        '''
+        inject=None
+        job_base=Injection_Dec17_Data_inject_${inject}_region_${detector_location}_tight_select_after_correction
+    	python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type Data --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_1 --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --select_after_corrections "${tight_selection}" ##### --test
+    	python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type Data --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_2 --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --select_after_corrections "${tight_selection}" --corrections ${jobdir}/${job_base}_round_1/OutputFiles ##### --test
+        '''
+    	for inject in None Random Global Local GlobalPlusLocal
+    	do
+              #the jobs with just a preselection, thats it
+              job_base=Injection_Dec17_inject_${inject}_region_${detector_location}_tight_preselection
+    	        python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type MC --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_1 --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${tight_selection}" ##### --test
+    	        python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type MC --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_2 --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --corrections ${jobdir}/${job_base}_round_1/OutputFiles --preselection "${tight_selection}" ##### --test
+
+              # the jobs with a looser preselection, and then a selection before corrections
+              job_base=Injection_Dec17_inject_${inject}_region_${detector_location}_loose_preselection_tight_select_before_correction
+    	        python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type MC --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_1 --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --select_before_corrections "${tight_selection}" ##### --test
+    	        python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type MC --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_2 --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --corrections ${jobdir}/${job_base}_round_1/OutputFiles --preselection "${tight_selection}" --select_before_corrections "${tight_selection}" ##### --test
+
+              # the jobs with a looser preselection, and then a selection after corrections
+              job_base=Injection_Dec17_inject_${inject}_region_${detector_location}_loose_preselection_tight_select_after_correction
+    	        python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type MC --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_1 --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --select_after_corrections "${tight_selection}" ##### --test
+    	        python $MomentumValidationDir/Submission/submit_cov_matrix_jobs.py  --file_type MC --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_2 --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --corrections ${jobdir}/${job_base}_round_1/OutputFiles --preselection "${tight_selection}" --select_after_corrections "${tight_selection}" ##### --test
+      done
 done

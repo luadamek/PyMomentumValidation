@@ -3,8 +3,6 @@ from batchsub import Job, JobSet
 import os
 import argparse
 
-
-
 #file_type = "MC"
 #detector_location = "ID"
 #injection = "Global"
@@ -29,11 +27,11 @@ parser.add_argument('--inject', type=str, required=False, dest="inject")
 parser.add_argument('--file_type', type=str, required=True, dest="file_type")
 parser.add_argument('--job_base', type=str, required=True, dest="job_base")
 parser.add_argument('--test', action="store_true", dest="test")
-parser.add_argument('--range', dest="range", required=False, default=10.0, type=float)
 parser.add_argument('--version', type=str, required=True, dest="version")
-parser.add_argument('--select_first', action="store_true", dest="select_first")
-parser.add_argument('--pt_threshold', dest="pt_threshold", type=float, required=False, default=-1.0)
 parser.add_argument('--corrections', '-c', type=str, required=False, dest="corrections", default="")
+parser.add_argument('--preselection', "-presel", type=str, required=False, dest="preselection", default="")
+parser.add_argument('--select_before_corrections', "-sel_bf_corr", type=str, required=False, dest="select_before_corrections", default="")
+parser.add_argument('--select_after_corrections', "-sel_af_corr", type=str, required=False, dest="select_after_corrections", default="")
 args = parser.parse_args()
 
 file_type = args.file_type
@@ -44,13 +42,13 @@ output = args.output
 test = args.test
 job_base = args.job_base
 version = args.version
-calc_range = args.range
-pt_threshold  = args.pt_threshold
-select_first = args.select_first
 corrections = args.corrections
 jobdir = args.jobdir
+preselection = args.preselection
+select_before_corrections = args.select_before_corrections
+select_after_corrections = args.select_after_corrections
 
-job_descr = "{}_{}_{}_Inject_{}_{}_range_{:.4f}_pt_threshold_{:.4f}_selfirst_{}".format(job_base, detector_location, file_type, inject, version, args.range, args.pt_threshold, str(select_first)).replace(".", "_")
+job_descr = args.job_base
 if job_descr[-1] == "_": job_descr = job_descr[:-1]
 commands = utils.get_setup_commands()
 jobname = "covmatrix_job_{}".format(job_descr) + "_{}"
@@ -76,14 +74,16 @@ for root_file in files:
         this_jobname = jobname.format(job_counter)
         this_jobdir = os.path.join(jobdir, job_descr)
         this_jobdir = os.path.join(this_jobdir, this_jobname)
-        command = "python {executable} --filename {filename} --start {start} --stop {stop} --detector_location {detector_location} --output_filename {output_filename} --range {range} --pt_threshold {pt_threshold}"
-        if select_first: command += " --select_first"
-        command = command.format(executable = exec_file, filename = root_file, start=start, stop=stop, detector_location=detector_location, output_filename = output_filename, range=calc_range, pt_threshold = pt_threshold)
+        command = "python {executable} --filename {filename} --start {start} --stop {stop} --detector_location {detector_location} --output_filename {output_filename}"
+        command = command.format(executable = exec_file, filename = root_file, start=start, stop=stop, detector_location=detector_location, output_filename = output_filename)
         if corrections: command += " --corrections {}".format(corrections)
         if inject != "": command += " --inject {}".format(inject)
+        if preselection: command += " --preselection \"{}\"".format(preselection)
+        if select_before_corrections: command += " --select_before_corrections \"{}\"".format(select_before_corrections)
+        if select_after_corrections: command += " --select_after_corrections \"{}\"".format(select_after_corrections)
         these_commands = commands + [command]
 
-        job = Job(this_jobname, this_jobdir, these_commands, time = "00:30:00", memory="15000M")
+        job = Job(this_jobname, this_jobdir, these_commands, time = "00:12:00", memory="15000M")
         jobset.add_job(job)
         job_counter += 1
 

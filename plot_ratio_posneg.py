@@ -11,8 +11,8 @@ from MatrixInversion import get_deltas_from_job
 import os
 
 
-input_files = ["/project/def-psavard/ladamek/momentumvalidationoutput/Nov27_nocalib/Output.root", "/project/def-psavard/ladamek/momentumvalidationoutput/Nov27_calib/Output.root"]
-output_locations = [os.path.join(os.getenv("PWD"), "PosNegOutputFiles"), os.path.join(os.getenv("PWD"), "PosNegOutputFilesCalib")]
+input_files = ["/project/def-psavard/ladamek/momentumvalidationoutput/Dec3_nocalib/Output.root", "/project/def-psavard/ladamek/momentumvalidationoutput/Dec12_calib/Output.root"]
+output_locations = [os.path.join(os.getenv("PWD"), "PosNegOutputFiles_Dec3"), os.path.join(os.getenv("PWD"), "PosNegOutputFilesCalib_Dec12")]
 
 colors = {"Data": ROOT.kBlack, "MC": ROOT.kBlue}
 styles = {"Data": 24, "MC": 24}

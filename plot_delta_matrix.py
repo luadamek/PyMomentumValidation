@@ -98,28 +98,30 @@ def get_difference_histogram(meas, injected, name, low_hi = None):
 
 
 sagitta_histograms = {}
-#base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec3_round_2_{}_MC_Inject_{}_v03_v2_range_{}_pt_threshold_{}_selfirst_False/OutputFiles"
-base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec12_round_{round}_{}_MC_Inject_{}_v03_v2_range_{}_pt_threshold_{}_selfirst_False/OutputFiles"
-base_directory_data = base_directory.replace("MC", "Data")
-for pt in ["100_0000", "-1_0000"]:
-    for r in ["12_0000", "20_0000", "8_0000", "16_0000"]:
-        for region in ["MS", "ID"]:
-            for roun in [1, 2, 3, 4]:
-                output_location = os.path.join(os.getenv("MomentumValidationDir"), "SolutionHistograms_Dec3_round_{round}_{}_{}_{}_selfirst_False".format(r, pt, region, round=roun))
+#base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec16_round_2_{}_MC_Inject_{}_v03_v2_range_{}_pt_threshold_{}_selfirst_False/OutputFiles"
+base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_Dec17_inject_{inject}_region_{detector_location}_{end_string}_round_{round}/OutputFiles"
+base_directory_data = "/scratch/ladamek/sagittabias_matrices/Injection_Dec17_Data_inject_{inject}_region_{detector_location}_{end_string}_round_{round}/OutputFiles"
+for region in ["ID", "ME"]:
+    for end_string in ["tight_preselection", "loose_preselection_tight_select_before_correction", "loose_preselection_tight_select_after_correction"][::-1]:
+        for roun in [1, 2]:
+                output_location = os.path.join(os.getenv("MomentumValidationDir"), "SolutionHistograms_Injection_Dec17_region_{detector_location}_{end_string}_round_{round}".format(detector_location=region, end_string=end_string, round=roun))
                 if not os.path.exists(output_location): os.makedirs(output_location)
-                #if r == "12_0000" and pt == "100_0000":
-                #        bias = "Data"
-                #        directory = base_directory.format(region,bias, r, pt)
-                #        subtraction_dir = base_directory.format(region,"None", r, pt)
-                #        sagitta_histograms[bias] = plot_sagitta_bias(directory, subtraction_dir, output_location, region=region)
-                for bias in ["Global" , "Local", "None", "GlobalPlusLocal"]: #, "Data"]:#, "Null"]:A
+
+                if end_string == "loose_preselection_tight_select_after_correction":
+                    bias="None"
+                    this_endstring = "tight_select_after_correction"
+                    directory = base_directory_data.format(detector_location=region, inject="None", end_string=this_endstring, round=roun)
+                    subtraction_dir = base_directory.format(detector_location=region, inject="None", end_string=end_string, round=roun)
+                    sagitta_histograms[bias] = plot_sagitta_bias(directory, subtraction_dir, output_location, region=region, is_data = True)
+
+                for bias in ["Random", "Global" , "Local", "None", "GlobalPlusLocal"]: #, "Data"]:#, "Null"]:A
                         #get the injection histogram for scale
-                        directory = base_directory.format(region,bias, r, pt, round=roun)
-                        subtraction_dir = base_directory.format(region,"None", r, pt, round=roun)
+                        directory = base_directory.format(detector_location=region, inject=bias, end_string=end_string, round=roun)
+                        subtraction_dir = base_directory.format(detector_location=region, inject="None", end_string=end_string, round=roun)
                         sagitta_histograms[bias] = plot_sagitta_bias(directory, subtraction_dir, output_location, region=region)
 
-                #directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec3_{}_Data_Inject_None_v03_v2/OutputFiles".format(region,bias)
-                #subtraction_dir = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec3_{}_MC_Inject_{}_v03_v2/OutputFiles".format(region,"None")
+                #directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec16_{}_Data_Inject_None_v03_v2/OutputFiles".format(region,bias)
+                #subtraction_dir = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec16_{}_MC_Inject_{}_v03_v2/OutputFiles".format(region,"None")
                 #plot_sagitta_bias(directory, subtraction_dir, output_location, is_data = True, region=region)
                 #extrema = get_extrema(directory)
 
