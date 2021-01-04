@@ -12,12 +12,15 @@ from SagittaBiasUtils import get_df_for_job
 from variables import \
                       calc_pos_id_pt, calc_neg_id_pt,\
                       calc_pos_ms_pt, calc_neg_ms_pt,\
+                      calc_pos_me_pt, calc_neg_me_pt,\
                       calc_pos_cb_pt, calc_neg_cb_pt,\
                       calc_pos_id_eta, calc_neg_id_eta,\
                       calc_pos_ms_eta, calc_neg_ms_eta,\
+                      calc_pos_me_eta, calc_neg_me_eta,\
                       calc_pos_cb_eta, calc_neg_cb_eta,\
                       calc_pos_id_phi, calc_neg_id_phi,\
                       calc_pos_ms_phi, calc_neg_ms_phi,\
+                      calc_pos_me_phi, calc_neg_me_phi,\
                       calc_pos_cb_phi, calc_neg_cb_phi
 
 from BiasCorrection import SagittaBiasCorrection

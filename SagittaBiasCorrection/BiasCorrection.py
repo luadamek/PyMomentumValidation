@@ -5,12 +5,15 @@ from array import array
 from variables import \
                       calc_pos_id_pt, calc_neg_id_pt,\
                       calc_pos_ms_pt, calc_neg_ms_pt,\
+                      calc_pos_me_pt, calc_neg_me_pt,\
                       calc_pos_cb_pt, calc_neg_cb_pt,\
                       calc_pos_id_eta, calc_neg_id_eta,\
                       calc_pos_ms_eta, calc_neg_ms_eta,\
+                      calc_pos_me_eta, calc_neg_me_eta,\
                       calc_pos_cb_eta, calc_neg_cb_eta,\
                       calc_pos_id_phi, calc_neg_id_phi,\
                       calc_pos_ms_phi, calc_neg_ms_phi,\
+                      calc_pos_me_phi, calc_neg_me_phi,\
                       calc_pos_cb_phi, calc_neg_cb_phi
 from selections import check_safe_event
 
@@ -105,6 +108,13 @@ class SagittaBiasCorrection:
             self.neg_phi_var = calc_neg_ms_phi
             self.pos_eta_var = calc_pos_ms_eta
             self.neg_eta_var = calc_neg_ms_eta
+        if flavour == "ME":
+            self.pos_pt_var = calc_pos_me_pt
+            self.neg_pt_var = calc_neg_me_pt
+            self.pos_phi_var = calc_pos_me_phi
+            self.neg_phi_var = calc_neg_me_phi
+            self.pos_eta_var = calc_pos_me_eta
+            self.neg_eta_var = calc_neg_me_eta
         if flavour == "CB":
             self.pos_pt_var = calc_pos_cb_pt
             self.neg_pt_var = calc_neg_cb_pt

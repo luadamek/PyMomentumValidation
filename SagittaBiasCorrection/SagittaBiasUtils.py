@@ -6,12 +6,15 @@ import math
 from variables import \
                       calc_pos_id_pt, calc_neg_id_pt,\
                       calc_pos_ms_pt, calc_neg_ms_pt,\
+                      calc_pos_me_pt, calc_neg_me_pt,\
                       calc_pos_cb_pt, calc_neg_cb_pt,\
                       calc_pos_id_eta, calc_neg_id_eta,\
                       calc_pos_ms_eta, calc_neg_ms_eta,\
+                      calc_pos_me_eta, calc_neg_me_eta,\
                       calc_pos_cb_eta, calc_neg_cb_eta,\
                       calc_pos_id_phi, calc_neg_id_phi,\
                       calc_pos_ms_phi, calc_neg_ms_phi,\
+                      calc_pos_me_phi, calc_neg_me_phi,\
                       calc_pos_cb_phi, calc_neg_cb_phi
 
 from BiasCorrection import SagittaBiasCorrection
@@ -42,8 +45,7 @@ def merge_results(list_of_covs,key ):
     total_cov = sum([el["nentries"] * el[key] for el in list_of_covs])
     return total_cov/total
 
-def inject_bias(df, region, injection_function):
-    injection_histogram = injection_function(region)
+def get_variables(region):
     if region == "ID":
         pos_varx = calc_pos_id_eta
         neg_varx = calc_neg_id_eta
@@ -54,7 +56,17 @@ def inject_bias(df, region, injection_function):
         neg_varx = calc_neg_ms_eta
         pos_vary = calc_pos_ms_phi
         neg_vary = calc_neg_ms_phi
+    elif region == "ME":
+        pos_varx = calc_pos_me_eta
+        neg_varx = calc_neg_me_eta
+        pos_vary = calc_pos_me_phi
+        neg_vary = calc_neg_me_phi
     else: raise ValueError()
+    return pos_varx, neg_varx, pos_vary, neg_vary
+
+def inject_bias(df, region, injection_function):
+    injection_histogram = injection_function(region)
+    pos_varx, neg_varx, pos_vary, neg_vary = get_variables(region)
     correction = SagittaBiasCorrection([injection_histogram],  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = region)
     data = convert_df_to_data(df)
     data = correction.calibrate(data)
@@ -70,8 +82,9 @@ def add_pair_mass(df):
     return df
 
 def get_histogram_function(inject):
-    from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_null, injection_histogram_data
+    from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_null, injection_histogram_data, injection_histogram_random
     if inject == "Global": injection_function = injection_histogram_global
+    if inject == "Random": injection_function = injection_histogram_random
     if inject == "GlobalPlusLocal": injection_function = injection_histogram_globalpluslocal
     if inject == "Local": injection_function = injection_histogram_local
     if inject == "Null": injection_function = injection_histogram_null
@@ -84,11 +97,10 @@ def get_parser():
     parser.add_argument('--detector_location', type=str, dest='detector_location')
     parser.add_argument('--output_filename', type=str, dest='output_filename')
     parser.add_argument('--inject', '-i', type=str, dest="inject", default = "", required=False)
-    parser.add_argument('--resonance', '-r', type=str, dest="resonance", default="Z", required=False)
-    parser.add_argument('--selection', '-s', type=str, dest="selection", default="", required=False)
-    parser.add_argument('--range', '-rg', type=float, dest="range", default=10.0, required=False)
     parser.add_argument('--pt_threshold', '-pth', type=float, dest="pt_threshold", default=-1.0, required=False)
-    parser.add_argument('--select_first', '-sf', action="store_true", dest="select_first")
+    parser.add_argument('--preselection', '-presel', type=str, dest="preselection", default="", required=False)
+    parser.add_argument('--select_before_corrections', '-sel_bf_corr', type=str, dest="select_before_corrections", default="", required=False)
+    parser.add_argument('--select_after_corrections', '-sel_af_corr', type=str, dest="select_after_corrections", default="", required=False)
     parser.add_argument('--corrections', '-c', type=str, dest="corrections", default="", required=False)
     return parser
 
@@ -104,23 +116,15 @@ def get_mass_selection(args):
     else: raise ValueError("{} has no selection".format(args.resonance))
     return selection
 
-def apply_selection(df, args):
-    selection = get_mass_selection(args)
-    if args.selection:
-       print("Applying selection {}".format(args.selection))
-       df = df.query(args.selection)
-    else: 
-       print("Applying selection {}".format(selection))
-       df = df.query(selection)
-
-    if hasattr(args, "pt_threshold"):
-        if args.pt_threshold > 0.0:
-            print("Applying pt threshold {}".format(args.pt_threshold))
-            df = df.query("(Pos_{}_Pt < {}) and (Neg_{}_Pt < {})".format(args.detector_location, args.pt_threshold, args.detector_location, args.pt_threshold))
+def apply_selection(df, selection, args):
+    selection = selection.format(*[args.detector_location for i in range(0, selection.count("{}"))])
+    print("Applying selection {}".format(selection))
+    df = df.query(selection)
     return df
 
 from utils import get_dataframe
 def get_df_for_job(args):
+
     if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
         injection_histogram_function = get_histogram_function(args.inject)
 
@@ -140,32 +144,25 @@ def get_df_for_job(args):
     if "v03" in args.filename and "v2" in args.filename and do_add_pair_mass:
         df = add_pair_mass(df)
 
+    if args.preselection: df = apply_selection(df, args.preselection, args)
+
+    if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
+        df = inject_bias(df, args.detector_location, injection_histogram_function)
+
+    if args.select_before_corrections: df = apply_selection(df, args.select_before_corrections, args)
+
     #apply the corrections
     if args.corrections != "":
         for c in args.corrections.split(","):
             from MatrixInversion import get_deltas_from_job
             injection_histogram, _, detector_location = get_deltas_from_job(c)
             assert args.detector_location == detector_location
-            if detector_location == "ID":
-                pos_varx = calc_pos_id_eta
-                neg_varx = calc_neg_id_eta
-                pos_vary = calc_pos_id_phi
-                neg_vary = calc_neg_id_phi
-            elif detector_location == "MS":
-                pos_varx = calc_pos_ms_eta
-                neg_varx = calc_neg_ms_eta
-                pos_vary = calc_pos_ms_phi
-                neg_vary = calc_neg_ms_phi
+            pos_varx, neg_varx, pos_vary, neg_vary = get_variables(detector_location)
             correction = SagittaBiasCorrection([injection_histogram],  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = detector_location)
             data = convert_df_to_data(df)
             data = correction.calibrate(data)
             df = put_data_back_in_df(data, df)
 
-    if args.select_first: df = apply_selection(df, args)
-
-    if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
-        df = inject_bias(df, args.detector_location, injection_histogram_function)
-
-    if not args.select_first: df = apply_selection(df, args)
+    if args.select_after_corrections: df = apply_selection(df, args.select_after_corrections, args)
 
     return df, eta_edges, phi_edges

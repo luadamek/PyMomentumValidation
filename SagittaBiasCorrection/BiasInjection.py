@@ -32,15 +32,33 @@ def get_injection_values_local(eta_edges, phi_edges, detector_location = "ID"):
     values = scale_to(values)
     return values
 
+def get_injection_values_random(eta_edges, phi_edges, detector_location = "ID"):
+    import random
+    random.seed(1337)
+
+    values = np.ones((len(eta_edges)-1, len(phi_edges)-1))
+    for bindex_x in range(0, len(eta_edges)-1):
+        for bindex_y in range(0, len(phi_edges)-1):
+            values[bindex_x, bindex_y] = random.uniform(-1.0, 1.0)
+    values = scale_to(values, scale=0.7)
+    return values
+
 def injection_histogram_data(detector_location = "ID"):
     bias = "None"
-    base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec3_{}_MC_Inject_{}_v03_v2_range_{}_pt_threshold_{}/OutputFiles"
+    #base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec3_{}_MC_Inject_{}_v03_v2_range_{}_pt_threshold_{}/OutputFiles"
+    base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec12_round_{round}_{detector_location}_MC_Inject_{inject}_v03_v2_range_{range}_0000_pt_threshold_{pt_threshold}_0000_selfirst_False/OutputFiles"
     base_directory_data = base_directory.replace("MC", "Data")
 
-    r = "12_0000"
-    pt = "100_0000"
-    subtraction_dir = base_directory.format(detector_location,"None", r, pt)
-    directory = base_directory_data.format(detector_location, "None", r, pt)
+    r = "12"
+    pt = "100"
+    if detector_location == "ID" or detector_location == "CB":
+        roun = 2
+    elif detector_location == "MS":
+        roun = 4
+    else: raise ValueError("The detector location {} does not exists".format(detector_location))
+
+    directory = base_directory_data.format(detector_location = detector_location, inject= "None", range = r, pt_threshold = pt, round = roun)
+    subtraction_dir = base_directory_data.format(detector_location = detector_location, inject= "None", range = r, pt_threshold = pt, round = roun)
 
     from MatrixInversion import get_deltas_from_job
     sagitta_hist, _, __ = get_deltas_from_job(directory)
@@ -85,6 +103,7 @@ injection_histogram_local = lambda detector_location = "ID" , _ = get_injection_
 injection_histogram_null = lambda detector_location = "ID" , _ = get_injection_values_null :  injection_histogram(_, detector_location = detector_location)
 injection_histogram_global = lambda detector_location = "ID" , _ = get_injection_values_global :  injection_histogram(_, detector_location = detector_location)
 injection_histogram_globalpluslocal = lambda detector_location = "ID" , _ = get_injection_values_globalpluslocal :  injection_histogram(_, detector_location = detector_location)
+injection_histogram_random = lambda detector_location = "ID", _ = get_injection_values_random : injection_histogram(_, detector_location)
 
 def solution_histogram(hist):
      hist.Scale(-1.0)
