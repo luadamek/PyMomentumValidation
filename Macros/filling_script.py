@@ -1,4 +1,4 @@
-from variables import calc_id_mass, calc_ms_mass, calc_cb_mass
+from variables import calc_id_mass, calc_ms_mass, calc_cb_mass, calc_me_mass
 from selections import range_selection_function
 from histogram_filler import create_selection_function, write_histograms
 import ROOT
@@ -6,19 +6,21 @@ from BiasCorrection import SagittaBiasCorrection
 from variables import \
                       calc_pos_id_pt, calc_neg_id_pt,\
                       calc_pos_ms_pt, calc_neg_ms_pt,\
+                      calc_pos_me_pt, calc_neg_me_pt,\
                       calc_pos_cb_pt, calc_neg_cb_pt,\
                       calc_pos_id_eta, calc_neg_id_eta,\
                       calc_pos_ms_eta, calc_neg_ms_eta,\
+                      calc_pos_me_eta, calc_neg_me_eta,\
                       calc_pos_cb_eta, calc_neg_cb_eta,\
                       calc_pos_id_phi, calc_neg_id_phi,\
                       calc_pos_ms_phi, calc_neg_ms_phi,\
+                      calc_pos_me_phi, calc_neg_me_phi,\
                       calc_pos_cb_phi, calc_neg_cb_phi
 from selections import sel_pos_leading_id, sel_neg_leading_id
 import numpy as np
 #put this as the default pt binning somewhere
 from binnings import global_pt_binning
 pt_bins = global_pt_binning
-from variables import calc_ms_mass
 
 def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_options, histsetname):
 
@@ -55,6 +57,17 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                          xlabel ='M_{#mu#mu}^{MS} [GeV]',\
                                          ylabel = 'Number Events')
 
+    histogram_name_base = "{histsetname}_{location}_Mass_Histogram_{count}"
+    histogram_name = histogram_name_base.format(count="Inclusive", location="ME", histsetname=histsetname)
+    hist_filler.book_histogram_fill(histogram_name,\
+                                         calc_me_mass,\
+                                         selections = [],\
+                                         bins = 200,\
+                                         range_low = 91.2-10.0,\
+                                         range_high = 91.2+10.0,\
+                                         xlabel ='M_{#mu#mu}^{ME} [GeV]',\
+                                         ylabel = 'Number Events')
+
 
     phi_bins = np.linspace(phi_bin_options["philow"], phi_bin_options["phihigh"], phi_bin_options["nbins"] + 1)
 
@@ -66,9 +79,12 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
     mass_sel_func_ID = create_selection_function(range_selection_function, [mass_ID], mass_ID, 91.2 - 10.0, 91.2 + 10.0)
     mass_sel_func_CB = create_selection_function(range_selection_function, [mass_CB], mass_CB, 91.2 - 10.0, 91.2 + 10.0)
     mass_sel_func_MS = create_selection_function(range_selection_function, calc_ms_mass.branches, calc_ms_mass, 86.0 - 10.0, 86.0 + 10.0)
+    mass_sel_func_ME = create_selection_function(range_selection_function, [mass_ME], mass_ME, 91.2 - 10.0, 91.2 + 10.0)
+
     base_selections_ID = [mass_sel_func_ID]
     base_selections_CB = [mass_sel_func_CB]
     base_selections_MS = [mass_sel_func_MS]
+    base_selections_ME = [mass_sel_func_ME]
     i = "Inclusive"
     histogram_name_base = "{histsetname}_{charge}_{location}_AverageMassProfile_{count}"
     histogram_name = histogram_name_base.format(charge="Pos", count=i, location="ID", histsetname=histsetname)
@@ -490,7 +506,7 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
             hist_filler.apply_calibration_for_channel("Data17", c)
             hist_filler.apply_calibration_for_channel("Data18", c)
 
-    for varname, var in zip(["ID", "CB", "MS"], [calc_id_mass, calc_cb_mass, calc_ms_mass]):
+    for varname, var in zip(["ID", "CB", "MS", "ME"], [calc_id_mass, calc_cb_mass, calc_ms_mass, calc_me_mass]):
         histogram_name = "{}_mass".format(varname)
         variable_name_for_selection = "Pair_{}_Mass".format(varname)
         hist_filler.book_histogram_fill(histogram_name,\
@@ -535,16 +551,19 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
     mass_MS = calc_ms_mass
     mass_ID = "Pair_ID_Mass"
     mass_CB = "Pair_CB_Mass"
+    mass_ME = "Pair_ME_Mass"
     mass_selZ_func_ID = create_selection_function(range_selection_function, [mass_ID], mass_ID, 91.2 - 10.0, 91.2 + 10.0)
     mass_selZ_func_CB = create_selection_function(range_selection_function, [mass_CB], mass_CB, 91.2 - 10.0, 91.2 + 10.0)
     mass_selZ_func_MS = create_selection_function(range_selection_function, calc_ms_mass.branches, calc_ms_mass, 86.0 - 10.0, 86.0 + 10.0)
+    mass_selZ_func_ME = create_selection_function(range_selection_function, [mass_ME], mass_ME, 91.2 - 10.0, 91.2 + 10.0)
 
     mass_MS = calc_ms_mass
     mass_selJPSI_func_ID = create_selection_function(range_selection_function, [mass_ID], mass_ID, 2.8, 3.4)
     mass_selJPSI_func_CB = create_selection_function(range_selection_function, [mass_CB], mass_CB, 2.8, 3.4)
     mass_selJPSI_func_MS = create_selection_function(range_selection_function, calc_ms_mass.branches, calc_ms_mass, 2.2, 3.4)
+    mass_selJPSI_func_ME = create_selection_function(range_selection_function, [mass_ME], mass_ME, 2.8, 3.4)
 
-    from variables import calc_cos_theta_star_id, calc_cos_theta_star_ms
+    from variables import calc_cos_theta_star_id, calc_cos_theta_star_ms, calc_cos_theta_star_me
 
     for sel, name in zip([[sel_pos_leading_id], [sel_neg_leading_id], []], ["poslead", "neglead", "Inclusive"]):
         #make invariant mass histograms for ID tracks
@@ -570,6 +589,17 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                              xlabel ='M_{#mu#mu}^{MS} [GeV]',\
                                              ylabel = 'Number Events')
 
+        histogram_name_base = "MassSpectrum_ME_{identified}"
+        histogram_name = histogram_name_base.format(identified = name)
+        hist_filler.book_histogram_fill(histogram_name,\
+                                             calc_me_mass,\
+                                             selections = sel,\
+                                             bins = 100,\
+                                             range_low = 91.2-10.0,\
+                                             range_high = 91.2+10.0,\
+                                             xlabel ='M_{#mu#mu}^{ME} [GeV]',\
+                                             ylabel = 'Number Events')
+
         histogram_name_base = "MassSpectrumJPSI_ID_{identified}"
         histogram_name = histogram_name_base.format(identified = name)
         hist_filler.book_histogram_fill(histogram_name,\
@@ -592,6 +622,17 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                              xlabel ='M_{#mu#mu}^{MS} [GeV]',\
                                              ylabel = 'Number Events')
 
+        histogram_name_base = "MassSpectrumJPSI_ME_{identified}"
+        histogram_name = histogram_name_base.format(identified = name)
+        hist_filler.book_histogram_fill(histogram_name,\
+                                             calc_me_mass,\
+                                             selections = sel,\
+                                             bins = 100,\
+                                             range_low = 2.2,\
+                                             range_high = 3.4,\
+                                             xlabel ='M_{#mu#mu}^{ME} [GeV]',\
+                                             ylabel = 'Number Events')
+
         histogram_name_base = "CosThetaStar_ID_{identified}"
         histogram_name = histogram_name_base.format(identified = name)
         hist_filler.book_histogram_fill(histogram_name,\
@@ -600,7 +641,7 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                              bins = 100,\
                                              range_low = -1.0,\
                                              range_high = 1.0,\
-                                             xlabel ='cos#theta*',\
+                                             xlabel ='cos#theta*_{ID}',\
                                              ylabel = 'Number Events')
 
         histogram_name_base = "CosThetaStar_MS_{identified}"
@@ -611,8 +652,21 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                              bins = 100,\
                                              range_low = -1.0,\
                                              range_high = 1.0,\
-                                             xlabel ='cos#theta*',\
+                                             xlabel ='cos#theta*_{MS}',\
                                              ylabel = 'Number Events')
+
+
+        histogram_name_base = "CosThetaStar_ME_{identified}"
+        histogram_name = histogram_name_base.format(identified = name)
+        hist_filler.book_histogram_fill(histogram_name,\
+                                             calc_cos_theta_star_me,\
+                                             selections = sel + [mass_selZ_func_ME],\
+                                             bins = 100,\
+                                             range_low = -1.0,\
+                                             range_high = 1.0,\
+                                             xlabel ='cos#theta*_{ME}',\
+                                             ylabel = 'Number Events')
+
 
         histogram_name_base = "CosThetaStarJPSI_ID_{identified}"
         histogram_name = histogram_name_base.format(identified = name)
@@ -622,7 +676,7 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                              bins = 100,\
                                              range_low = -1.0,\
                                              range_high = 1.0,\
-                                             xlabel ='cos#theta*',\
+                                             xlabel ='cos#theta*_{ID}',\
                                              ylabel = 'Number Events')
 
         histogram_name_base = "CosThetaStarJSPI_MS_{identified}"
@@ -633,7 +687,18 @@ def fill_histograms(hist_filler, output_filename, calibrations = None):
                                              bins = 100,\
                                              range_low = -1.0,\
                                              range_high = 1.0,\
-                                             xlabel ='cos#theta*',\
+                                             xlabel ='cos#theta*_{MS}',\
+                                             ylabel = 'Number Events')
+
+        histogram_name_base = "CosThetaStarJSPI_ME_{identified}"
+        histogram_name = histogram_name_base.format(identified = name)
+        hist_filler.book_histogram_fill(histogram_name,\
+                                             calc_cos_theta_star_me,\
+                                             selections = sel + [mass_selJPSI_func_ME],\
+                                             bins = 100,\
+                                             range_low = -1.0,\
+                                             range_high = 1.0,\
+                                             xlabel ='cos#theta*_{ME}',\
                                              ylabel = 'Number Events')
 
         '''

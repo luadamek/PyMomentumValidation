@@ -396,6 +396,11 @@ def ms_mass(event):
 branches = ["Pos_MS_Pt", "Neg_MS_Pt", "Pos_MS_Phi", "Neg_MS_Phi", "Pos_MS_Eta", "Neg_MS_Eta"]
 calc_ms_mass = Calculation(ms_mass, branches)
 
+def me_mass(event):
+    return event["Pair_ME_Mass"]
+branches = ["Pair_ME_Mass"]
+calc_me_mass = Calculation(me_mass, branches)
+
 def cb_pt(event):
     return event["Pair_CB_Pt"]
 branches = ["Pair_CB_Pt"]
@@ -410,6 +415,11 @@ def ms_pt(event):
     return event["Pair_MS_Pt"]
 branches = ["Pair_MS_Pt"]
 calc_ms_pt = Calculation(ms_pt, branches)
+
+def me_pt(event):
+    return event["Pair_ME_Pt"]
+branches = ["Pair_ME_Pt"]
+calc_me_pt = Calculation(me_pt, branches)
 
 def pos_cb_pt(event):
     return event["Pos_CB_Pt"]
@@ -426,6 +436,11 @@ def pos_ms_pt(event):
 branches = ["Pos_MS_Pt"]
 calc_pos_ms_pt = Calculation(pos_ms_pt, branches)
 
+def pos_me_pt(event):
+    return event["Pos_ME_Pt"]
+branches = ["Pos_ME_Pt"]
+calc_pos_me_pt = Calculation(pos_me_pt, branches)
+
 def neg_cb_pt(event):
     return event["Neg_CB_Pt"]
 branches = ["Neg_CB_Pt"]
@@ -440,6 +455,11 @@ def neg_ms_pt(event):
     return event["Neg_MS_Pt"]
 branches = ["Neg_MS_Pt"]
 calc_neg_ms_pt = Calculation(neg_ms_pt, branches)
+
+def neg_me_pt(event):
+    return event["Neg_ME_Pt"]
+branches = ["Neg_ME_Pt"]
+calc_neg_me_pt = Calculation(neg_me_pt, branches)
 
 def weight(event):
     return event["TotalWeight"]
@@ -461,6 +481,11 @@ def pos_ms_eta(event):
 branches = ["Pos_MS_Eta"]
 calc_pos_ms_eta = Calculation(pos_ms_eta, branches)
 
+def pos_me_eta(event):
+    return event["Pos_ME_Eta"]
+branches = ["Pos_ME_Eta"]
+calc_pos_me_eta = Calculation(pos_me_eta, branches)
+
 def neg_cb_eta(event):
     return event["Neg_CB_Eta"]
 branches = ["Neg_CB_Eta"]
@@ -475,6 +500,11 @@ def neg_ms_eta(event):
     return event["Neg_MS_Eta"]
 branches = ["Neg_MS_Eta"]
 calc_neg_ms_eta = Calculation(neg_ms_eta, branches)
+
+def neg_me_eta(event):
+    return event["Neg_ME_Eta"]
+branches = ["Neg_ME_Eta"]
+calc_neg_me_eta = Calculation(neg_me_eta, branches)
 
 def pos_cb_phi(event):
     return event["Pos_CB_Phi"]
@@ -491,6 +521,11 @@ def pos_ms_phi(event):
 branches = ["Pos_MS_Phi"]
 calc_pos_ms_phi = Calculation(pos_ms_phi, branches)
 
+def pos_me_phi(event):
+    return event["Pos_ME_Phi"]
+branches = ["Pos_ME_Phi"]
+calc_pos_me_phi = Calculation(pos_me_phi, branches)
+
 def neg_cb_phi(event):
     return event["Neg_CB_Phi"]
 branches = ["Neg_CB_Phi"]
@@ -505,6 +540,12 @@ def neg_ms_phi(event):
     return event["Neg_MS_Phi"]
 branches = ["Neg_MS_Phi"]
 calc_neg_ms_phi = Calculation(neg_ms_phi, branches)
+
+def neg_me_phi(event):
+    return event["Neg_ME_Phi"]
+branches = ["Neg_ME_Phi"]
+calc_neg_me_phi = Calculation(neg_me_phi, branches)
+
 
 from selections import pos_leading_id, neg_leading_id
 def leading_id_pt(event):
@@ -636,3 +677,7 @@ calc_cos_theta_star_cb = Calculation(cos_theta_star_id, ["Pos_CB_Pt", "Neg_CB_Pt
 def cos_theta_star_ms(event):
     return cos_theta_star(event, "MS")
 calc_cos_theta_star_ms = Calculation(cos_theta_star_ms, ["Pos_MS_Pt", "Neg_MS_Pt", "Pos_MS_Eta", "Neg_MS_Eta", "Pos_MS_Phi", "Neg_MS_Phi"])
+
+def cos_theta_star_me(event):
+    return cos_theta_star(event, "ME")
+calc_cos_theta_star_me = Calculation(cos_theta_star_me, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
