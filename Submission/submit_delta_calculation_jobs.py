@@ -3,21 +3,6 @@ from batchsub import Job, JobSet
 import os
 import argparse
 
-#file_type = "MC"
-#detector_location = "ID"
-#injection = "Global"
-#outfile_base = "output_{}.pkl"
-#output_location = "/project/def-psavard/ladamek/sagitta_bias_matrices"
-
-#    parser.add_argument('--detector_location', type=str, dest='detector_location')
-#    parser.add_argument('--output_filename', type=str, dest='output_filename')
-#    parser.add_argument('--inject', '-i', type=str, dest="inject", default = "", required=false)
-#    parser.add_argument('--resonance', '-r', type=str, dest="resonance", default="z", required=false)
-#    parser.add_argument('--selection', '-s', type=str, dest="selection", default="", required=false)
-#    parser.add_argument('--range', '-rg', type=float, dest="range", default=10.0, required=false)
-#    parser.add_argument('--pt_threshold', '-pth', type=float, dest="pt_threshold", default=-1.0, required=false)
-#    parser.add_argument('--select_first', '-sf', action="store_true", required=false, dest="select_first")
-
 parser = argparse.ArgumentParser(description='Parse Arguments')
 parser.add_argument('--outfile_base', type=str, required = False, dest='outfile_base', default = "output_{}.pkl")
 parser.add_argument('--detector_location', type=str, dest='detector_location', required=True)
@@ -32,6 +17,7 @@ parser.add_argument('--corrections', '-c', type=str, required=False, dest="corre
 parser.add_argument('--preselection', "-presel", type=str, required=False, dest="preselection", default="")
 parser.add_argument('--select_before_corrections', "-sel_bf_corr", type=str, required=False, dest="select_before_corrections", default="")
 parser.add_argument('--select_after_corrections', "-sel_af_corr", type=str, required=False, dest="select_after_corrections", default="")
+parser.add_argument('--method' , '-meth', type=str, default="matrix", required=False)
 args = parser.parse_args()
 
 file_type = args.file_type
@@ -63,7 +49,9 @@ for root_file in files:
         stop = startstop[1]
         tree_name = "MuonMomentumCalibrationTree"
         root_file = root_file
-        exec_file = os.path.join(os.getenv("MomentumValidationDir"), "SagittaBiasCorrection/MatrixInversion.py")
+        if args.method == "matrix": exec_file = os.path.join(os.getenv("MomentumValidationDir"), "SagittaBiasCorrection/MatrixInversion.py")
+        elif args.method == "delta_qm": exec_file = os.path.join(os.getenv("MomentumValidationDir"), "SagittaBiasCorrection/DeltaQMIterativeMethod.py")
+        else: raise ValueError("Method {} doesn't exists".format(args.method))
 
         output_dir = os.path.join(output, job_descr)
         output_location = os.path.join(output_dir, "OutputFiles")
@@ -83,7 +71,9 @@ for root_file in files:
         if select_after_corrections: command += " --select_after_corrections \"{}\"".format(select_after_corrections)
         these_commands = commands + [command]
 
-        job = Job(this_jobname, this_jobdir, these_commands, time = "00:12:00", memory="15000M")
+        if args.method == "matrix": time = "00:12:00"
+        elif args.method == "delta_qm": time = "00:03:00"
+        job = Job(this_jobname, this_jobdir, these_commands, time = time, memory="15000M")
         jobset.add_job(job)
         job_counter += 1
 

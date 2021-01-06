@@ -18,6 +18,7 @@ from variables import \
                       calc_pos_cb_phi, calc_neg_cb_phi
 
 from BiasCorrection import SagittaBiasCorrection
+import ROOT
 
 eta_edges_ID = np.linspace(-2.5, +2.5 , 25)
 #eta_edges_ID[0] = -2.65
@@ -39,6 +40,59 @@ def put_data_back_in_df(data, df):
         print(c)
         df[c] = data[c]
     return df
+
+def find_bindex(edges_of_bin, all_edges):
+    bindex = 1
+    found=False
+    for bin_low, bin_high in zip(all_edges[:-1], all_edges[1:]):
+        if bin_low == edges_of_bin[0] and bin_high == edges_of_bin[1]:
+            return bindex
+        bindex += 1
+    assert False
+
+def place_deltas_into_histogram(deltas, binning, detector_location):
+
+    if type(binning) != tuple:
+
+        x_bins = binning.bin_edges
+        y_bins = binning.subbins[0].bin_edges
+
+        x_var = binning.variable.replace("Pos_", "").replace("Neg_", "")
+        y_var = binning.subbins[0].variable.replace("Pos_", "").replace("Neg_", "")
+
+        from array import array
+        delta_hist = ROOT.TH2D("delta", "delta", len(x_bins) - 1, array('d',x_bins), len(y_bins) - 1, array('d',y_bins))
+        delta_hist.GetXaxis().SetTitle(x_var)
+        delta_hist.GetYaxis().SetTitle(y_var)
+
+        for i in range(0, len(deltas)):
+            edges = binning.edges_global(i)
+            bindex = binning.edges_global
+            edges_dict = {}
+            edges_dict[y_var] = edges[1]
+            edges_dict[x_var] = edges[0]
+            x_bindex = find_bindex(edges_dict[x_var], x_bins)
+            y_bindex = find_bindex(edges_dict[y_var], y_bins)
+            delta_hist.SetBinContent(x_bindex, y_bindex, delta[i])
+
+    else:
+        x_bins = binning[0].bin_edges
+        y_bins = binning[1].bin_edges
+
+        x_var = binning[0].variable.replace("Pos_", "").replace("Neg_", "")
+        y_var = binning[1].variable.replace("Pos_", "").replace("Neg_", "")
+
+        from array import array
+        delta_hist = ROOT.TH2D("delta", "delta", len(x_bins) - 1, array('d',x_bins), len(y_bins) - 1, array('d',y_bins))
+        delta_hist.GetXaxis().SetTitle(x_var)
+        delta_hist.GetYaxis().SetTitle(y_var)
+
+        for x_bindex in range(1, len(x_bins)):
+            for y_bindex in range(1, len(y_bins)):
+                delta_hist.SetBinContent(x_bindex, y_bindex, deltas[x_bindex-1, y_bindex-1])
+
+
+    return delta_hist, {"x_var":x_var, "y_var":y_var}
 
 def merge_results(list_of_covs,key ):
     total = sum([el["nentries"] for el in list_of_covs])
@@ -102,19 +156,9 @@ def get_parser():
     parser.add_argument('--select_before_corrections', '-sel_bf_corr', type=str, dest="select_before_corrections", default="", required=False)
     parser.add_argument('--select_after_corrections', '-sel_af_corr', type=str, dest="select_after_corrections", default="", required=False)
     parser.add_argument('--corrections', '-c', type=str, dest="corrections", default="", required=False)
+    parser.add_argument("--qm_corrections", "-qmc", type=str, dest="qm_corrections", default="", required=False)
     return parser
 
-def get_mass_selection(args):
-    selection = ""
-    if args.resonance == "Z":
-        mean_mass = 91.2 # GeV
-        if args.detector_location == "MS": mean_mass = 86.0 # GeV
-        selection = "abs(Pair_{}_Mass - {}) < {}".format(args.detector_location, mean_mass, args.range)
-    elif args.resonance == "JPSI":
-        mean_mass = 3.1 # GeV
-        selection = "abs(Pair_{}_Mass - {}) < {}".format(args.detector_location, mean_mass, args.range)
-    else: raise ValueError("{} has no selection".format(args.resonance))
-    return selection
 
 def apply_selection(df, selection, args):
     selection = selection.format(*[args.detector_location for i in range(0, selection.count("{}"))])
@@ -154,14 +198,16 @@ def get_df_for_job(args):
     #apply the corrections
     if args.corrections != "":
         for c in args.corrections.split(","):
-            from MatrixInversion import get_deltas_from_job
-            injection_histogram, _, detector_location = get_deltas_from_job(c)
+            if args.method == "matrix": from MatrixInversion import get_deltas_from_job
+            elif args.method == "delta_qm": from DeltaQMIterativeMethod import get_deltas_from_job
+            correction_histogram, _, detector_location = get_deltas_from_job(c)
             assert args.detector_location == detector_location
             pos_varx, neg_varx, pos_vary, neg_vary = get_variables(detector_location)
-            correction = SagittaBiasCorrection([injection_histogram],  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = detector_location)
+            correction = SagittaBiasCorrection([correction_histogram],  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = detector_location)
             data = convert_df_to_data(df)
             data = correction.calibrate(data)
             df = put_data_back_in_df(data, df)
+            del data
 
     if args.select_after_corrections: df = apply_selection(df, args.select_after_corrections, args)
 

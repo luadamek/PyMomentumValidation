@@ -38,7 +38,7 @@ def draw_2d_histogram(histogram, description = "", normalize = True, output_loca
     canvas.Print(os.path.join(output_location, canvas.GetName() + ".pdf"))
 
 histogram_flavours = ["coarsest", "finer", "finest"]
-detector_locations = ["ID", "CB", "MS"]
+detector_locations = ["ID", "CB", "ME"]
 for histogram_flavour in histogram_flavours:
     for detector_location in detector_locations:
 
@@ -65,7 +65,7 @@ for histogram_flavour in histogram_flavours:
         for histogram_name in histograms:
             histograms = hm.get_histograms(histogram_name)
             #for key in histograms:
-            #    print("location: {}, channel: {}, RMS {:.4f}".format(detector_location ,key, histograms[key].GetRMS()))
+            #    print("location: {}, channel: {}, RME {:.4f}".format(detector_location ,key, histograms[key].GetRME()))
             #input()
             from plotting_utils import draw_data_vs_mc, draw_histograms
             draw_data_vs_mc(histograms,\
@@ -107,7 +107,7 @@ for histogram_flavour in histogram_flavours:
         Neg_histograms = ["{}_Neg_{}_AverageMassProfile_{}".format(histogram_flavour, detector_location, i) for i in ["Inclusive"]]
         Pos_histograms = ["{}_Pos_{}_AverageMassProfile_{}".format(histogram_flavour, detector_location, i) for i in ["Inclusive"]]
         for Pos_histogram, Neg_histogram in zip(Pos_histograms, Neg_histograms):
-            #if detector_location == "MS" and  "Inclusive" in Pos_histogram and "Inclusive" in Neg_histogram: continue
+            #if detector_location == "ME" and  "Inclusive" in Pos_histogram and "Inclusive" in Neg_histogram: continue
             continue
             h_pos = hm.get_histograms(Pos_histogram)
             h_neg = hm.get_histograms(Neg_histogram)

@@ -11,8 +11,8 @@ from MatrixInversion import get_deltas_from_job
 import os
 
 
-input_files = ["/project/def-psavard/ladamek/momentumvalidationoutput/Dec3_nocalib/Output.root", "/project/def-psavard/ladamek/momentumvalidationoutput/Dec12_calib/Output.root"]
-output_locations = [os.path.join(os.getenv("PWD"), "PosNegOutputFiles_Dec3"), os.path.join(os.getenv("PWD"), "PosNegOutputFilesCalib_Dec12")]
+input_files = ["/project/def-psavard/ladamek/momentumvalidationoutput/Jan4_nocalib/Output.root", "/project/def-psavard/ladamek/momentumvalidationoutput/Jan4_calib_3/Output.root"]
+output_locations = [os.path.join(os.getenv("PWD"), "PosNegOutputFiles_Jan4"), os.path.join(os.getenv("PWD"), "PosNegOutputFilesCalib_3_Jan4")]
 
 colors = {"Data": ROOT.kBlack, "MC": ROOT.kBlue}
 styles = {"Data": 24, "MC": 24}
@@ -26,7 +26,7 @@ for input_file, output_location in zip(input_files, output_locations):
     hist_manager.list_histograms("Mass")
 
     for histogram_name_base in ["MassSpectrum_{location}_{identified}", "CosThetaStar_{location}_{identified}"]:
-        for location in ["ID", "MS"]:
+        for location in ["ID", "ME"]:
             #make a plot of the ratio of the mass distribution for +'ve and ='ve tracks
             sets_of_histograms = {}
             for name in ["poslead", "neglead"]:

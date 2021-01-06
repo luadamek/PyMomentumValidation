@@ -25,33 +25,33 @@ from variables import \
 
 from BiasCorrection import SagittaBiasCorrection
 
-from SagittaBiasUtils import eta_edges_ID, eta_edges_else, phi_edges, convert_df_to_data, put_data_back_in_df, inject_bias, add_pair_mass, get_histogram_function
-
-from utils import get_dataframe
-
-def get_cov_matrices(df, global_binning_pos, global_binning_neg, detector_location):
+from SagittaBiasUtils import eta_edges_ID, eta_edges_else, phi_edges, convert_df_to_data, put_data_back_in_df, inject_bias, add_pair_mass, get_histogram_function, merge_results, find_bindex
+def get_cov_matrices(df, global_binning_pos, global_binning_neg, detector_location, debug = False):
     df["pos_bindex"] = global_binning_pos.get_global_bindex(df)
     df["neg_bindex"] = global_binning_neg.get_global_bindex(df)
     #get rid of overflow
-    print("Before overflow correction {}".format(len(df)))
+    if debug: print("Before overflow correction {}".format(len(df)))
     df = df.query("(pos_bindex >= 0) and (neg_bindex >= 0)")
-    print("After overflow correction {}".format(len(df)))
+    if debug: print("After overflow correction {}".format(len(df)))
 
     n_corr_bins = global_binning_pos.get_global_nbins()#number of bins in which to apply the correction
     e_vector = np.zeros((n_corr_bins, len(df)))
 
     weights = df.eval("TotalWeight").values
-    print(weights)
-    print(np.min(weights))
-    print(np.max(weights))
+
+    if debug: print("Printing the weights")
+    if debug: print("weights", weights)
+    if debug: print("min weight", np.min(weights))
+    if debug: print("max weight", np.max(weights))
+
     #calculate the e vector
     e_vector[df["pos_bindex"].values, np.arange(0, len(df))] += df.eval("(Pair_{}_Mass ** 2) * Pos_{}_Pt".format(detector_location, detector_location)).values
     e_vector[df["neg_bindex"].values, np.arange(0, len(df))] -= df.eval("(Pair_{}_Mass ** 2) * Neg_{}_Pt".format(detector_location, detector_location)).values
 
-    print("calculating the covariance")
+    if debug: print("calculating the covariance")
     #calculate the covariance matrix
     cov = utils_cov(e_vector, aweights=weights)
-    print("Done!")
+    if debug: print("Done!")
 
     #equal_to = np.zeros((n_corr_bins))
     masses = df.eval("(Pair_{}_Mass ** 2)".format(detector_location)).values
@@ -64,17 +64,6 @@ def get_cov_matrices(df, global_binning_pos, global_binning_neg, detector_locati
     equal_to = (1.0/np.sum(weights)) * np.sum( weights.reshape(weights.shape[0],-1) * ((masses - mean_mass) * (e_vector_trans - mean_e_vector)), axis=0)
 
     return cov, equal_to, np.sum(weights)
-
-from SagittaBiasUtils import merge_results
-
-def find_bindex(edges_of_bin, all_edges):
-    bindex = 1
-    found=False
-    for bin_low, bin_high in zip(all_edges[:-1], all_edges[1:]):
-        if bin_low == edges_of_bin[0] and bin_high == edges_of_bin[1]:
-            return bindex
-        bindex += 1
-    assert False
 
 
 def get_deltas_from_job(outfile_location):
@@ -101,27 +90,9 @@ def get_deltas_from_job(outfile_location):
     binning = opened[0]["pos_binning"]
     detector_location = opened[0]["detector_location"]
 
-    x_bins = binning.bin_edges
-    y_bins = binning.subbins[0].bin_edges
-
-    x_var = binning.variable.replace("Pos_", "").replace("Neg_", "")
-    y_var = binning.subbins[0].variable.replace("Pos_", "").replace("Neg_", "")
-
     #delta_hist = ROOT.TH2D("delta", "delta", len(x_bins)-1, min(x_bins), max(x_bins), len(y_bins)-1, min(y_bins), max(y_bins))
-    from array import array
-    delta_hist = ROOT.TH2D("delta", "delta", len(x_bins) - 1, array('d',x_bins), len(y_bins) - 1, array('d',y_bins))
 
-    for i in range(0, len(delta)):
-        edges = binning.edges_global(i)
-        bindex = binning.edges_global
-        edges_dict = {}
-        edges_dict[y_var] = edges[1]
-        edges_dict[x_var] = edges[0]
-        x_bindex = find_bindex(edges_dict[x_var], x_bins)
-        y_bindex = find_bindex(edges_dict[y_var], y_bins)
-        delta_hist.GetXaxis().SetTitle(x_var)
-        delta_hist.GetYaxis().SetTitle(y_var)
-        delta_hist.SetBinContent(x_bindex, y_bindex, delta[i])
+    delta_hist, var_dict = place_deltas_into_histogram(deltas, binning, detector_location)
 
     opened = opened[:1] #free memory from all the open matrices
     if "corrections" in opened[0] and opened[0]["corrections"] != "":
@@ -130,7 +101,7 @@ def get_deltas_from_job(outfile_location):
         for c in corrections.split(","):
             delta_hist.Add(get_deltas_from_job(c)[0], 1.0)
 
-    return delta_hist, {"x_var":x_var, "y_var":y_var}, detector_location
+    return delta_hist,  var_dict, detector_location
 
 if __name__ == "__main__":
     from SagittaBiasUtils import get_parser
@@ -140,6 +111,7 @@ if __name__ == "__main__":
     parser.add_argument('--start', type=int, dest='start')
     parser.add_argument('--stop', type=int, dest='stop')
     args = parser.parse_args()
+    args.method = "matrix"
 
     df, eta_edges, phi_edges = get_df_for_job(args)
 
