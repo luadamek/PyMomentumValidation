@@ -73,31 +73,52 @@ def get_deltas_from_job(outfile_location):
     import ROOT
 
     matrices = glob.glob(os.path.join(outfile_location, "*.pkl"))
+    matrices = [m for m in matrices if "CACHE" not in os.path.split(m)[-1]]
 
-    opened = []
+    cache_file = os.path.join(outfile_location, "CACHE.pkl")
+    try:
+        print("Trying to open {}".format(cache_file))
+        import pickle as pkl
+        with open(cache_file, "rb") as f:
+            delta_hist,  var_dict, detector_location, corrections = pkl.load(f)
+        print("Successfully opened {}".format(cache_file))
+
+
+    except Exception as e:
+        print("Failed to open cache. Opening each pkl file instead")
+        opened = []
+        for m in matrices:
+            with open(m, "rb") as f:
+                print("opening {}".format(m))
+                opened.append(pkl.load(f))
+
+        cov = merge_results(opened, "cov")
+        b = merge_results(opened, "b")
+
+        import numpy as np
+        deltas = np.linalg.solve(cov, b)
+
+        binning = opened[0]["pos_binning"]
+        detector_location = opened[0]["detector_location"]
+
+        from SagittaBiasUtils import place_deltas_into_histogram
+        delta_hist, var_dict = place_deltas_into_histogram(deltas, binning, detector_location)
+        corrections = None
+        if "corrections" in opened[0] and opened[0]["corrections"] != "":
+            corrections = opened[0]["corrections"]
+
+        import pickle as pkl
+        with open(cache_file, "wb") as f:
+            pkl.dump((delta_hist,  var_dict, detector_location, corrections), f)
+            os.system("rm {}".format(m))
+
+        del opened
+        print("Done opening")
+
     for m in matrices:
-        with open(m, "rb") as f:
-            print("opening {}".format(m))
-            opened.append(pkl.load(f))
+        os.system("rm {}".format(m))
 
-    cov = merge_results(opened, "cov")
-    b = merge_results(opened, "b")
-
-    import numpy as np
-    delta = np.linalg.solve(cov, b)
-
-    #ok now load everything into a histogram
-    binning = opened[0]["pos_binning"]
-    detector_location = opened[0]["detector_location"]
-
-    #delta_hist = ROOT.TH2D("delta", "delta", len(x_bins)-1, min(x_bins), max(x_bins), len(y_bins)-1, min(y_bins), max(y_bins))
-
-    delta_hist, var_dict = place_deltas_into_histogram(deltas, binning, detector_location)
-
-    opened = opened[:1] #free memory from all the open matrices
-    if "corrections" in opened[0] and opened[0]["corrections"] != "":
-        corrections = opened[0]["corrections"]
-        del opened #free memory from all of the open matrices
+    if corrections is not None:
         for c in corrections.split(","):
             delta_hist.Add(get_deltas_from_job(c)[0], 1.0)
 

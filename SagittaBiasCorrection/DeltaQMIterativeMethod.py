@@ -68,11 +68,16 @@ def get_qm_m(df, detector_location, phi_binning_pos, phi_binning_neg, eta_binnin
             val_neg = np.sum(df_neg["Pair_{}_Mass".format(detector_location)].values * df_neg["TotalWeight"].values)
             qm_average -= val_neg
 
-            qm_means[i, j] = qm_average / (pos_sum + neg_sum)
-            q_means[i, j] = (pos_sum - neg_sum) / (pos_sum + neg_sum)
+            if (pos_sum + neg_sum) > 0.0:
+                qm_means[i, j] = qm_average / (pos_sum + neg_sum)
+                q_means[i, j] = (pos_sum - neg_sum) / (pos_sum + neg_sum)
+            else:
+                qm_means[i, j] = 0.0
+                q_means[i, j] = 0.0
 
-    mean = np.average(df["Pair_{}_Mass".format(detector_location)].values, weights = df["TotalWeight"].values)
     nentries = np.sum(df["TotalWeight"].values)
+    if nentries > 0.0: mean = np.average(df["Pair_{}_Mass".format(detector_location)].values, weights = df["TotalWeight"].values)
+    else: mean = 0.0
     return qm_means, mean, q_means, nentries
 
 def get_deltas_from_job(outfile_location):
@@ -82,31 +87,58 @@ def get_deltas_from_job(outfile_location):
     import ROOT
 
     print(outfile_location)
-    matrices = glob.glob(os.path.join(outfile_location, "*.pkl"))
+    output_statistics = glob.glob(os.path.join(outfile_location, "*.pkl"))
+    output_statistics = [m for m in output_statistics if "CACHE" not in os.path.split(m)[-1]]
 
-    opened = []
-    for m in matrices:
-        with open(m, "rb") as f:
-            print("opening {}".format(m))
-            opened.append(pkl.load(f))
+    cache_file = os.path.join(outfile_location, "CACHE.pkl")
+    try:
+        print("Trying to open {}".format(cache_file))
+        import pickle as pkl
+        with open(cache_file, "rb") as f:
+            delta_hist,  var_dict, detector_location, corrections = pkl.load(f)
+        print("Successfully opened {}".format(cache_file))
 
-    mean_mass = merge_results(opened, "mean_m")
-    mean_qmass = merge_results(opened, "mean_qm")
-    mean_q = merge_results(opened, "mean_q")
+    except Exception as e:
+        print("Failed to open cache. Opening each pkl file instead")
+        opened = []
+        for m in output_statistics:
+            with open(m, "rb") as f:
+                print("opening {}".format(m))
+                opened.append(pkl.load(f))
+                opened[-1]["mean_q"][np.isnan(opened[-1]["mean_q"])] = 0.0
+                if np.isnan(opened[-1]["mean_m"]): opened[-1]["mean_m"] = 0.0
+                opened[-1]["mean_qm"][np.isnan(opened[-1]["mean_qm"])] = 0.0
 
-    deltas = ((mean_qmass / mean_mass) - (mean_q)) / (4 * mean_mass)
+        mean_mass = merge_results(opened, "mean_m")
+        mean_qmass = merge_results(opened, "mean_qm")
+        mean_q = merge_results(opened, "mean_q")
 
-    binning_phi = opened[0]["phi_binning_pos"]
-    binning_eta = opened[0]["eta_binning_pos"]
-    detector_location = opened[0]["detector_location"]
+        delta_s = ((mean_qmass / mean_mass) - (mean_q))
+        deltas = 4 * delta_s/mean_mass
+        #deltas = ((mean_qmass / mean_mass) - (mean_q)) / (4 * mean_mass) * 1000.0 #what am I missing here??
 
-    from SagittaBiasUtils import place_deltas_into_histogram
-    delta_hist, var_dict = place_deltas_into_histogram(deltas, (binning_eta, binning_phi), detector_location)
+        binning_phi = opened[0]["phi_binning_pos"]
+        binning_eta = opened[0]["eta_binning_pos"]
+        detector_location = opened[0]["detector_location"]
 
-    opened = opened[:1] #free memory from all the open matrices
-    if "corrections" in opened[0] and opened[0]["corrections"] != "":
-        corrections = opened[0]["corrections"]
-        del opened #free memory from all of the open matrices
+        from SagittaBiasUtils import place_deltas_into_histogram
+        delta_hist, var_dict = place_deltas_into_histogram(deltas, (binning_eta, binning_phi), detector_location)
+
+        corrections = None
+        if "corrections" in opened[0] and opened[0]["corrections"] != "":
+            corrections = opened[0]["corrections"]
+
+        import pickle as pkl
+        with open(cache_file, "wb") as f:
+            pkl.dump((delta_hist,  var_dict, detector_location, corrections), f)
+
+        del opened
+        print("Done opening")
+
+    for o in output_statistics:
+        os.system("rm {}".format(o))
+
+    if corrections is not None:
         for c in corrections.split(","):
             delta_hist.Add(get_deltas_from_job(c)[0], 1.0)
 
@@ -125,9 +157,13 @@ if __name__ == "__main__":
     df, eta_edges, phi_edges= get_df_for_job(args) #don't need the global binning, just the edges
 
     phi_binning_pos = Binning("Pos_{}_Phi".format(args.detector_location), phi_edges, None, repr_override=None)
+    phi_binning_pos.recursively_include_overflow(False)
     phi_binning_neg = Binning("Neg_{}_Phi".format(args.detector_location), phi_edges, None, repr_override=None)
+    phi_binning_neg.recursively_include_overflow(False)
     eta_binning_pos = Binning("Pos_{}_Eta".format(args.detector_location), eta_edges, None, repr_override=None)
+    eta_binning_pos.recursively_include_overflow(False)
     eta_binning_neg = Binning("Neg_{}_Eta".format(args.detector_location), eta_edges, None, repr_override=None)
+    eta_binning_neg.recursively_include_overflow(False)
 
     mean_qm, mean_m, mean_q, nentries = get_qm_m(df, args.detector_location, phi_binning_pos, phi_binning_neg, eta_binning_pos, eta_binning_neg, leading_only = not args.use_both_lead_and_sublead)
 

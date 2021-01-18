@@ -39,6 +39,9 @@ if job_descr[-1] == "_": job_descr = job_descr[:-1]
 commands = utils.get_setup_commands()
 jobname = "covmatrix_job_{}".format(job_descr) + "_{}"
 
+output_dir = os.path.join(output, job_descr)
+output_location = os.path.join(output_dir, "OutputFiles")
+
 job_counter = 0
 jobset = JobSet(job_descr)
 files = utils.get_files(version)[file_type]
@@ -53,8 +56,6 @@ for root_file in files:
         elif args.method == "delta_qm": exec_file = os.path.join(os.getenv("MomentumValidationDir"), "SagittaBiasCorrection/DeltaQMIterativeMethod.py")
         else: raise ValueError("Method {} doesn't exists".format(args.method))
 
-        output_dir = os.path.join(output, job_descr)
-        output_location = os.path.join(output_dir, "OutputFiles")
         if not os.path.exists(output_location): os.makedirs(output_location)
         output_filename = outfile_base.format(job_counter)
         output_filename = os.path.join(output_location, output_filename)
@@ -85,5 +86,14 @@ else:
         print("Checking compleition")
         time.sleep(100)
     print("FINISHED")
+
+    #create the cache file for the delta file
+    if "matrix" == args.method:
+        from MatrixInversion import get_deltas_from_job
+        global get_deltas_from_job
+    elif "delta_qm" == args.method:
+        from DeltaQMIterativeMethod import get_deltas_from_job
+        global get_deltas_from_job
+    get_deltas_from_job(output_location)
 
 
