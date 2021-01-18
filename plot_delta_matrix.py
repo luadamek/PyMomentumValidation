@@ -6,7 +6,6 @@ import ROOT
 from binnings import global_pt_binning, global_pt_binning_zipped
 from plotting_utils import draw_text, draw_2d_histogram
 from atlasplots import set_atlas_style, atlas_label
-from MatrixInversion import get_deltas_from_job
 import os
 set_atlas_style()
 
@@ -17,6 +16,7 @@ def get_extrema(directory):
     return extrema
 
 def get_effect_histogram(target, meas=None, scale=0.045, name=None):
+    global histogram_scales
     import ROOT
     ROOT.gStyle.SetPalette(ROOT.kInvertedDarkBodyRadiator)
     from BiasCorrection import extract_binning_from_histogram
@@ -44,35 +44,25 @@ def get_effect_histogram(target, meas=None, scale=0.045, name=None):
     new_hist.SetMinimum(0.0)
     return new_hist
 
-def plot_sagitta_bias(directory, subtraction_directory, output_location, extrema=None, is_data = False, region=None):
+def get_sagitta_bias_histogram(directory, subtraction_directory = None, is_data = False):
+    sagitta_hist, _, __ = get_deltas_from_job(directory)
+    sagitta_hist.SetName(directory.split("/")[-2] + "_delta_hist")
+    sagitta_hist.GetXaxis().SetTitle("#eta_{#mu}^{"+region+"}")
+    sagitta_hist.GetYaxis().SetTitle("#phi_{#mu}^{"+region+"}")
+    sagitta_hist.Scale(1000.0)
+    sagitta_hist.GetZaxis().SetTitle("#delta^{"+region+"} [TeV^{-1}]")
+    if not is_data: description = "    #sqrt{s} = 13 TeV, Simulation"
+    else: description = "    #sqrt{s} = 13 TeV, 139 fb^{-1}"
 
-        print(directory)
-        sagitta_hist, _, __ = get_deltas_from_job(directory)
-        sagitta_hist_subtraction, _, __ = get_deltas_from_job(subtraction_dir)
-        sagitta_hist.SetName(directory.split("/")[-2] + "_delta_hist")
-        sagitta_hist.GetXaxis().SetTitle("#eta_{#mu}^{"+region+"}")
-        sagitta_hist.GetYaxis().SetTitle("#phi_{#mu}^{"+region+"}")
-        sagitta_hist.Scale(1000.0)
-        if extrema is None: extrema = (abs(sagitta_hist.GetMinimum()), abs(sagitta_hist.GetMaximum()))
-        sagitta_hist.SetMinimum(-1.0*max(*extrema))
-        sagitta_hist.SetMaximum(max(*extrema))
-        sagitta_hist.GetZaxis().SetTitle("#delta^{"+region+"} [TeV^{-1}]")
-        if not is_data: description = "    #sqrt{s} = 13 TeV, Simulation"
-        else: description = "    #sqrt{s} = 13 TeV, 139 fb^{-1}"
-        draw_2d_histogram(sagitta_hist, description, normalize = False, output_location=output_location)
+    if subtraction_directory is None: return sagitta_hist
 
-        sagitta_hist_subtraction.Scale(1000.0)
-        sagitta_hist.Add(sagitta_hist_subtraction, -1.0)
-        sagitta_hist.SetName(directory.split("/")[-2] + "_delta_hist_corr")
-        sagitta_hist.GetZaxis().SetTitle("#delta^{"+region+"}_{Corr} [TeV^{-1}]")
-        extrema = (abs(sagitta_hist.GetMinimum()), abs(sagitta_hist.GetMaximum()))
-        sagitta_hist.SetMinimum(-1.0*max(*extrema))
-        sagitta_hist.SetMaximum(max(*extrema))
-        if bias == "Global":
-            print(sagitta_hist.GetBinContent(5,5))
-        draw_2d_histogram(sagitta_hist, description, normalize = False, output_location=output_location)
-
-        return sagitta_hist
+    sagitta_hist_subtraction, _, __ = get_deltas_from_job(subtraction_dir)
+    sagitta_hist_subtraction.Scale(1000.0)
+    sagitta_hist = sagitta_hist.Clone(sagitta_hist.GetName() + "Corr")
+    sagitta_hist.Add(sagitta_hist_subtraction, -1.0)
+    sagitta_hist.SetName(directory.split("/")[-2] + "_delta_hist_corr")
+    sagitta_hist.GetZaxis().SetTitle("#delta^{"+region+"}_{Corr} [TeV^{-1}]")
+    return sagitta_hist
 
 from MatrixInversion import get_histogram_function
 from BiasInjection import solution_histogram
@@ -96,94 +86,101 @@ def get_difference_histogram(meas, injected, name, low_hi = None):
     rnp.fill_hist(histogram, values)
     return histogram, np.mean(values), np.std(values)
 
-
 sagitta_histograms = {}
-#base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec16_round_2_{}_MC_Inject_{}_v03_v2_range_{}_pt_threshold_{}_selfirst_False/OutputFiles"
-base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_Dec17_inject_{inject}_region_{detector_location}_{end_string}_round_{round}/OutputFiles"
-base_directory_data = "/scratch/ladamek/sagittabias_matrices/Injection_Dec17_Data_inject_{inject}_region_{detector_location}_{end_string}_round_{round}/OutputFiles"
+base_directories = {}
+base_directories["delta_qm"] = "/scratch/ladamek/sagittabias_matrices/Injection_Dec17_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_round_{round}/OutputFiles"
+base_directories["matrix"] = "/scratch/ladamek/sagittabias_matrices/Injection_Dec17_inject_{inject}_region_{detector_location}_{end_string}_round_{round}/OutputFiles"
+methods = ["delta_qm", "matrix"]
+delta_qm_round = 11
+matrix_round = 2
+
 for region in ["ID", "ME"]:
-    for end_string in ["tight_preselection", "loose_preselection_tight_select_before_correction", "loose_preselection_tight_select_after_correction"][::-1]:
-        for roun in [1, 2]:
-                output_location = os.path.join(os.getenv("MomentumValidationDir"), "SolutionHistograms_Injection_Dec17_region_{detector_location}_{end_string}_round_{round}".format(detector_location=region, end_string=end_string, round=roun))
-                if not os.path.exists(output_location): os.makedirs(output_location)
+    for end_string in ["tight_preselection", "loose_preselection_tight_select_before_correction", "loose_preselection_tight_select_after_correction"]:
+            for bias in ["Random", "Global" , "Local", "None", "GlobalPlusLocal"]: #, "Data"]:#, "Null"]:A
+                extrema_uncorr = -10000000
+                extrema_corr = -10000000
+                extrema_effect = -10000000
+                for iteration in [1,2]:
+                    for method in methods:
+                        if "matrix" == method:
+                            from MatrixInversion import get_deltas_from_job
+                            global get_deltas_from_job
+                            roun = matrix_round
 
-                if end_string == "loose_preselection_tight_select_after_correction":
-                    bias="None"
-                    this_endstring = "tight_select_after_correction"
-                    directory = base_directory_data.format(detector_location=region, inject="None", end_string=this_endstring, round=roun)
-                    subtraction_dir = base_directory.format(detector_location=region, inject="None", end_string=end_string, round=roun)
-                    sagitta_histograms[bias] = plot_sagitta_bias(directory, subtraction_dir, output_location, region=region, is_data = True)
+                        elif "delta_qm" == method:
+                            from DeltaQMIterativeMethod import get_deltas_from_job
+                            global get_deltas_from_job
+                            roun = delta_qm_round
+                        base_directory = base_directories[method]
 
-                for bias in ["Random", "Global" , "Local", "None", "GlobalPlusLocal"]: #, "Data"]:#, "Null"]:A
-                        #get the injection histogram for scale
-                        directory = base_directory.format(detector_location=region, inject=bias, end_string=end_string, round=roun)
-                        subtraction_dir = base_directory.format(detector_location=region, inject="None", end_string=end_string, round=roun)
-                        sagitta_histograms[bias] = plot_sagitta_bias(directory, subtraction_dir, output_location, region=region)
+                        output_location = os.path.join(os.getenv("MomentumValidationDir"), "SolutionHistograms_Injection_Dec17_method_{method}_region_{detector_location}_{end_string}_round_{round}".format(detector_location=region, end_string=end_string, round=roun, method=method))
+                        if not os.path.exists(output_location): os.makedirs(output_location)
 
-                #directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec16_{}_Data_Inject_None_v03_v2/OutputFiles".format(region,bias)
-                #subtraction_dir = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec16_{}_MC_Inject_{}_v03_v2/OutputFiles".format(region,"None")
-                #plot_sagitta_bias(directory, subtraction_dir, output_location, is_data = True, region=region)
-                #extrema = get_extrema(directory)
+                        #####################################################
+                        ## A plot of the sagitta bias estimates            ##
+                        directory = base_directory.format(detector_location=region, inject=bias, end_string=end_string, round=roun, method=method)
+                        sagitta_hist = get_sagitta_bias_histogram(directory, is_data = False)
+                        description = "    #sqrt{s} = 13 TeV, Simulation"
+                        if extrema_uncorr < abs(sagitta_hist.GetMinimum()): extrema_uncorr = abs(sagitta_hist.GetMinimum())
+                        if extrema_uncorr < abs(sagitta_hist.GetMaximum()): extrema_uncorr = abs(sagitta_hist.GetMaximum())
+                        sagitta_hist.SetMinimum(-1.0 * extrema_uncorr)
+                        sagitta_hist.SetMaximum(1.0 * extrema_uncorr)
+                        if iteration == 2: draw_2d_histogram(sagitta_hist, description, normalize = False, output_location=output_location)
+                        #####################################################
 
-                #if r == "12_0000" and pt == "100_0000":
-                #    #get the injection histogram for scale
-                #    directory = base_directory_data.format(region,"None", r, pt)
-                #    subtraction_dir = base_directory.format(region,"None", r, pt)
-                #    plot_sagitta_bias(directory, subtraction_dir, output_location, region=region)
+                        #####################################################
+                        ## A plot of the correction sagitta bias estimates ##
+                        directory = base_directory.format(detector_location=region, inject=bias, end_string=end_string, round=roun, method=method)
+                        subtraction_dir = base_directory.format(detector_location=region, inject="None", end_string=end_string, round=roun, method=method)
+                        sagitta_hist = get_sagitta_bias_histogram(directory, subtraction_dir, is_data = False)
+                        description = "    #sqrt{s} = 13 TeV, Simulation"
+                        if extrema_corr < abs(sagitta_hist.GetMinimum()): extrema_corr = abs(sagitta_hist.GetMinimum())
+                        if extrema_corr < abs(sagitta_hist.GetMaximum()): extrema_corr = abs(sagitta_hist.GetMaximum())
+                        sagitta_hist.SetMinimum(-1.0 * extrema_corr)
+                        sagitta_hist.SetMaximum(1.0 * extrema_corr)
+                        if iteration == 2: draw_2d_histogram(sagitta_hist, description, normalize = False, output_location=output_location)
+                        #####################################################
 
+                         #make plots of the percent effect and remaining bias after the N iterations of both methods
+                        if bias == "None": continue
+                        solution = get_solution_histogram(bias)
+                        solution.Scale(1000.0)
+                        sagitta_hist.GetXaxis().SetTitle("#eta_{#mu}^{"+region+"}")
+                        sagitta_hist.GetYaxis().SetTitle("#phi_{#mu}^{"+region+"}")
+                        sagitta_hist.SetName(bias + "_Delta_" + region)
+                        sagitta_hist_ratio = sagitta_hist.Clone(sagitta_hist.GetName() + "Ratio")
+                        sagitta_hist_ratio.Divide(solution)
 
-                #lets make plots of the difference between delta corrected and the injected
-                for bias in sagitta_histograms:
-                     if bias == "None": continue
-                     #lets get the injection histogram:
-                     solution = get_solution_histogram(bias)
-                     solution.Scale(1000.0)
-                     sagitta_hist = sagitta_histograms[bias] 
-                     sagitta_hist.GetXaxis().SetTitle("#eta_{#mu}^{"+region+"}")
-                     sagitta_hist.GetYaxis().SetTitle("#phi_{#mu}^{"+region+"}")
-                     sagitta_hist.SetName(bias + "_Delta_" + region)
-                     sagitta_hist_ratio = sagitta_hist.Clone(sagitta_hist.GetName() + "Ratio")
-                     sagitta_hist_ratio.Divide(solution)
+                        sagitta_hist_ratio.GetZaxis().SetTitle("#delta^{"+region+"}_{Corr}/#delta^{"+region+"}_{Injected}")
+                        draw_2d_histogram(sagitta_hist_ratio, "    #sqrt{s}= 13 TeV, Simulation", normalize = False, output_location=output_location)
 
-                     extrema = (0.7, 1.3)
-                     sagitta_hist_ratio.SetMinimum(0.7)
-                     sagitta_hist_ratio.SetMaximum(1.3)
-                     sagitta_hist_ratio.GetZaxis().SetTitle("#delta^{"+region+"}_{Corr}/#delta^{"+region+"}_{Injected}")
-                     draw_2d_histogram(sagitta_hist_ratio, "    #sqrt{s}= 13 TeV, Simulation", normalize = False, output_location=output_location)
+                        sagitta_hist_diff = sagitta_hist.Clone(sagitta_hist.GetName() + "Diff")
+                        sagitta_hist_diff.Add(solution, -1.0)
 
-                     sagitta_hist_diff = sagitta_hist.Clone(sagitta_hist.GetName() + "Diff")
-                     sagitta_hist_diff.Add(solution, -1.0)
+                        sagitta_hist_diff.GetZaxis().SetTitle("#delta^{"+region+"}_{Corr} - #delta^{"+region+"}_{Injected} [TeV^{-1}]")
+                        draw_2d_histogram(sagitta_hist_diff, "    #sqrt{s}= 13 TeV, Simulation", normalize = True, output_location=output_location)
 
-                     #extrema = (abs(sagitta_hist_diff.GetMinimum()), abs(sagitta_hist_diff.GetMaximum()))
-                     #from BiasInjection import injection_histogram_data
-                     #injection_histogram = injection_histogram_data()
-                     #injection_histogram.Scale(1000.0)
-                     #extrema = (abs(injection_histogram.GetMaximum()), abs(injection_histogram.GetMinimum()) )
-                     #sagitta_hist_diff.SetMinimum(-1.0*max(*extrema))
-                     #sagitta_hist_diff.SetMaximum(max(*extrema))
-                     sagitta_hist_diff.GetZaxis().SetTitle("#delta^{"+region+"}_{Corr} - #delta^{"+region+"}_{Injected} [TeV^{-1}]")
-                     draw_2d_histogram(sagitta_hist_diff, "    #sqrt{s}= 13 TeV, Simulation", normalize = True, output_location=output_location)
+                        #make a histogram showing the distribution of differences between the injected and corrected
+                        histogram, mean, std = get_difference_histogram(sagitta_hist, solution, bias + "Difference", low_hi = None)
+                        histogram.GetXaxis().SetTitle("#delta^{"+region+"} - #delta^{"+region+"}_{Injected} [TeV^{-1}]")
+                        histogram.GetYaxis().SetTitle("Number of Estimates")
+                        canvas = ROOT.TCanvas(histogram.GetName() + "Canvas", histogram.GetName() + "Canvas")
+                        histogram.Draw("HIST")
+                        canvas.SetBottomMargin(0.25)
+                        ptext = ROOT.TPaveText(.15,.5,.5,.95)
+                        ptext.AddText("Mean: {}".format(mean))
+                        ptext.AddText("Std. Dev: {}".format(std))
+                        ptext.Draw()
+                        canvas.Print(os.path.join(output_location,"Difference_{}_{}_{}.png".format(histogram.GetName(), region, bias)))
 
-                     #make a histogram showing the distribution of differences between the injected and corrected
-                     histogram, mean, std = get_difference_histogram(sagitta_hist, solution, bias + "Difference", low_hi = None)
-                     histogram.GetXaxis().SetTitle("#delta^{"+region+"} - #delta^{"+region+"}_{Injected} [TeV^{-1}]")
-                     histogram.GetYaxis().SetTitle("Number of Estimates")
-                     canvas = ROOT.TCanvas(histogram.GetName() + "Canvas", histogram.GetName() + "Canvas")
-                     histogram.Draw("HIST")
-                     canvas.SetBottomMargin(0.25)
-                     ptext = ROOT.TPaveText(.15,.5,.5,.95)
-                     ptext.AddText("Mean: {}".format(mean))
-                     ptext.AddText("Std. Dev: {}".format(std))
-                     print(mean, std)
-                     #t1 = ROOT.TText(.2,.8,"Mean: {}".format(mean))
-                     #t2 = ROOT.TText(.2,.65,"Std. Dev: {}".format(std))
-                     ptext.Draw()
-                     canvas.Print(os.path.join(output_location,"Difference_{}_{}_{}.png".format(histogram.GetName(), region, bias)))
+                        name = "{}_{}_{}".format("RemainingBias", bias, region)
+                        effect_correction = get_effect_histogram(solution, sagitta_hist, name = name)
+                        name = "{}_{}_{}".format("InjectionBias", bias, region)
+                        effect_injection = get_effect_histogram(solution, name = name)
 
-                     name = "{}_{}_{}".format("RemainingBias", bias, region)
-                     effect_correction = get_effect_histogram(solution, sagitta_hist, name = name)
-                     name = "{}_{}_{}".format("InjectionBias", bias, region)
-                     effect_injection = get_effect_histogram(solution, name = name)
+                        if extrema_effect < abs(effect_correction.GetMaximum()): extrema_effect = abs(effect_correction.GetMaximum())
+                        effect_correction.SetMaximum(extrema_effect)
+                        effect_correction.SetMinimum(0.0)
 
-                     draw_2d_histogram(effect_correction, "    #sqrt{s}= 13 TeV, Simulation", normalize = False, output_location=output_location, palette_override = ROOT.kInvertedDarkBodyRadiator)
-                     draw_2d_histogram(effect_injection, "    #sqrt{s}= 13 TeV, Simulation", normalize = False, output_location=output_location, palette_override = ROOT.kInvertedDarkBodyRadiator)
+                        if iteration == 2: draw_2d_histogram(effect_correction, "    #sqrt{s}= 13 TeV, Simulation", normalize = False, output_location=output_location, palette_override = ROOT.kInvertedDarkBodyRadiator)
+                        draw_2d_histogram(effect_injection, "    #sqrt{s}= 13 TeV, Simulation", normalize = False, output_location=output_location, palette_override = ROOT.kInvertedDarkBodyRadiator)
