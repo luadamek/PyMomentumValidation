@@ -225,7 +225,6 @@ class SagittaBiasCorrection:
 
         extra_corrections = ["Pair_{}_Mass", "Pair_{}_Pt", "Pair_{}_Eta", "Pair_{}_Phi"]
 
-        print(dir(data))
         if hasattr(data, "dtype"): keys =  data.dtype.names
         else: keys = list(data.keys())
         do_extra_corrections = any([ (el.format(self.flavour) in keys) for el in extra_corrections])

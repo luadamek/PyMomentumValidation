@@ -14,7 +14,7 @@ import pickle as pkl
 
 #histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "",)
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_matrix_calibrations, load_matrix_subtractions):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_matrix_calibrations, load_matrix_subtractions, inject = None):
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
 
@@ -33,11 +33,41 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         executable_local = os.path.join(slurm_directory, "plot_local.sh")
         python_executable = os.path.join(slurm_directory, "plot.py")
 
+        if inject is not None:
+            injections = []
+            from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_random
+            if inject == "Local":
+                inject_hist_func = injection_histogram_local
+            if inject == "Global":
+                inject_hist_func = injection_histogram_global
+            if inject == "GlobalPlusLocal":
+                inject_hist_func = injection_histogram_globalpluslocal
+            if inject == "Random":
+                inject_hist_func = injection_histogram_random
+
+            for region in ["ID", "ME"]:
+                inject_hist = inject_hist_func(detector_location = region)
+                if region == "ID":
+                    xvar_pos = calc_pos_id_eta
+                    xvar_neg = calc_neg_id_eta
+                    yvar_pos = calc_pos_id_phi
+                    yvar_neg = calc_neg_id_phi
+
+                if region == "ME":
+                    xvar_pos = calc_pos_me_eta
+                    xvar_neg = calc_neg_me_eta
+                    yvar_pos = calc_pos_me_phi
+                    yvar_neg = calc_neg_me_phi
+                injections.append(SagittaBiasCorrection([inject_hist], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = region))
+                injections_file = os.path.join(slurm_directory, "injections.pkl")
+                with open(injections_file, "wb") as f:
+                    pkl.dump(injections, f)
+
         if load_matrix_calibrations:
+            calibrations = []
             to_load = load_matrix_calibrations.split(",")
             if load_matrix_subtractions:
                  to_subtract = load_matrix_subtractions.split(',')
-            calibrations = []
             for el, sub in zip(to_load, to_subtract):
                 deltas, variables, detector_location = get_deltas_from_job(el)
                 if sub: delta_subtraction, _, __ = get_deltas_from_job(sub)
@@ -72,9 +102,9 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
                     yvar_neg = calc_neg_me_phi
                 else: raise ValueError()
                 calibrations.append(SagittaBiasCorrection([deltas], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = detector_location))
-            calibrations_file = os.path.join(slurm_directory, "calibrations.pkl")
-            with open(calibrations_file, "wb") as f:
-                 pkl.dump(calibrations, f)
+                calibrations_file = os.path.join(slurm_directory, "calibrations.pkl")
+                with open(calibrations_file, "wb") as f:
+                    pkl.dump(calibrations, f)
 
         #create the python script that is needed for plotting
         plotting_instructions_python = []
@@ -96,9 +126,10 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         outfile_name =  "\"" + os.path.join(slurm_directory, job_name + "_{}.root\".format(str(i))")
 
 
-        if not load_matrix_calibrations: plotting_instructions_python.append("fill_histograms(plots, {})".format(outfile_name)) 
-        else:
-            plotting_instructions_python.append("fill_histograms(plots, {}, calibrations = \"{}\")".format(outfile_name, calibrations_file))
+        plotting_instructions_python.append("fill_histograms(plots, {}".format(outfile_name)) 
+        if load_matrix_calibrations: plotting_instructions_python[-1] += ", calibrations = \"{}\""
+        if inject is not None: plotting_instructions_python[-1] += ", injections = \"{}\"".format(injections_file)
+        plotting_instructions_python[-1] += ")"
         with open(python_executable, 'w') as f:
             for line in plotting_instructions_python:
                 f.write(line+"\n")
@@ -140,9 +171,7 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
                 partition[channel] =  partitions[channel][i]
             assert len(partitions[channel]) == n_jobs
             hist_filler = HistogramFiller(trees, tree_name, calc_weight, selection_string = "", partitions = partition)
-            print("Made histogram filler")
             filler_list.append(hist_filler)
-        print("Created Fillers")
         #create a pickle file for each submission
         pickle.dump(filler_list, open(filler_file, "wb" ) )
         print("Created the submission file. Ready to go!")
@@ -173,7 +202,7 @@ if __name__ == "__main__":
         parser.add_argument('--load_matrix_calibrations', '-lmc', dest="load_matrix_calibrations", type=str, default='', help='a comma separated list of directories from which to load calibrations')
         parser.add_argument('--load_matrix_subtractions', '-lms', dest="load_matrix_subtractions", type=str, default='', help='a comma separated list of directories from which to load subtractions when correcting deltas')
         parser.add_argument('--testjob', '-tj', dest="test_job", action="store_true", help="Submit a test job")
-        parser.add_argument('--inject', "-inj", dest="inject", type=str)
+        parser.add_argument('--inject', "-inj", dest="inject", type=str, default="")
         args = parser.parse_args()
 
         #Create a pickle file and list for each submission
@@ -183,9 +212,12 @@ if __name__ == "__main__":
         queue_flavour = args.queue_flavour
         file_flavour = args.file_flavour
         filling_script = args.filling_script
+        inject = args.inject
+        if inject == "":
+            inject = None
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations, args.load_matrix_subtractions)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations, args.load_matrix_subtractions, inject=inject)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

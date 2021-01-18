@@ -494,7 +494,17 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                          ylabel = 'Number Events')
 
 #This is a script that fills the histograms for
-def fill_histograms(hist_filler, output_filename, calibrations = None):
+def fill_histograms(hist_filler, output_filename, calibrations = None, injections = None):
+    if injections is not None:
+        import pickle as pkl
+        with open(injections, "rb") as f:
+            injections = pkl.load(f)
+        for c in injections:
+            hist_filler.apply_calibration_for_channel("MC", c)
+            hist_filler.apply_calibration_for_channel("MC1516", c)
+            hist_filler.apply_calibration_for_channel("MC17", c)
+            hist_filler.apply_calibration_for_channel("MC18", c)
+
     #book a calibration for the sagitta bias correction
     if calibrations is not None:
         import pickle as pkl
