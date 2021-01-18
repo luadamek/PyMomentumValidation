@@ -73,7 +73,7 @@ def place_deltas_into_histogram(deltas, binning, detector_location):
             edges_dict[x_var] = edges[0]
             x_bindex = find_bindex(edges_dict[x_var], x_bins)
             y_bindex = find_bindex(edges_dict[y_var], y_bins)
-            delta_hist.SetBinContent(x_bindex, y_bindex, delta[i])
+            delta_hist.SetBinContent(x_bindex, y_bindex, deltas[i])
 
     else:
         x_bins = binning[0].bin_edges
