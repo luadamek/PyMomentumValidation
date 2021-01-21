@@ -498,23 +498,23 @@ def fill_histograms(hist_filler, output_filename, calibrations = None, injection
     if injections is not None:
         import pickle as pkl
         with open(injections, "rb") as f:
-            injections = pkl.load(f)
-        for c in injections:
-            hist_filler.apply_calibration_for_channel("MC", c)
-            hist_filler.apply_calibration_for_channel("MC1516", c)
-            hist_filler.apply_calibration_for_channel("MC17", c)
-            hist_filler.apply_calibration_for_channel("MC18", c)
+            stuff = pkl.load(f)
+        channels = stuff["channels"]
+        injections = stuff["injections"]
+        for i in injections:
+            for c in channels:
+                hist_filler.apply_calibration_for_channel(c, i)
 
     #book a calibration for the sagitta bias correction
     if calibrations is not None:
         import pickle as pkl
         with open(calibrations, "rb") as f:
-            calibrations = pkl.load(f)
-        for c in calibrations:
-            hist_filler.apply_calibration_for_channel("Data", c)
-            hist_filler.apply_calibration_for_channel("Data1516", c)
-            hist_filler.apply_calibration_for_channel("Data17", c)
-            hist_filler.apply_calibration_for_channel("Data18", c)
+            stuff = pkl.load(f)
+        channels = stuff["channels"]
+        calibrations = stuff["calibrations"]
+        for calibs in calibrations:
+            for c in channels:
+                hist_filler.apply_calibration_for_channel(c, calibs)
 
     for varname, var in zip(["ID", "CB", "MS", "ME"], [calc_id_mass, calc_cb_mass, calc_ms_mass, calc_me_mass]):
         histogram_name = "{}_mass".format(varname)

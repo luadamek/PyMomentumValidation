@@ -14,7 +14,7 @@ import pickle as pkl
 
 #histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "",)
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_matrix_calibrations, load_matrix_subtractions, inject = None):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_matrix_calibrations, load_matrix_subtractions, inject = None, inject_channels="", calibration_channels=""):
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
 
@@ -61,7 +61,7 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
                 injections.append(SagittaBiasCorrection([inject_hist], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = region))
                 injections_file = os.path.join(slurm_directory, "injections.pkl")
                 with open(injections_file, "wb") as f:
-                    pkl.dump(injections, f)
+                    pkl.dump({"channels": inject_channels.split(","), "injections": injections}, f)
 
         if load_matrix_calibrations:
             calibrations = []
@@ -104,7 +104,8 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
                 calibrations.append(SagittaBiasCorrection([deltas], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = detector_location))
                 calibrations_file = os.path.join(slurm_directory, "calibrations.pkl")
                 with open(calibrations_file, "wb") as f:
-                    pkl.dump(calibrations, f)
+                    pkl.dump({"channels": calibration_channels.split(","), "calibrations":calibrations}, f)
+
 
         #create the python script that is needed for plotting
         plotting_instructions_python = []
@@ -127,7 +128,7 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
 
 
         plotting_instructions_python.append("fill_histograms(plots, {}".format(outfile_name)) 
-        if load_matrix_calibrations: plotting_instructions_python[-1] += ", calibrations = \"{}\""
+        if load_matrix_calibrations: plotting_instructions_python[-1] += ", calibrations = \"{}\"".format(calibrations_file)
         if inject is not None: plotting_instructions_python[-1] += ", injections = \"{}\"".format(injections_file)
         plotting_instructions_python[-1] += ")"
         with open(python_executable, 'w') as f:
@@ -203,6 +204,8 @@ if __name__ == "__main__":
         parser.add_argument('--load_matrix_subtractions', '-lms', dest="load_matrix_subtractions", type=str, default='', help='a comma separated list of directories from which to load subtractions when correcting deltas')
         parser.add_argument('--testjob', '-tj', dest="test_job", action="store_true", help="Submit a test job")
         parser.add_argument('--inject', "-inj", dest="inject", type=str, default="")
+        parser.add_argument('--inject_channels', "-inj_ch", dest="inject_channels", type=str, default="MC,MC1516,MC17,MC18")
+        parser.add_argument('--calibration_channels', "-corr_ch", dest="calibration_channels", type=str, default="Data,Data1516,Data17,Data18")
         args = parser.parse_args()
 
         #Create a pickle file and list for each submission
@@ -213,11 +216,13 @@ if __name__ == "__main__":
         file_flavour = args.file_flavour
         filling_script = args.filling_script
         inject = args.inject
+        calibration_channels = args.calibration_channels
+        inject_channels = args.inject_channels
         if inject == "":
             inject = None
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations, args.load_matrix_subtractions, inject=inject)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations, args.load_matrix_subtractions, inject=inject, inject_channels=inject_channels, calibration_channels=calibration_channels)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion
