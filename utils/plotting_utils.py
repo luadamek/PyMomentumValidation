@@ -4,24 +4,40 @@ import array
 import os
 from atlasplots import set_atlas_style, atlas_label
 
-def draw_2d_histogram(histogram, description = "", normalize = True, output_location="", palette_override = None):
+from atlasplots import set_atlas_style 
+set_atlas_style()
+def draw_2d_histogram(histogram, description = "", normalize = True, output_location="", palette_override = None, ftype = "png"):
+
+    if palette_override is None: ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
+    else: ROOT.gStyle.SetPalette(palette_override)
+
     if normalize:
         extrema = [ abs(histogram.GetMaximum()), abs(histogram.GetMinimum())]
         histogram.SetMaximum(max(*extrema))
         histogram.SetMinimum(min(*[-1.0 * el for el in extrema]))
+
+    text_size = 0.07
+    label_size = 0.06
+    histogram.GetZaxis().SetTitleSize(text_size)
+    histogram.GetYaxis().SetTitleSize(text_size)
+    histogram.GetXaxis().SetTitleSize(text_size)
+    histogram.GetZaxis().SetLabelSize(label_size)
+    histogram.GetYaxis().SetLabelSize(label_size)
+    histogram.GetXaxis().SetLabelSize(label_size)
+
     canvas = ROOT.TCanvas("Canvas_" + histogram.GetName())
     histogram.Draw("COLZ")
-    histogram.GetYaxis().SetTitleOffset(0.7*histogram.GetYaxis().GetTitleOffset())
+    histogram.GetYaxis().SetTitleOffset(0.88)
+    histogram.GetXaxis().SetTitleOffset(1.1)
     canvas.SetTopMargin(0.1)
     if description: atlas_label(0.15, 0.94, "Internal   {}".format(description))
     else: atlas_label(0.2, 0.94, "Internal")
     canvas.SetRightMargin(0.25)
-    histogram.GetZaxis().SetTitleOffset(1.2 * histogram.GetZaxis().GetTitleOffset())
+    histogram.GetZaxis().SetTitleOffset(1.2)
     canvas.SetBottomMargin(0.25)
     canvas.Draw()
-    if palette_override is None: ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
-    else: ROOT.gStyle.SetPalette(palette_override)
-    canvas.Print(os.path.join(output_location, canvas.GetName() + ".png"))
+
+    canvas.Print(os.path.join(output_location, canvas.GetName() + ".{}".format(ftype)))
 
 def draw_text(x, y, text, color=1, size=0.05):
     '''Draw text.
@@ -90,8 +106,6 @@ alive = []
 def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".png", plot_dir = "plots", datakey = "data", extra_str = None):
 
 
-    from atlasplots import set_atlas_style 
-    set_atlas_style()
     ROOT.gStyle.SetLineWidth(1)
     ROOT.gStyle.SetFrameLineWidth(1)
 
@@ -319,8 +333,8 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
         minimum = mins_maxes[0]
         maximum = mins_maxes[1]
 
-    text_size = 60
-    label_size = 45
+    text_size = 70
+    label_size = 60
 
     for i, key in enumerate(to_plot):
         stack = to_plot[key]
