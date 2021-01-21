@@ -14,7 +14,15 @@ def get_extrema(directory):
     extrema = (abs(sagitta_hist.GetMinimum()), abs(sagitta_hist.GetMaximum()))
     return extrema
 
-def get_effect_histogram(target, meas=None, scale=0.045, name=None):
+def calculate_pt(pt, delta, q = 1.0):
+    return pt / (1 + ( q * pt * delta ) )
+
+def calculate_effect(target, meas = None, pt = 45.0, q = 1.0):
+    pt_biased = calculate_pt(pt, -1.0 * target/1000.0, q = q)
+    if meas is not None: pt_biased = calculate_pt(pt_biased, 1.0 * meas/1000.0, q = q)
+    return abs(pt_biased - pt)/abs(pt) * 100.0
+
+def get_effect_histogram(target, meas=None, scale=0.045, name=None, template = None):
     import ROOT
     ROOT.gStyle.SetPalette(ROOT.kInvertedDarkBodyRadiator)
     from BiasCorrection import extract_binning_from_histogram
@@ -23,22 +31,29 @@ def get_effect_histogram(target, meas=None, scale=0.045, name=None):
     from array import array
     bins_array_x = array('d',binning["x"])
     bins_array_y = array('d',binning["y"])
+
     if name is not None: newname = name
     elif meas is None: newname = target.GetName() + "PercentEffect"
     else: newname = meas.GetName() + "PercentEffect"
-    #new_hist = ROOT.TH2D(newname, newname, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y)
-    if meas is not None: new_hist = meas.Clone(newname)
-    else: new_hist = ROOT.TH2D(newname, newname, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y)
+
+    if template is not None: new_hist = template.Clone(newname)
+    else:
+        new_hist = ROOT.TH2D(newname, newname, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y)
+        new_hist.GetXaxis().SetTitle("#eta")
+        new_hist.GetYaxis().SetTitle("#phi")
+
     values = []
     for i in range(1, new_hist.GetNbinsX() + 1):
         for j in range(1, new_hist.GetNbinsY() + 1):
             if meas is not None: remaining_bias = target.GetBinContent(i,j) - meas.GetBinContent(i,j)
             else: remaining_bias = target.GetBinContent(i,j)
-            print(remaining_bias, target.GetBinContent(i,j))
-            new_hist.SetBinContent(i, j, 100.0 * abs((scale * remaining_bias)/(1 + (scale * remaining_bias))))
-            values.append(100.0 * abs((scale * remaining_bias)/(1 + (scale * remaining_bias))))
-    #new_hist.GetXaxis().SetTitle("#eta")
-    #new_hist.GetYaxis().SetTitle("#phi")
+            meas_content = None
+            if meas is not None:
+                meas_content = meas.GetBinContent(i,j)
+            effect = calculate_effect(target.GetBinContent(i, j), meas = meas_content)
+            values.append(effect)
+            new_hist.SetBinContent(i, j, effect)
+
     new_hist.GetZaxis().SetTitle("Percent Effect")
     new_hist.SetMaximum(max(values))
     new_hist.SetMinimum(0.0)
@@ -96,7 +111,6 @@ delta_qm_round = 16
 matrix_round = 2
 
 for region in ["ID", "ME"]:
-       continue
        for end_string in ["tight_preselection", "loose_preselection_tight_select_before_correction", "loose_preselection_tight_select_after_correction"]:
            for bias in ["Random", "Global" , "Local", "None", "GlobalPlusLocal"]: #, "Data"]:#, "Null"]:A
                extrema_uncorr = -10000000
@@ -176,9 +190,9 @@ for region in ["ID", "ME"]:
                        canvas.Print(os.path.join(output_location,"Difference_{}_{}_{}.png".format(histogram.GetName(), region, bias)))
 
                        name = "{}_{}_{}".format("RemainingBias", bias, region)
-                       effect_correction = get_effect_histogram(solution, sagitta_hist, name = name)
+                       effect_correction = get_effect_histogram(solution, sagitta_hist, name = name, template = sagitta_hist)
                        name = "{}_{}_{}".format("InjectionBias", bias, region)
-                       effect_injection = get_effect_histogram(solution, name = name)
+                       effect_injection = get_effect_histogram(solution, name = name, template = sagitta_hist)
 
                        if extrema_effect < abs(effect_correction.GetMaximum()): extrema_effect = abs(effect_correction.GetMaximum())
                        effect_correction.SetMaximum(extrema_effect)
