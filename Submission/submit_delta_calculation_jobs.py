@@ -94,6 +94,6 @@ else:
     elif "delta_qm" == args.method:
         from DeltaQMIterativeMethod import get_deltas_from_job
         global get_deltas_from_job
-    get_deltas_from_job(output_location)
+    get_deltas_from_job(output_location, update_cache=True)
 
 

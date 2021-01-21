@@ -80,26 +80,29 @@ def get_qm_m(df, detector_location, phi_binning_pos, phi_binning_neg, eta_binnin
     else: mean = 0.0
     return qm_means, mean, q_means, nentries
 
-def get_deltas_from_job(outfile_location):
+def get_deltas_from_job(outfile_location, update_cache = False):
     import glob
     import os
     import pickle as pkl
     import ROOT
 
-    print(outfile_location)
     output_statistics = glob.glob(os.path.join(outfile_location, "*.pkl"))
     output_statistics = [m for m in output_statistics if "CACHE" not in os.path.split(m)[-1]]
 
     cache_file = os.path.join(outfile_location, "CACHE.pkl")
+    failed = True
     try:
         print("Trying to open {}".format(cache_file))
         import pickle as pkl
         with open(cache_file, "rb") as f:
             delta_hist,  var_dict, detector_location, corrections = pkl.load(f)
         print("Successfully opened {}".format(cache_file))
+        failed = False
+    except Exception as e: pass
 
-    except Exception as e:
-        print("Failed to open cache. Opening each pkl file instead")
+    if update_cache:
+        if len(output_statistics) == 0: raise ValueError("Couldn't create the cache because there were no files to read...")
+        print("You want to update the cache. I am doing that. Opening each pkl file instead")
         opened = []
         for m in output_statistics:
             with open(m, "rb") as f:
@@ -115,7 +118,6 @@ def get_deltas_from_job(outfile_location):
 
         delta_s = ((mean_qmass / mean_mass) - (mean_q))
         deltas = 4 * delta_s/mean_mass
-        #deltas = ((mean_qmass / mean_mass) - (mean_q)) / (4 * mean_mass) * 1000.0 #what am I missing here??
 
         binning_phi = opened[0]["phi_binning_pos"]
         binning_eta = opened[0]["eta_binning_pos"]
@@ -135,8 +137,8 @@ def get_deltas_from_job(outfile_location):
         del opened
         print("Done opening")
 
-    for o in output_statistics:
-        os.system("rm {}".format(o))
+    if failed and not update_cache:
+        raise ValueError("Call this function with update_cache True if there is no cache file already")
 
     if corrections is not None:
         for c in corrections.split(","):

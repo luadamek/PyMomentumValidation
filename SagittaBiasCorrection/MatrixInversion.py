@@ -66,7 +66,7 @@ def get_cov_matrices(df, global_binning_pos, global_binning_neg, detector_locati
     return cov, equal_to, np.sum(weights)
 
 
-def get_deltas_from_job(outfile_location):
+def get_deltas_from_job(outfile_location, update_cache = False):
     import glob
     import os
     import pickle as pkl
@@ -76,15 +76,19 @@ def get_deltas_from_job(outfile_location):
     matrices = [m for m in matrices if "CACHE" not in os.path.split(m)[-1]]
 
     cache_file = os.path.join(outfile_location, "CACHE.pkl")
+    failed = True
     try:
         print("Trying to open {}".format(cache_file))
         import pickle as pkl
         with open(cache_file, "rb") as f:
             delta_hist,  var_dict, detector_location, corrections = pkl.load(f)
         print("Successfully opened {}".format(cache_file))
+        failed = False
 
+    except Exception as e: pass
 
-    except Exception as e:
+    if update_cache:
+        if len(matrices) == 0: raise ValueError("Couldn't create the cache because there were no files to read...")
         print("Failed to open cache. Opening each pkl file instead")
         opened = []
         for m in matrices:
@@ -110,13 +114,12 @@ def get_deltas_from_job(outfile_location):
         import pickle as pkl
         with open(cache_file, "wb") as f:
             pkl.dump((delta_hist,  var_dict, detector_location, corrections), f)
-            os.system("rm {}".format(m))
 
         del opened
         print("Done opening")
 
-    for m in matrices:
-        os.system("rm {}".format(m))
+    if failed and not update_cache:
+        raise ValueError("Call this function with update_cache True if there is no cache file already")
 
     if corrections is not None:
         for c in corrections.split(","):
