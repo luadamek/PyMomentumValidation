@@ -546,37 +546,82 @@ def neg_me_phi(event):
 branches = ["Neg_ME_Phi"]
 calc_neg_me_phi = Calculation(neg_me_phi, branches)
 
-
-from selections import pos_leading_id, neg_leading_id
-def leading_id_pt(event):
-    pos_leading = pos_leading_id(event)
-    neg_leading = neg_leading_id(event)
-    to_return = np.zeros(len(event["Pos_ID_Pt"]))
-    to_return[pos_leading] = event["Pos_ID_Pt"][pos_leading]
-    to_return[neg_leading] = event["Neg_ID_Pt"][neg_leading]
+from selections import get_leading, get_subleading
+def get_variable(event, location, var, leading=True):
+    if leading:
+        func = get_leading
+    else:
+        func = get_subleading
+    pos_leading = func(event, location, "Pos")
+    neg_leading = func(event, location, "Neg")
+    to_return = np.zeros(len(event["Pos_{}_{}".format(location, var)]))
+    to_return[pos_leading] = event["Pos_{}_{}".format(location, var)][pos_leading]
+    to_return[neg_leading] = event["Neg_{}_{}".format(location, var)][neg_leading]
     return to_return
+
+###################################################################
+def leading_id_pt(event):
+    return get_variable(event, "ID", "Pt", leading=True)
 branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
 calc_leading_id_pt = Calculation(leading_id_pt, branches)
 
+def subleading_id_pt(event):
+    return get_variable(event, "ID", "Pt", leading=False)
+branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
+calc_subleading_id_pt = Calculation(leading_id_pt, branches)
+
+def leading_me_pt(event):
+    return get_variable(event, "ME", "Pt", leading=True)
+branches = ["Pos_ME_Pt", "Neg_ME_Pt"]
+calc_leading_me_pt = Calculation(leading_me_pt, branches)
+
+def subleading_me_pt(event):
+    return get_variable(event, "ME", "Pt", leading=False)
+branches = ["Pos_ME_Pt", "Neg_ME_Pt"]
+calc_subleading_me_pt = Calculation(leading_me_pt, branches)
+
+###################################################################
 def leading_id_eta(event):
-    pos_leading = pos_leading_id(event)
-    neg_leading = neg_leading_id(event)
-    to_return = np.zeros(len(event["Pos_ID_Eta"]))
-    to_return[pos_leading] = event["Pos_ID_Eta"][pos_leading]
-    to_return[neg_leading] = event["Neg_ID_Eta"][neg_leading]
-    return to_return
-branches = ["Pos_ID_Eta", "Neg_ID_Eta"] + ["Pos_ID_Pt", "Neg_ID_Pt"]
+    return get_variable(event, "ID", "Eta", leading=True)
+branches = ["Pos_ID_Eta", "Neg_ID_Eta"]
 calc_leading_id_eta = Calculation(leading_id_eta, branches)
 
+def subleading_id_eta(event):
+    return get_variable(event, "ID", "Eta", leading=False)
+branches = ["Pos_ID_Eta", "Neg_ID_Eta"]
+calc_subleading_id_eta = Calculation(leading_id_eta, branches)
+
+def leading_me_eta(event):
+    return get_variable(event, "ME", "Eta", leading=True)
+branches = ["Pos_ME_Eta", "Neg_ME_Eta"]
+calc_leading_me_eta = Calculation(leading_me_eta, branches)
+
+def subleading_me_eta(event):
+    return get_variable(event, "ME", "Eta", leading=False)
+branches = ["Pos_ME_Eta", "Neg_ME_Eta"]
+calc_subleading_me_eta = Calculation(leading_me_eta, branches)
+
+###################################################################
 def leading_id_phi(event):
-    pos_leading = pos_leading_id(event)
-    neg_leading = neg_leading_id(event)
-    to_return = np.zeros(len(event["Pos_ID_Phi"]))
-    to_return[pos_leading] = event["Pos_ID_Phi"][pos_leading]
-    to_return[neg_leading] = event["Neg_ID_Phi"][neg_leading]
-    return to_return
-branches = ["Pos_ID_Phi", "Neg_ID_Phi"] + ["Pos_ID_Pt", "Neg_ID_Pt"]
+    return get_variable(event, "ID", "Phi", leading=True)
+branches = ["Pos_ID_Phi", "Neg_ID_Phi"]
 calc_leading_id_phi = Calculation(leading_id_phi, branches)
+
+def subleading_id_phi(event):
+    return get_variable(event, "ID", "Phi", leading=False)
+branches = ["Pos_ID_Phi", "Neg_ID_Phi"]
+calc_subleading_id_phi = Calculation(leading_id_phi, branches)
+
+def leading_me_phi(event):
+    return get_variable(event, "ME", "Phi", leading=True)
+branches = ["Pos_ME_Phi", "Neg_ME_Phi"]
+calc_leading_me_phi = Calculation(leading_me_phi, branches)
+
+def subleading_me_phi(event):
+    return get_variable(event, "ME", "Phi", leading=False)
+branches = ["Pos_ME_Phi", "Neg_ME_Phi"]
+calc_subleading_me_phi = Calculation(leading_me_phi, branches)
+###################################################################
 
 import numexpr as ne
 def get_momentum(event, charge, detector_location):

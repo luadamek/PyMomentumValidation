@@ -15,7 +15,15 @@ from variables import \
                       calc_pos_id_phi, calc_neg_id_phi,\
                       calc_pos_ms_phi, calc_neg_ms_phi,\
                       calc_pos_me_phi, calc_neg_me_phi,\
-                      calc_pos_cb_phi, calc_neg_cb_phi
+                      calc_pos_cb_phi, calc_neg_cb_phi,\
+                      calc_leading_id_pt, calc_subleading_id_pt,\
+                      calc_leading_me_pt, calc_subleading_me_pt,\
+                      calc_leading_id_eta, calc_subleading_id_eta,\
+                      calc_leading_me_eta, calc_subleading_me_eta,\
+                      calc_leading_id_phi, calc_subleading_id_phi,\
+                      calc_leading_me_phi, calc_subleading_me_phi
+
+###################################################################
 from selections import sel_pos_leading_id, sel_neg_leading_id
 import numpy as np
 #put this as the default pt binning somewhere
@@ -576,6 +584,70 @@ def fill_histograms(hist_filler, output_filename, calibrations = None, injection
     from variables import calc_cos_theta_star_id, calc_cos_theta_star_ms, calc_cos_theta_star_me
 
     for sel, name in zip([[sel_pos_leading_id], [sel_neg_leading_id], []], ["poslead", "neglead", "Inclusive"]):
+
+        #I will come back and fix this
+
+        varlist = \
+        [\
+         calc_leading_id_pt, calc_subleading_id_pt,\
+         calc_leading_me_pt, calc_subleading_me_pt,\
+         calc_leading_id_eta, calc_subleading_id_eta,\
+         calc_leading_me_eta, calc_subleading_me_eta,\
+         calc_leading_id_phi, calc_subleading_id_phi,\
+         calc_leading_me_phi, calc_subleading_me_phi,\
+        ]
+
+        histnames = \
+        [\
+         "PT_Leading_ID", "PT_Subleading_ID",\
+         "PT_Leading_ME", "PT_Subleading_ME",\
+         "Eta_Leading_ID", "Eta_Subleading_ID",\
+         "Eta_Leading_ME", "Eta_Subleading_ME",\
+         "Phi_Leading_ID", "Phi_Subleading_ID",\
+         "Phi_Leading_ME", "Phi_Subleading_ME",\
+        ]
+
+        x_ranges = \
+        [\
+         (5.0, 100.0), (5.0, 70.0),\
+         (5.0, 100.0), (5.0, 70.0),\
+         (-2.5, 2.5), (-2.5, 2.5),\
+         (-2.7, 2.7), (-2.7, 2.7),\
+         (-3.14, 3.14), (-3.14, +3.14),\
+         (-3.14, +3.14), (-3.14, +3.14),\
+        ]
+
+        nbins_all = \
+        [\
+         50, 50,\
+         50, 50,\
+         50, 50,\
+         50, 50,\
+         50, 50,\
+         50, 50,\
+        ]
+
+        x_labels = \
+        [\
+         "P_{T}^{ID, Lead} [GeV]", "P_{T}^{ID, Sub} [GeV]",\
+         "P_{T}^{ME, Lead} [GeV]", "P_{T}^{ME, Sub} [GeV]",\
+         "#eta^{ID, Lead}", "#eta^{ID, Sub}",\
+         "#eta^{ME, Lead}", "#eta^{ME, Sub}",\
+         "#phi^{ID, Lead}", "#phi^{ID, Sub}",\
+         "#phi^{ME, Lead}", "#phi^{ME, Sub}",\
+        ]
+
+        for xvar, histname, x_range, x_label, nbins  in zip(varlist, histnames, x_ranges, x_labels, nbins_all):
+            hist_filler.book_histogram_fill(histname + "_" + name,\
+                                             xvar,\
+                                             selections = sel,\
+                                             bins = nbins,\
+                                             range_low = x_range[0],\
+                                             range_high = x_range[1],\
+                                             xlabel = x_label,\
+                                             ylabel = 'Number Events')
+
+
         #make invariant mass histograms for ID tracks
         histogram_name_base = "MassSpectrum_ID_{identified}"
         histogram_name = histogram_name_base.format(identified = name)
