@@ -157,6 +157,7 @@ def get_parser():
     parser.add_argument('--select_after_corrections', '-sel_af_corr', type=str, dest="select_after_corrections", default="", required=False)
     parser.add_argument('--corrections', '-c', type=str, dest="corrections", default="", required=False)
     parser.add_argument("--qm_corrections", "-qmc", type=str, dest="qm_corrections", default="", required=False)
+    parser.add_argument("--no_cleaning_selection", "-ncsel", action="store_false")
     return parser
 
 
@@ -165,6 +166,11 @@ def apply_selection(df, selection, args):
     print("Applying selection {}".format(selection))
     df = df.query(selection)
     return df
+
+def apply_cleaning_selection(df, args):
+    base_selection = "(Pos_{loc}_Pt > 0.0) and (Neg_{loc}_Pt > 0.0)" #for some reason, some ME tracks have pT = -999 but a mass close to 91.2 GeV... I don't know why
+    selection = base_selection.format(loc=args.detector_location)
+    return df.query(selection)
 
 from utils import get_dataframe
 def get_df_for_job(args):
@@ -185,8 +191,10 @@ def get_df_for_job(args):
         do_add_pair_mass = True
 
     df = get_dataframe(args.filename, args.start, args.stop, variables, "")
+
     if "v03" in args.filename and "v2" in args.filename and do_add_pair_mass:
         df = add_pair_mass(df)
+    df = apply_cleaning_selection(df, args)
 
     if args.preselection: df = apply_selection(df, args.preselection, args)
 
