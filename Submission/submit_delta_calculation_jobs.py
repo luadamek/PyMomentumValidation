@@ -72,8 +72,12 @@ for root_file in files:
         if select_after_corrections: command += " --select_after_corrections \"{}\"".format(select_after_corrections)
         these_commands = commands + [command]
 
-        if args.method == "matrix": time = "00:12:00"
-        elif args.method == "delta_qm": time = "00:03:00"
+        if args.method == "matrix":
+            time = "00:5:00"
+            memory="15000M"
+        elif args.method == "delta_qm":
+            time = "00:02:00"
+            memory="6000M"
         job = Job(this_jobname, this_jobdir, these_commands, time = time, memory="15000M")
         jobset.add_job(job)
         job_counter += 1
