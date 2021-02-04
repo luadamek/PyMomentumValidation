@@ -78,7 +78,7 @@ for root_file in files:
         elif args.method == "delta_qm":
             time = "00:02:00"
             memory="6000M"
-        job = Job(this_jobname, this_jobdir, these_commands, time = time, memory="15000M")
+        job = Job(this_jobname, this_jobdir, these_commands, time = time, memory=memory)
         jobset.add_job(job)
         job_counter += 1
 
