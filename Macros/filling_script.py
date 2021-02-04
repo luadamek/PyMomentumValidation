@@ -638,9 +638,12 @@ def fill_histograms(hist_filler, output_filename, calibrations = None, injection
         ]
 
         for xvar, histname, x_range, x_label, nbins  in zip(varlist, histnames, x_ranges, x_labels, nbins_all):
+            if "ID" in histname: base_sel = [mass_selZ_func_ID]
+            if "ME" in histname: base_sel = [mass_selZ_func_ME]
+            if "MS" in histname: base_sel = [mass_selZ_func_MS]
             hist_filler.book_histogram_fill(histname + "_" + name,\
                                              xvar,\
-                                             selections = sel,\
+                                             selections = sel + base_sel,\
                                              bins = nbins,\
                                              range_low = x_range[0],\
                                              range_high = x_range[1],\
