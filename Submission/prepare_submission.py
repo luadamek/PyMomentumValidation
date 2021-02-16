@@ -12,9 +12,70 @@ from MatrixInversion import get_deltas_from_job
 from BiasCorrection import SagittaBiasCorrection
 import pickle as pkl
 
-#histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "",)
+def apply_calibrations(kind, hist_fillers):
+    if kind is None or len(kind) == 0: return
+    if "deltaqm" in kind:
+         base_filename = "/scratch/ladamek/sagittabias_matrices/Injection_Feb10_{filetype}_inject_None_method_delta_qm_region_{region}_loose_preselection_tight_select_after_correction_nom_round_21/OutputFiles"
+         import DeltaQMIterativeMethod
+         func = DeltaQMIterativeMethod.get_deltas_from_job
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_matrix_calibrations, load_matrix_subtractions, inject = None, inject_channels="", calibration_channels=""):
+    elif "matrix" in kind:
+         base_filename = "/scratch/ladamek/sagittabias_matrices/Injection_Feb10_{filetype}_inject_None_method_matrix_region_{region}_loose_preselection_tight_select_after_correction_nom_round_7/OutputFiles"
+         import MatrixInversion
+         func = MatrixInversion.get_deltas_from_job
+
+    else: raise ValueError("Calibration {} not found".format(kind))
+
+    from selections import sel_nom_delta_preselection_id, sel_nom_delta_preselection_me
+
+    for region in ["ID", "ME"]:
+        for data, mc in [("Data1516", "MC1516"), ("Data17", "MC17"), ("Data18", "MC18")]:
+            dir_data = base_filename.format(filetype=data, region=region)
+            dir_mc = base_filename.format(filetype=mc, region=region)
+
+            deltas, variables, detector_location = get_deltas_from_job(dir_data)
+            delta_subtraction, _, __ = get_deltas_from_job(dir_mc)
+            if "uncorr" not in kind: deltas.Add(delta_subtraction, -1.0)
+            if "mconly" in kind: deltas = delta_subtraction
+            xvar_name = variables["x_var"]
+            yvar_name = variables["y_var"]
+            if xvar_name == "ID_Eta":
+                xvar_pos = calc_pos_id_eta
+                xvar_neg = calc_neg_id_eta
+                selections = [sel_nom_delta_preselection_id]
+            elif xvar_name == "MS_Eta":
+                xvar_pos = calc_pos_ms_eta
+                xvar_neg = calc_neg_ms_eta
+                selections = []
+            elif xvar_name == "CB_Eta":
+                xvar_pos = calc_pos_cb_eta
+                xvar_neg = calc_neg_cb_eta
+                selections = []
+            elif xvar_name == "ME_Eta":
+                xvar_pos = calc_pos_me_eta
+                xvar_neg = calc_neg_me_eta
+                selections = [sel_nom_delta_preselection_me]
+            else: raise ValueError()
+            if yvar_name == "ID_Phi":
+                yvar_pos = calc_pos_id_phi
+                yvar_neg = calc_neg_id_phi
+            elif yvar_name == "MS_Phi":
+                yvar_pos = calc_pos_ms_phi
+                yvar_neg = calc_neg_ms_phi
+            elif xvar_name == "CB_Phi":
+                xvar_pos = calc_pos_cb_phi
+                xvar_neg = calc_neg_cb_phi
+            elif yvar_name == "ME_Phi":
+                yvar_pos = calc_pos_me_phi
+                yvar_neg = calc_neg_me_phi
+            else: raise ValueError()
+            calib = SagittaBiasCorrection([deltas], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = region)
+            for hist_filler in hist_fillers:
+                apply_to = data
+                if "mconly" in kind: apply_to = mc
+                hist_filler.apply_calibration_for_channel(apply_to, calib, selections=selections)
+
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels=""):
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
 
@@ -32,80 +93,6 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         executable = os.path.join(slurm_directory, "plot.sh")
         executable_local = os.path.join(slurm_directory, "plot_local.sh")
         python_executable = os.path.join(slurm_directory, "plot.py")
-
-        if inject is not None:
-            injections = []
-            from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_random
-            if inject == "Local":
-                inject_hist_func = injection_histogram_local
-            if inject == "Global":
-                inject_hist_func = injection_histogram_global
-            if inject == "GlobalPlusLocal":
-                inject_hist_func = injection_histogram_globalpluslocal
-            if inject == "Random":
-                inject_hist_func = injection_histogram_random
-
-            for region in ["ID", "ME"]:
-                inject_hist = inject_hist_func(detector_location = region)
-                if region == "ID":
-                    xvar_pos = calc_pos_id_eta
-                    xvar_neg = calc_neg_id_eta
-                    yvar_pos = calc_pos_id_phi
-                    yvar_neg = calc_neg_id_phi
-
-                if region == "ME":
-                    xvar_pos = calc_pos_me_eta
-                    xvar_neg = calc_neg_me_eta
-                    yvar_pos = calc_pos_me_phi
-                    yvar_neg = calc_neg_me_phi
-                injections.append(SagittaBiasCorrection([inject_hist], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = region))
-                injections_file = os.path.join(slurm_directory, "injections.pkl")
-                with open(injections_file, "wb") as f:
-                    pkl.dump({"channels": inject_channels.split(","), "injections": injections}, f)
-
-        if load_matrix_calibrations:
-            calibrations = []
-            to_load = load_matrix_calibrations.split(",")
-            if load_matrix_subtractions:
-                 to_subtract = load_matrix_subtractions.split(',')
-            for el, sub in zip(to_load, to_subtract):
-                deltas, variables, detector_location = get_deltas_from_job(el)
-                if sub: delta_subtraction, _, __ = get_deltas_from_job(sub)
-                if sub: deltas.Add(delta_subtraction, -1.0) #apply a kinetic bias correction
-                xvar_name = variables["x_var"]
-                yvar_name = variables["y_var"]
-                print(xvar_name)
-                if xvar_name == "ID_Eta":
-                    xvar_pos = calc_pos_id_eta
-                    xvar_neg = calc_neg_id_eta
-                elif xvar_name == "MS_Eta":
-                    xvar_pos = calc_pos_ms_eta
-                    xvar_neg = calc_neg_ms_eta
-                elif xvar_name == "CB_Eta":
-                    xvar_pos = calc_pos_cb_eta
-                    xvar_neg = calc_neg_cb_eta
-                elif xvar_name == "ME_Eta":
-                    xvar_pos = calc_pos_me_eta
-                    xvar_neg = calc_neg_me_eta
-                else: raise ValueError()
-                if yvar_name == "ID_Phi":
-                    yvar_pos = calc_pos_id_phi
-                    yvar_neg = calc_neg_id_phi
-                elif yvar_name == "MS_Phi":
-                    yvar_pos = calc_pos_ms_phi
-                    yvar_neg = calc_neg_ms_phi
-                elif xvar_name == "CB_Phi":
-                    xvar_pos = calc_pos_cb_phi
-                    xvar_neg = calc_neg_cb_phi
-                elif yvar_name == "ME_Phi":
-                    yvar_pos = calc_pos_me_phi
-                    yvar_neg = calc_neg_me_phi
-                else: raise ValueError()
-                calibrations.append(SagittaBiasCorrection([deltas], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = detector_location))
-                calibrations_file = os.path.join(slurm_directory, "calibrations.pkl")
-                with open(calibrations_file, "wb") as f:
-                    pkl.dump({"channels": calibration_channels.split(","), "calibrations":calibrations}, f)
-
 
         #create the python script that is needed for plotting
         plotting_instructions_python = []
@@ -128,8 +115,6 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
 
 
         plotting_instructions_python.append("fill_histograms(plots, {}".format(outfile_name)) 
-        if load_matrix_calibrations: plotting_instructions_python[-1] += ", calibrations = \"{}\"".format(calibrations_file)
-        if inject is not None: plotting_instructions_python[-1] += ", injections = \"{}\"".format(injections_file)
         plotting_instructions_python[-1] += ")"
         with open(python_executable, 'w') as f:
             for line in plotting_instructions_python:
@@ -173,6 +158,42 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
             assert len(partitions[channel]) == n_jobs
             hist_filler = HistogramFiller(trees, tree_name, calc_weight, selection_string = "", partitions = partition)
             filler_list.append(hist_filler)
+
+        if inject is not None:
+           injections = []
+           from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_random
+           if inject == "Local":
+               inject_hist_func = injection_histogram_local
+           if inject == "Global":
+               inject_hist_func = injection_histogram_global
+           if inject == "GlobalPlusLocal":
+               inject_hist_func = injection_histogram_globalpluslocal
+           if inject == "Random":
+               inject_hist_func = injection_histogram_random
+
+           for region in ["ID", "ME"]:
+               inject_hist = inject_hist_func(detector_location = region)
+               if region == "ID":
+                   xvar_pos = calc_pos_id_eta
+                   xvar_neg = calc_neg_id_eta
+                   yvar_pos = calc_pos_id_phi
+                   yvar_neg = calc_neg_id_phi
+
+               if region == "ME":
+                   xvar_pos = calc_pos_me_eta
+                   xvar_neg = calc_neg_me_eta
+                   yvar_pos = calc_pos_me_phi
+                   yvar_neg = calc_neg_me_phi
+               injections.append(SagittaBiasCorrection([inject_hist], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = region))
+
+           for inject_channel in inject_channels.split(","):
+               for injection in injections:
+                   for hist_filler in filler_list: hist_filler.apply_calibration_for_channel(inject_channel, injection)
+
+        if load_calibrations is not None:
+            apply_calibrations(load_calibrations, filler_list)
+
+
         #create a pickle file for each submission
         pickle.dump(filler_list, open(filler_file, "wb" ) )
         print("Created the submission file. Ready to go!")
@@ -200,12 +221,10 @@ if __name__ == "__main__":
         parser.add_argument('--queue_flavour', '-queue_flavour', dest="queue_flavour", type=str, default='tomorrow', help='What slurm queue should the jobs run on?')
         parser.add_argument('--file_flavour', '-ff', dest="file_flavour", type=str, default='inclusive', help='What is the flavour of the jobs that you want to submit?')
         parser.add_argument('--filling_script', '-fs', dest="filling_script", type=str, default='inclusive', help='What is the name of the script that takes the input root file and makes histograms?')
-        parser.add_argument('--load_matrix_calibrations', '-lmc', dest="load_matrix_calibrations", type=str, default='', help='a comma separated list of directories from which to load calibrations')
-        parser.add_argument('--load_matrix_subtractions', '-lms', dest="load_matrix_subtractions", type=str, default='', help='a comma separated list of directories from which to load subtractions when correcting deltas')
+        parser.add_argument('--load_calibrations', '-lmc', dest="load_calibrations", type=str, default='', help='the name of the calibrations to be applied. They are defined in the apply_calibration function in prepare_submission.py')
         parser.add_argument('--testjob', '-tj', dest="test_job", action="store_true", help="Submit a test job")
         parser.add_argument('--inject', "-inj", dest="inject", type=str, default="")
         parser.add_argument('--inject_channels', "-inj_ch", dest="inject_channels", type=str, default="MC,MC1516,MC17,MC18")
-        parser.add_argument('--calibration_channels', "-corr_ch", dest="calibration_channels", type=str, default="Data,Data1516,Data17,Data18")
         args = parser.parse_args()
 
         #Create a pickle file and list for each submission
@@ -216,13 +235,12 @@ if __name__ == "__main__":
         file_flavour = args.file_flavour
         filling_script = args.filling_script
         inject = args.inject
-        calibration_channels = args.calibration_channels
         inject_channels = args.inject_channels
         if inject == "":
             inject = None
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_matrix_calibrations, args.load_matrix_subtractions, inject=inject, inject_channels=inject_channels, calibration_channels=calibration_channels)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

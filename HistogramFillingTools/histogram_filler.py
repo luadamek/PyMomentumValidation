@@ -103,10 +103,13 @@ class HistogramFiller:
         self.subchannels = {} #dictionary of new_channel to dictionary of old_channel and selections
 
 
-    def apply_calibration_for_channel(self, channel, calibration):
+    def apply_calibration_for_channel(self, channel, calibration, selections = []):
         if channel not in self.calibrations: self.calibrations[channel] = []
-        self.calibrations[channel].append(calibration)
+        self.calibrations[channel].append((calibration, selections))
         self.all_calibrations.append(calibration)
+        for s in selections:
+            if s.name not in [sel.name for sel in self.all_selections]:
+                self.all_selections.append(s)
 
     def apply_selection_for_channel(self, channel, selections):
         if channel not in self.selections_for_channels:
@@ -138,9 +141,11 @@ class HistogramFiller:
         print("\n"*2)
         print("Getting branches for channel {}".format(channel))
         calibrations = []
+        calib_selections = []
         if channel in self.calibrations:
             print("Calibrating channel {}".format(channel))
-            calibrations += self.calibrations[channel]
+            calibrations += [c[0] for c in self.calibrations[channel]]
+            calib_selections += [s[1] for s in self.calibrations[channel]]
         branches = get_needed_branches(variables, selections, calibrations)
 
         #get the parition of the ttree to be read
@@ -154,7 +159,7 @@ class HistogramFiller:
         tree = self.trees[channel]
 
         print("Reading entries from {} until {}".format(partition[0], partition[1]))
-        result = GetData(partition = partition, bare_branches = branches, channel = channel, tree = tree, treename = self.tree_name, variables=variables, weight_calculator = self.weight_calculator, selections = selections, selection_string = self.selection_string, verbose = self.verbose, calibrations=calibrations)
+        result = GetData(partition = partition, bare_branches = branches, channel = channel, tree = tree, treename = self.tree_name, variables=variables, weight_calculator = self.weight_calculator, selections = selections, selection_string = self.selection_string, verbose = self.verbose, calibrations=calibrations, calibration_selections = calib_selections)
 
         #Get the selections, variables and weights
         selection_dict = result["selection_dict"]
@@ -451,7 +456,7 @@ def getIsData(filename):
     '''
     return ("Data" in filename.split("/")[-1] or "data" in filename.split("/")[-1] or "Data" in filename.split("/")[-2] or "data" in filename.split("/")[-2])
 
-def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, treename = None, variables = [], weight_calculator = None, selections = [], selection_string = "",  verbose = False, calibrations = []):
+def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, treename = None, variables = [], weight_calculator = None, selections = [], selection_string = "",  verbose = False, calibrations = [], calibration_selections = []):
     '''
     A function for retrieving data
     partition -- a tuple of length 2. Retrieve tree entries from partition[0] until partition[1]
@@ -487,7 +492,15 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, t
     if data is None:
         raise ValueError("Could not retrieve the data.")
 
-    for c in calibrations: data = c.calibrate(data)
+    #only apply the calibrations with the corresponding selections
+    for c, c_sels in zip(calibrations, calibration_selections):
+        data_calib = c.calibrate(data)
+        passes = np.ones(len(data))>0
+        for c_sel in c_sels:
+            print("Applying {} for calibration".format(c_sel.name))
+            passes &= c_sel.eval(data)
+        for name in data.dtype.names:
+            data[name][passes] = data_calib[name][passes]
 
     if verbose: print("Got the data for parition " + str(partition))
 
