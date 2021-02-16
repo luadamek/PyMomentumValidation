@@ -568,7 +568,7 @@ calc_leading_id_pt = Calculation(leading_id_pt, branches)
 def subleading_id_pt(event):
     return get_variable(event, "ID", "Pt", leading=False)
 branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
-calc_subleading_id_pt = Calculation(leading_id_pt, branches)
+calc_subleading_id_pt = Calculation(subleading_id_pt, branches)
 
 def leading_me_pt(event):
     return get_variable(event, "ME", "Pt", leading=True)
@@ -578,7 +578,7 @@ calc_leading_me_pt = Calculation(leading_me_pt, branches)
 def subleading_me_pt(event):
     return get_variable(event, "ME", "Pt", leading=False)
 branches = ["Pos_ME_Pt", "Neg_ME_Pt"]
-calc_subleading_me_pt = Calculation(leading_me_pt, branches)
+calc_subleading_me_pt = Calculation(subleading_me_pt, branches)
 
 ###################################################################
 def leading_id_eta(event):
@@ -589,7 +589,7 @@ calc_leading_id_eta = Calculation(leading_id_eta, branches)
 def subleading_id_eta(event):
     return get_variable(event, "ID", "Eta", leading=False)
 branches = ["Pos_ID_Eta", "Neg_ID_Eta"]
-calc_subleading_id_eta = Calculation(leading_id_eta, branches)
+calc_subleading_id_eta = Calculation(subleading_id_eta, branches)
 
 def leading_me_eta(event):
     return get_variable(event, "ME", "Eta", leading=True)
@@ -599,7 +599,7 @@ calc_leading_me_eta = Calculation(leading_me_eta, branches)
 def subleading_me_eta(event):
     return get_variable(event, "ME", "Eta", leading=False)
 branches = ["Pos_ME_Eta", "Neg_ME_Eta"]
-calc_subleading_me_eta = Calculation(leading_me_eta, branches)
+calc_subleading_me_eta = Calculation(subleading_me_eta, branches)
 
 ###################################################################
 def leading_id_phi(event):
@@ -610,7 +610,7 @@ calc_leading_id_phi = Calculation(leading_id_phi, branches)
 def subleading_id_phi(event):
     return get_variable(event, "ID", "Phi", leading=False)
 branches = ["Pos_ID_Phi", "Neg_ID_Phi"]
-calc_subleading_id_phi = Calculation(leading_id_phi, branches)
+calc_subleading_id_phi = Calculation(subleading_id_phi, branches)
 
 def leading_me_phi(event):
     return get_variable(event, "ME", "Phi", leading=True)
@@ -620,7 +620,7 @@ calc_leading_me_phi = Calculation(leading_me_phi, branches)
 def subleading_me_phi(event):
     return get_variable(event, "ME", "Phi", leading=False)
 branches = ["Pos_ME_Phi", "Neg_ME_Phi"]
-calc_subleading_me_phi = Calculation(leading_me_phi, branches)
+calc_subleading_me_phi = Calculation(subleading_me_phi, branches)
 ###################################################################
 
 import numexpr as ne
@@ -726,3 +726,20 @@ calc_cos_theta_star_ms = Calculation(cos_theta_star_ms, ["Pos_MS_Pt", "Neg_MS_Pt
 def cos_theta_star_me(event):
     return cos_theta_star(event, "ME")
 calc_cos_theta_star_me = Calculation(cos_theta_star_me, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
+
+def forward_id(event):
+    return cos_theta_star_id(event) > 0.0
+sel_forward_id = Calculation(forward_id, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"])
+
+def backward_id(event):
+    return np.logical_not(backward_id)
+sel_backward_id = Calculation(forward_id, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"])
+
+
+def forward_me(event):
+    return cos_theta_star_me(event) > 0.0
+sel_forward_me = Calculation(forward_me, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
+
+def backward_me(event):
+    return np.logical_not(backward_me)
+sel_backward_me = Calculation(forward_me, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
