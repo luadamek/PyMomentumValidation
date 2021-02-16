@@ -20,6 +20,11 @@ class HistogramManager:
        self.histograms = list(set(self.histograms))
        t_file.Close()
 
+       self.channels_merged = {}
+
+    def merge_channels(self, channel_name, channels_to_merge):
+        self.channels_merged[channel_name] = channels_to_merge
+
     def list_histograms(self, wcard):
        print("=" * 50)
        print("listing all histograms:")
@@ -41,5 +46,13 @@ class HistogramManager:
            histogram_dict[channel].SetDirectory(0)
            if rebin is not None:
                histogram_dict[channel].Rebin(rebin)
+
+       for channel in self.channels_merged:
+           histogram_dict[channel] = None
+           for channel_to_merge in self.channels_merged[channel]:
+               if histogram_dict[channel] is None: histogram_dict[channel] = histogram_dict[channel_to_merge].Clone(histogram_dict[channel_to_merge].GetName().replace(channel_to_merge, channel))
+               else: histogram_dict[channel].Add(histogram_dict[channel_to_merge])
+               histogram_dict[channel].SetDirectory(0)
+
        t_file.Close()
        return histogram_dict
