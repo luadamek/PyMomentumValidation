@@ -158,6 +158,7 @@ def get_parser():
     parser.add_argument('--corrections', '-c', type=str, dest="corrections", default="", required=False)
     parser.add_argument("--qm_corrections", "-qmc", type=str, dest="qm_corrections", default="", required=False)
     parser.add_argument("--no_cleaning_selection", "-ncsel", action="store_false")
+    parser.add_argument("--fold", "-f", type=str, default="None")
     return parser
 
 
@@ -190,7 +191,27 @@ def get_df_for_job(args):
         variables.remove("Pair_MS_Mass")
         do_add_pair_mass = True
 
+    if args.fold != "None":
+        variables += ["EvtNumber"]
+        variables = list(set(variables))
+
+
     df = get_dataframe(args.filename, args.start, args.stop, variables, "")
+
+    if args.fold != "None":
+        int_fold = None
+        fold_divisor = 2 
+        if args.fold == "one": int_fold = 0
+        if args.fold == "two": int_fold = 1
+        if int_fold is None: raise ValueError("Doesn't work!")
+
+        fold_selection = "EvtNumber % fold_divisor == fold"
+        print("Folding with {}".format(fold_selection))
+        print("before folding: {} events".format(len(df)))
+        fold_index = df["EvtNumber"].values
+        passes = (fold_index % fold_divisor == int_fold)
+        df = df.iloc[passes]
+        print("after folding: {} events".format(len(df)))
 
     if "v03" in args.filename and "v2" in args.filename and do_add_pair_mass:
         df = add_pair_mass(df)

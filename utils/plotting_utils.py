@@ -63,7 +63,7 @@ def draw_text(x, y, text, color=1, size=0.05):
     l.SetTextColor(color)
     l.DrawLatex(x, y, text)
 
-def ATLASLabel(x, y, text=None, color=1, size = None):
+def ATLASLabel(x, y, text=None, color=1, size = None, extra_descr = None):
     """Draw the ATLAS Label.
     Parameters
     ----------
@@ -82,7 +82,12 @@ def ATLASLabel(x, y, text=None, color=1, size = None):
     l.SetTextColor(color)
     if size != None:
         l.SetTextSize(size)
-    l.DrawLatex(x, y, r"#bf{#it{ATLAS}} " + text)
+    if extra_descr is not None and len(extra_descr) != 0:
+        if "#splitline:" not in extra_descr: l.DrawLatex(x, y, r"#bf{#it{ATLAS}} " + text + extra_descr)
+        else:
+            extra_descr = extra_descr.split(":")[-1]
+            l.DrawLatex(x, y, r"#splitline{#bf{#it{ATLAS}} " + text +"}{"+ extra_descr + "}")
+
 
 def hist_to_tgrapherrors(hist):
     xs = []
@@ -100,6 +105,8 @@ def hist_to_tgrapherrors(hist):
     yerrs = array.array('d', yerrs)
     graph = ROOT.TGraphErrors(len(xs),xs,ys,xerrs,yerrs)
     graph.SetName("Graph_{}".format(hist.GetName()))
+    graph.GetXaxis().SetTitle(hist.GetXaxis().GetTitle())
+    graph.GetYaxis().SetTitle(hist.GetYaxis().GetTitle())
     return graph
 
 alive = []
@@ -288,6 +295,19 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
              os.makedirs(plot_dir)
          canvas.Print(os.path.join(plot_dir, identifier + ftype))
 
+def get_extrema(histogram, minimum=True, bounds=None):
+     extreme = 9999999999999
+     if not minimum: extreme = -1 * extreme
+
+     for i in range(1, histogram.GetNbinsX() + 1):
+         if histogram.GetBinContent(i) < extreme and minimum:
+             if bounds is None or (histogram.GetBinCenter(i) < bounds[1] and histogram.GetBinCenter(i) > bounds[0]):
+                 extreme = histogram.GetBinContent(i)
+         if histogram.GetBinContent(i) > extreme and not minimum:
+             if bounds is None or (histogram.GetBinCenter(i) < bounds[1] and histogram.GetBinCenter(i) > bounds[0]):
+                 extreme = histogram.GetBinContent(i)
+     return extreme
+
 def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".png", plot_dir = "plots", x_range = None, mins_maxes = None):
 
     from atlasplots import set_atlas_style
@@ -319,13 +339,13 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
     canvas.SetRightMargin(canvas.GetRightMargin()*1.1)
     canvas.SetLeftMargin(canvas.GetLeftMargin()*1.1)
 
-    if not mins_maxes:
+    if mins_maxes is None:
         mins = []
         maxs = []
         for i, key in enumerate(to_plot):
             stack = histograms[key]
-            mins.append(stack.GetMinimum())
-            maxs.append(stack.GetMaximum())
+            mins.append(get_extrema(stack, minimum=True, bounds=x_range))
+            maxs.append(get_extrema(stack, minimum=False, bounds=x_range))
 
         minimum = min(mins)
         maximum = max(maxs)
@@ -339,8 +359,10 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
     for i, key in enumerate(to_plot):
         stack = to_plot[key]
         bin_width = histograms[key].GetBinLowEdge(3) - histograms[key].GetBinLowEdge(2)
-        stack.GetYaxis().SetTitle(y_axis_label)
-        stack.GetXaxis().SetTitle(x_axis_label)
+        if y_axis_label is not None:
+            stack.GetYaxis().SetTitle(y_axis_label)
+        if x_axis_label is not None:
+            stack.GetXaxis().SetTitle(x_axis_label)
 
         if x_range is not None: stack.GetXaxis().SetRangeUser(*x_range)
         stack.SetMaximum(maximum + (0.6 * (maximum-minimum)))
@@ -350,11 +372,11 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
         stack.GetXaxis().SetTitleSize(text_size)
         stack.GetYaxis().SetLabelSize(label_size)
         stack.GetXaxis().SetLabelSize(label_size)
+        #stack.GetXaxis().SetTitleOffset(1.05)
         if i == 0: stack.Draw("AP")
         else: stack.Draw("P SAME")
 
-
-    ATLASLabel(0.25, 0.77, "Internal", size = text_size)
+    ATLASLabel(0.20, 0.8, "Internal", size = 50, extra_descr = extra_descr)
     legend.SetTextSize(40)
     legend.Draw("SAME")
 

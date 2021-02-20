@@ -18,6 +18,7 @@ parser.add_argument('--preselection', "-presel", type=str, required=False, dest=
 parser.add_argument('--select_before_corrections', "-sel_bf_corr", type=str, required=False, dest="select_before_corrections", default="")
 parser.add_argument('--select_after_corrections', "-sel_af_corr", type=str, required=False, dest="select_after_corrections", default="")
 parser.add_argument('--method' , '-meth', type=str, default="matrix", required=False)
+parser.add_argument('--fold', '-f', type=str, default="None", dest="fold")
 args = parser.parse_args()
 
 file_type = args.file_type
@@ -33,6 +34,7 @@ jobdir = args.jobdir
 preselection = args.preselection
 select_before_corrections = args.select_before_corrections
 select_after_corrections = args.select_after_corrections
+fold = args.fold
 
 job_descr = args.job_base
 if job_descr[-1] == "_": job_descr = job_descr[:-1]
@@ -70,14 +72,23 @@ for root_file in files:
         if preselection: command += " --preselection \"{}\"".format(preselection)
         if select_before_corrections: command += " --select_before_corrections \"{}\"".format(select_before_corrections)
         if select_after_corrections: command += " --select_after_corrections \"{}\"".format(select_after_corrections)
+        if fold != "None": command += " --fold {}".format(fold)
         these_commands = commands + [command]
 
         if args.method == "matrix":
-            time = "00:5:00"
-            memory="15000M"
+            if args.fold == "None":
+                memory = "15000M"
+                time = "00:02:30"
+            else:
+                time = "00:02:00"
+                memory="8000M"
         elif args.method == "delta_qm":
-            time = "00:02:00"
-            memory="6000M"
+            if args.fold == "None":
+                time = "00:02:00"
+                memory = "6000M"
+            else:
+                time = "00:01:00"
+                memory="6000M"
         job = Job(this_jobname, this_jobdir, these_commands, time = time, memory=memory)
         jobset.add_job(job)
         job_counter += 1
@@ -88,7 +99,7 @@ else:
     import time
     while not jobset.check_completion():
         print("Checking compleition")
-        time.sleep(100)
+        time.sleep(30)
     print("FINISHED")
 
     #create the cache file for the delta file
