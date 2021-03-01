@@ -354,9 +354,9 @@ def get_entry_steps(root_file, step_size = 10000, tree_name = "tree_incl_all"):
     last_entry = 0
     steps = []
     while last_entry < all_entries:
-        steps.append([last_entry, last_entry + step_size])
+        steps.append((last_entry, last_entry + step_size))
         last_entry = steps[-1][-1]
-    steps[-1][-1] = all_entries
+    steps[-1] = (steps[-1][0], all_entries)
     return steps
 
 def get_setup_commands():
