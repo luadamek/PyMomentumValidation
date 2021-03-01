@@ -6,7 +6,7 @@ from atlasplots import set_atlas_style, atlas_label
 
 from atlasplots import set_atlas_style 
 set_atlas_style()
-def draw_2d_histogram(histogram, description = "", normalize = True, output_location="", palette_override = None, ftype = "png"):
+def draw_2d_histogram(histogram, description = "", normalize = True, output_location="", palette_override = None, ftype = "png", fix_axes = True):
 
     if palette_override is None: ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
     else: ROOT.gStyle.SetPalette(palette_override)
@@ -17,18 +17,21 @@ def draw_2d_histogram(histogram, description = "", normalize = True, output_loca
         histogram.SetMinimum(min(*[-1.0 * el for el in extrema]))
 
     text_size = 0.07
+    
     label_size = 0.06
-    histogram.GetZaxis().SetTitleSize(text_size)
-    histogram.GetYaxis().SetTitleSize(text_size)
-    histogram.GetXaxis().SetTitleSize(text_size)
-    histogram.GetZaxis().SetLabelSize(label_size)
-    histogram.GetYaxis().SetLabelSize(label_size)
-    histogram.GetXaxis().SetLabelSize(label_size)
+
+    if fix_axes:
+       histogram.GetZaxis().SetTitleSize(text_size)
+       histogram.GetYaxis().SetTitleSize(text_size)
+       histogram.GetXaxis().SetTitleSize(text_size)
+       histogram.GetZaxis().SetLabelSize(label_size)
+       histogram.GetYaxis().SetLabelSize(label_size)
+       histogram.GetXaxis().SetLabelSize(label_size)
 
     canvas = ROOT.TCanvas("Canvas_" + histogram.GetName())
     histogram.Draw("COLZ")
-    histogram.GetYaxis().SetTitleOffset(0.88)
-    histogram.GetXaxis().SetTitleOffset(1.1)
+    if fix_axes: histogram.GetYaxis().SetTitleOffset(0.88)
+    if fix_axes: histogram.GetXaxis().SetTitleOffset(1.1)
     canvas.SetTopMargin(0.1)
     if description: atlas_label(0.15, 0.94, "Internal   {}".format(description))
     else: atlas_label(0.2, 0.94, "Internal")

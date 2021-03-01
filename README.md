@@ -117,37 +117,32 @@ cmake .. && make
 cd ../../
 ```
 
-## Package Philosophy
-A plotting job is defined in a script such as macros/fill_script.py, which must have a function called fill_histograms. fill_histograms takes a HistogramFiller instance, an output rootfile name, and fills histograms. Take a look inside of the script fill_scipt.py to get an idea of how this works. From a user's perspective, one does not have to worry about creating an instance of a "HistogramFiller" or defining the name of the output rootfile. The scripts responsible for shipping jobs to condor handle everything. 
+## Filling Histograms
+The class responsible for filling histograms is called a HistogramFiller.
 
-All selections and variables to be plotted are defined as instances of the class "Caclulation". To define a new selection for tracks in a plot, you could write the following function:
 ```
 from calculation import Calculation
-def TightIso(event):
-    return event["event_nearest_dR_EM"] > 0.55
-sel_TightIso = Calculation(TightIso, ["event_nearest_dR_EM"])
-```
-The initialization of Calculation takes a function that calculates the selection (event_nearest_dR_EM > 0.55), and a list of branches needed to perform the calculation (event_nearest_dR_EM).
+def pt_over_mass(event):
+    return event["Pos_ID_PT"]/event["Pair_ID_Mass"]
+branches = ["Pos_ID_PT", "Paid_ID_Mass"]
+calc_mass = Calculation(mass, branches)
 
-Similarly, one can create a function that calculates E/P
-```
-from calculation import Calculation
-def EOP(event):
-    return (event["event_ClusterEnergy_EM_200"] + event["event_ClusterEnergy_HAD_200"])/event["event_p"]
-branches = ["event_ClusterEnergy_EM_200", "event_ClusterEnergy_HAD_200", "event_p"]
-calc_EOP = Calculation(EOP, branches)
+def central(event):
+    return np.abs(event["Pos_ID_Eta"]) < 2.0
+branches = ["Pos_ID_Eta"]
+sel_central = Calculation(central, branches)
+
 ```
 
-To fill an EOP histogram for all tracks passing the TightIso selection, define a histogram filling script like macros/fill_script_test.py .
 ```
 def fill_histograms(hist_filler, outputRootFileName):
     outFile = ROOT.TFile(outputRootFileName, "RECREATE")
 
     #count the number of tracks in each channel
-    histogram_name = "EOP"
+    histogram_name = "mass"
     selections = [sel_TightIso]
     eventCountHist = hist_filler.book_histogram_fill(histogram_name,\
-                                                         calc_EOP,\
+                                                         calc_pt_over_mass,\
                                                          selections = selections,\
                                                          bins = 100,\
                                                          range_low = -0.5,\
@@ -161,8 +156,6 @@ def fill_histograms(hist_filler, outputRootFileName):
     outFile.Close()
 ```
 
-The following lines would prepare a batch job for submission. This job would use 200 slurm jobs, and run over v03_v2 files. The set of files that this corresponds to is visible in utils/filelists.py. The queue flavour describes the amount of time that the job is set to run for, and it is 10 minutes in the examples below.
-
 ## Test one of the jobs locally
 ```
 python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 200 --job_name Nov26_nocalib --queue_flavour 00\:10:\00 --file_flavour v03_v2 --filling_script Macros\/filling_script.py --test
@@ -172,3 +165,5 @@ python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree 
 ```
 python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 200 --job_name Nov26_nocalib --queue_flavour 00\:10:\00 --file_flavour v03_v2 --filling_script Macros\/filling_script.py
 ```
+
+## Applying a Sagitta Bias Calibration when filling histograms

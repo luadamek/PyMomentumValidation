@@ -113,17 +113,17 @@ def get_difference_histogram(meas, injected, name, low_hi = None):
     rnp.fill_hist(histogram, values)
     return histogram, np.mean(values), np.std(values)
 
-DATE = "Jan29"
-#base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_{syst_var}_round_{round}/OutputFiles/"
-base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_loose_preselection_tight_select_after_correction__fold_{syst_var}_round_{round}/OutputFiles/"
+
 
 delta_qm_round = 21
 matrix_round = 5
 methods = ["delta_qm", "matrix"]
 
+base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec17_inject_{inject}_region_{detector_location}_{end_string}_round_{round}"
+
 for region in ["ID", "ME"]:
-    continue
     for end_string in ["loose_preselection_tight_select_after_correction"]:#"tight_preselection", "loose_preselection_tight_select_before_correction", "loose_preselection_tight_select_after_correction"]:
+        for method in methods:
            for bias in ["Random", "Global" , "Local", "None", "GlobalPlusLocal"]: #, "Data"]:#, "Null"]:A
                extrema_uncorr = -10000000
                extrema_corr = -10000000
@@ -139,7 +139,6 @@ for region in ["ID", "ME"]:
                            from DeltaQMIterativeMethod import get_deltas_from_job
                            global get_deltas_from_job
                            roun = delta_qm_round
-                       base_directory = base_directories[method]
 
                        output_location = os.path.join(os.getenv("MomentumValidationDir"), "SolutionHistograms_Injection_Dec17_method_{method}_region_{detector_location}_{end_string}_round_{round}".format(detector_location=region, end_string=end_string, round=roun, method=method))
                        if not os.path.exists(output_location): os.makedirs(output_location)
@@ -153,7 +152,8 @@ for region in ["ID", "ME"]:
                        if extrema_uncorr < abs(sagitta_hist.GetMaximum()): extrema_uncorr = abs(sagitta_hist.GetMaximum())
                        sagitta_hist.SetMinimum(-1.0 * extrema_uncorr)
                        sagitta_hist.SetMaximum(1.0 * extrema_uncorr)
-                       if iteration == 2: draw_2d_histogram(sagitta_hist, description, normalize = False, output_location=output_location)
+                       if iteration == 2:
+                            draw_2d_histogram(sagitta_hist, description, normalize = False, output_location=output_location)
                        #####################################################
 
                        #####################################################
@@ -215,11 +215,15 @@ for region in ["ID", "ME"]:
 
                        draw_2d_histogram(effect_injection, "    #sqrt{s}= 13 TeV "+mc_descr+"", normalize = False, output_location=output_location, palette_override = ROOT.kInvertedDarkBodyRadiator)
 
+DATE = "Feb10"
+base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_{syst_var}_round_{round}/OutputFiles/"
+#base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_loose_preselection_tight_select_after_correction__fold_{syst_var}_round_{round}/OutputFiles/"
+
 matrix_round = 7
 delta_qm_round = 21
 end_string = "loose_preselection_tight_select_after_correction"
 dict_histograms = {}
-for variation in ["one", "two"]:#"nom"]:#, "up", "down"]:
+for variation in ["nom"]:#, "up", "down"]:
     dict_histograms[variation] = {}
     for data_filetype, mc_filetype in [("Data1516", "MC1516"), ("Data17", "MC17"), ("Data18", "MC18")]:
         dict_histograms[variation][data_filetype+"_"+mc_filetype]={}
@@ -275,7 +279,8 @@ for variation in ["one", "two"]:#"nom"]:#, "up", "down"]:
                     sagitta_hist.SetMinimum(-1.0 * extrema_uncorr)
                     sagitta_hist.SetMaximum(1.0 * extrema_uncorr)
                     method_histograms_data.append(sagitta_hist)
-                    if iteration == 2: draw_2d_histogram(sagitta_hist, description, normalize = False, output_location=output_location)
+                    if iteration == 2: 
+                        draw_2d_histogram(sagitta_hist, description, normalize = False, output_location=output_location)
                     #####################################################
 
                     if difference_uncorr is None:

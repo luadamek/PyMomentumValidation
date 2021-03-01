@@ -91,7 +91,7 @@ def calculate_sagitta_bias(pos_hist, neg_hist, newname = None):
 class SagittaBiasCorrection:
 
     #the histogram is a segitta bias correction map for delta s
-    def __init__(self, histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "",):
+    def __init__(self, histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "", correction="Sagitta"):
         assert flavour in ["ID", "MS", "CB", "ME"]
         self.flavour = flavour
         if flavour == "ID":
@@ -215,9 +215,16 @@ class SagittaBiasCorrection:
         #input(data[neg_pt_name][neg_selection])
 
         #apply the calibration to the ntuple
-        data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection] / (1.0 + ((1.0) * data[pos_pt_name][pos_selection] * correction_for_data_pos[pos_selection]))
+        if correction == "Sagitta":
+            data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection] / (1.0 + ((1.0) * data[pos_pt_name][pos_selection] * correction_for_data_pos[pos_selection]))
 
-        data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection] / (1.0 + ((-1.0) * data[neg_pt_name][neg_selection] * correction_for_data_neg[neg_selection]))
+            data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection] / (1.0 + ((-1.0) * data[neg_pt_name][neg_selection] * correction_for_data_neg[neg_selection]))
+        elif correction == "Scale":
+            data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection]*( 1.0 + correction_for_data_pos[pos_selection])
+            data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection]*( 1.0 + correction_for_data_neg[neg_selection])
+        elif correction == "ScaleInjection":
+            data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection]/( 1.0 + correction_for_data_pos[pos_selection])
+            data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection]/( 1.0 + correction_for_data_neg[neg_selection])
         #print("data_after_correction")
         #input(data[pos_pt_name][pos_selection])
         #input(data[neg_pt_name][neg_selection])
