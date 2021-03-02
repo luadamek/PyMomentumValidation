@@ -465,6 +465,7 @@ def weight(event):
     return event["TotalWeight"]
 branches = ["TotalWeight"]
 calc_weight = WeightCalculation(weight, branches)
+calc_weight_var = Calculation(weight, branches)
 
 def pos_cb_eta(event):
     return event["Pos_CB_Eta"]
@@ -661,6 +662,17 @@ def pair_id_pt(event):
     py2 = get_py(event, "Neg", "ID")
 
     return ne.evaluate("sqrt( (px1 + px2)**2 + (py1 + py2)**2)")
+calc_pair_id_pt = Calculation(pair_id_pt, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"])
+
+def pair_me_pt(event):
+    px1 = get_px(event, "Pos", "ME")
+    px2 = get_px(event, "Neg", "ME")
+
+    py1 = get_py(event, "Pos", "ME")
+    py2 = get_py(event, "Neg", "ME")
+
+    return ne.evaluate("sqrt( (px1 + px2)**2 + (py1 + py2)**2)")
+calc_pair_me_pt = Calculation(pair_me_pt, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
 
 def pair_id_eta(event):
     pz1 = get_pz(event, "Pos", "ID")
