@@ -43,10 +43,10 @@ def extract_binning_from_histogram(hist):
         edges[axisname] = these_edges
     return edges
 
-class SagittaBiasCorrection:
+class MCCorrection:
 
     #the histogram is a segitta bias correction map for delta s
-    def __init__(self, histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "", correction="Sagitta"):
+    def __init__(self, so=None, s1=None, r0=None, r1=None, r2=None,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = ""):
         assert flavour in ["ID", "MS", "CB", "ME"]
         self.flavour = flavour
         if flavour == "ID":
@@ -91,101 +91,109 @@ class SagittaBiasCorrection:
         self.neg_varx = neg_varx
         self.neg_vary = neg_vary
 
-        self.histograms = histograms
+        self.s0 = s0
+        self.s1 = s1
+        self.r0 = r0
+        self.r1 = r1
+        self.r2 = r2
+        self.edges_x = {}
+        self.edges_y = {}
+        self.corrections = {}
+        self.inject = False
+
         self.branches = []
         for v in [self.pos_varx, self.pos_vary, self.neg_varx, self.neg_vary] + all_extra_vars + self.pos_selections + self.neg_selections:
             self.branches = list(set(self.branches + v.branches))
 
-        histogram = histograms[-1]
-        edges = extract_binning_from_histogram(histogram)
-        #load some information about the histogram, such as the bin edges
-        self.edges_x = np.array(edges["x"], np.float32)
-        self.edges_y = np.array(edges["y"], np.float32)
+        for attr in ["s0", "s1", "r0", "r1", "r2"]:
+           histogram = self.getattr(attr)
+           if histogram is not None:
+               edges = extract_binning_from_histogram(histogram)
+               #load some information about the histogram, such as the bin edges
+               self.edges_x[attr] = np.array(edges["x"], np.float32)
+               self.edges_y[attr] = np.array(edges["y"], np.float32)
 
-        corrections = np.zeros((len(self.edges_x)-1, len(self.edges_y)-1))
-        for i in range(1, len(self.edges_x )):
-            for j in range(1, len(self.edges_y)):
-                corrections[i-1, j-1] = sum([el.GetBinContent(i, j) for el in self.histograms])
-        self.corrections = corrections
-        print(self.corrections)
+               self.corrections[attr] = np.zeros((len(self.edges_x)-1, len(self.edges_y)-1))
+               for i in range(1, len(self.edges_x )):
+                   for j in range(1, len(self.edges_y)):
+                       self.corrections[attr][i-1, j-1] = sum([el.GetBinContent(i, j) for el in self.histograms])
+           else:
+               self.edges_x[attr] = None
+               self.edges_y[attr] = None
+               self.corrections[attr] = None
 
     def calibrate(self, data):
-        print("CALIBRATING VARIABLES")
-        nbins_x = len(self.edges_x) -1
-        bindex_x_pos = np.digitize(self.pos_varx.eval(data), self.edges_x) - 1
-        underflow_x_pos = bindex_x_pos == -1
-        overflow_x_pos = bindex_x_pos == nbins_x
-        bindex_x_pos[underflow_x_pos] = 0
-        bindex_x_pos[overflow_x_pos] = nbins_x - 1
-
-        bindex_x_neg = np.digitize(self.neg_varx.eval(data), self.edges_x) - 1
-        underflow_x_neg = bindex_x_neg == -1
-        overflow_x_neg = bindex_x_neg == nbins_x
-        bindex_x_neg[underflow_x_neg] = 0
-        bindex_x_neg[overflow_x_neg] = nbins_x - 1
-
-        nbins_y = len(self.edges_y) -1
-        bindex_y_pos = np.digitize(self.pos_vary.eval(data), self.edges_y) - 1
-        underflow_y_pos = bindex_y_pos == -1
-        overflow_y_pos = bindex_y_pos == nbins_y
-        bindex_y_pos[underflow_y_pos] = 0
-        bindex_y_pos[overflow_y_pos] = nbins_y - 1
-
-        bindex_y_neg = np.digitize(self.neg_vary.eval(data), self.edges_y) - 1
-        underflow_y_neg = bindex_y_neg == -1
-        overflow_y_neg = bindex_y_neg == nbins_y
-        bindex_y_neg[underflow_y_neg] = 0
-        bindex_y_neg[overflow_y_neg] = nbins_y - 1
-
-        #don't correct overflow!
-        not_overflow_pos = np.logical_and.reduce([np.logical_not(el) for el in [underflow_x_pos, underflow_y_pos,  overflow_x_pos, overflow_y_pos]])
-        not_overflow_neg = np.logical_and.reduce([np.logical_not(el) for el in [underflow_x_neg, underflow_y_neg, overflow_x_neg, overflow_y_neg]])
-        not_overflow = np.logical_and(not_overflow_pos, not_overflow_neg)
-
-        print("The amount of overflow, positive:")
-        print(min(self.edges_x), max(self.edges_x))
-        print(np.sum(1 * np.logical_not(not_overflow_pos)))
-        print("The amount of overflow, negative:")
-        print(min(self.edges_y), max(self.edges_y))
-        print(np.sum(1 * np.logical_not(not_overflow_neg)))
-
-        correction_for_data_pos = self.corrections[bindex_x_pos, bindex_y_pos]
-        correction_for_data_neg = self.corrections[bindex_x_neg, bindex_y_neg]
 
         #ok, now correct the pT
         pos_pt_name = "Pos_{}_Pt".format(self.flavour)
         neg_pt_name = "Neg_{}_Pt".format(self.flavour)
+        corrections_pos = {key:None for key in ["s0", "s1", "r0", "r1", "r2"]}
+        corrections_neg = {key:None for key in ["s0", "s1", "r0", "r1", "r2"]}
+        for variable in corrections:
+           if getattr(self, variable) is None:
+               corrections_pos[variables] = np.zeros(len(data))
+               corrections_neg[variables] = np.zeros(len(data))
+               continue
+           print("CALIBRATING VARIABLES")
+           nbins_x = len(self.edges_x[variable]) -1
+           bindex_x_pos = np.digitize(self.pos_varx.eval(data), self.edges_x[variable]) - 1
+           underflow_x_pos = bindex_x_pos == -1
+           overflow_x_pos = bindex_x_pos == nbins_x
+           bindex_x_pos[underflow_x_pos] = 0
+           bindex_x_pos[overflow_x_pos] = nbins_x - 1
 
-        pos_selection = np.logical_and.reduce([el.eval(data) for el in self.pos_selections] + [not_overflow_pos])
-        neg_selection = np.logical_and.reduce([el.eval(data) for el in self.neg_selections] + [not_overflow_neg])
+           bindex_x_neg = np.digitize(self.neg_varx.eval(data), self.edges_x[variable]) - 1
+           underflow_x_neg = bindex_x_neg == -1
+           overflow_x_neg = bindex_x_neg == nbins_x
+           bindex_x_neg[underflow_x_neg] = 0
+           bindex_x_neg[overflow_x_neg] = nbins_x - 1
 
-        #print("Corrections: ")
-        #input(self.corrections)
-        #input(pos_selection)
-        #input(neg_selection)
-        #print(np.any(pos_selection))
-        #print(np.any(neg_selection))
-        #print("data_before_correction")
-        #input(data[pos_pt_name][pos_selection])
-        #input(data[neg_pt_name][neg_selection])
+           nbins_y = len(self.edges_y[variable]) -1
+           bindex_y_pos = np.digitize(self.pos_vary.eval(data), self.edges_y[variable]) - 1
+           underflow_y_pos = bindex_y_pos == -1
+           overflow_y_pos = bindex_y_pos == nbins_y
+           bindex_y_pos[underflow_y_pos] = 0
+           bindex_y_pos[overflow_y_pos] = nbins_y - 1
 
-        #apply the calibration to the ntuple
-        if correction == "Sagitta":
-            data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection] / (1.0 + ((1.0) * data[pos_pt_name][pos_selection] * correction_for_data_pos[pos_selection]))
+           bindex_y_neg = np.digitize(self.neg_vary.eval(data), self.edges_y[variable]) - 1
+           underflow_y_neg = bindex_y_neg == -1
+           overflow_y_neg = bindex_y_neg == nbins_y
+           bindex_y_neg[underflow_y_neg] = 0
+           bindex_y_neg[overflow_y_neg] = nbins_y - 1
 
-            data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection] / (1.0 + ((-1.0) * data[neg_pt_name][neg_selection] * correction_for_data_neg[neg_selection]))
-        elif correction == "Scale":
-            data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection]*( 1.0 + correction_for_data_pos[pos_selection])
-            data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection]*( 1.0 + correction_for_data_neg[neg_selection])
-        elif correction == "ScaleInjection":
-            data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection]/( 1.0 + correction_for_data_pos[pos_selection])
-            data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection]/( 1.0 + correction_for_data_neg[neg_selection])
-        #print("data_after_correction")
-        #input(data[pos_pt_name][pos_selection])
-        #input(data[neg_pt_name][neg_selection])
-        #input()
+           #don't correct overflow!
+           not_overflow_pos = np.logical_and.reduce([np.logical_not(el) for el in [underflow_x_pos, underflow_y_pos,  overflow_x_pos, overflow_y_pos]])
+           not_overflow_neg = np.logical_and.reduce([np.logical_not(el) for el in [underflow_x_neg, underflow_y_neg, overflow_x_neg, overflow_y_neg]])
+           not_overflow = np.logical_and(not_overflow_pos, not_overflow_neg)
+
+           print("The amount of overflow, positive:")
+           print(min(self.edges_x[variable]), max(self.edges_x[variable]))
+           print(np.sum(1 * np.logical_not(not_overflow_pos)))
+           print("The amount of overflow, negative:")
+           print(min(self.edges_y[variable]), max(self.edges_y[variable]))
+           print(np.sum(1 * np.logical_not(not_overflow_neg)))
+
+           correction_for_data_pos = self.corrections[bindex_x_pos, bindex_y_pos]
+           correction_for_data_neg = self.corrections[bindex_x_neg, bindex_y_neg]
+
+           pos_selection = np.logical_and.reduce([el.eval(data) for el in self.pos_selections] + [not_overflow_pos])
+           neg_selection = np.logical_and.reduce([el.eval(data) for el in self.neg_selections] + [not_overflow_neg])
+
+           corrections_pos[variable]= np.zeros(len(data))
+           corrections_neg[variable] = np.zeros(len(data))
+
+           corrections_pos[variable][pos_selection] = correction_for_data_pos[pos_selection]
+           corrections_neg[variable][neg_selection] = correction_for_data_neg[neg_selection]
 
         extra_corrections = ["Pair_{}_Mass", "Pair_{}_Pt", "Pair_{}_Eta", "Pair_{}_Phi"]
+
+        #apply the calibration
+        if not self.injection:
+            df[pos_pt_name] = corrections_pos["s0"] + (1.0 + corrections_pos["s1"]) * df["pos_pt_name"].values
+            df[neg_pt_name] = corrections_neg["s0"] + (1.0 + corrections_neg["s1"]) * df["neg_pt_name"].values
+        else:
+            df[pos_pt_name] = (df["pos_pt_name"].values - corrections_pos["s0"])/(1.0 + corrections_pos["s1"])
+            df[neg_pt_name] = (df["neg_pt_name"].values - corrections_neg["s0"])/(1.0 + corrections_neg["s1"])
 
         if hasattr(data, "dtype"): keys =  data.dtype.names
         else: keys = list(data.keys())
@@ -197,7 +205,7 @@ class SagittaBiasCorrection:
             for key in keys:
                 to_correct_data[key] = data[key]
             safe =  check_safe_event(to_correct_data,"Pos", self.flavour) & check_safe_event(to_correct_data,"Neg", self.flavour)
-            to_correct_selection = np.logical_or(pos_selection, neg_selection) & safe
+            to_correct_selection = safe
             for key in keys:
                 to_correct_data[key] = to_correct_data[key][to_correct_selection]
             pos_pt = self.pos_pt_var.eval(to_correct_data)
