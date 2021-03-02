@@ -34,7 +34,7 @@ class HistogramManager:
     def has_histogram(self, histogram_name):
         return histogram_name in self.histograms
 
-    def get_histograms(self, histogram_name, rebin=None):
+    def get_histograms(self, histogram_name, rebin=None, channels = None):
        t_file = ROOT.TFile(self.filename, "READ")
        histogram_dict = {}
        if not histogram_name in self.histograms:
@@ -55,4 +55,5 @@ class HistogramManager:
                histogram_dict[channel].SetDirectory(0)
 
        t_file.Close()
-       return histogram_dict
+       if channels is None: return histogram_dict
+       else: return {key:histogram_dict[key] for key in channels}
