@@ -5,7 +5,7 @@ tight_selection_down="( abs(Pair_{}_Mass - 91.2) < 15) and (Pos_{}_Pt < 110) and
 loose_selection="( abs(Pair_{}_Mass - 91.2) < 40) and (Pos_{}_Pt < 500) and (Neg_{}_Pt < 500)"
 inject=None
 
-for method in matrix delta_qm
+for method in matrix # delta_qm
 do
     if [ "$method" = "matrix" ]
     then
@@ -14,7 +14,7 @@ do
         max_iter=22
     fi
 
-    for selection in down up
+    for selection in nom
     do
         if [ "$selection" = "nom" ]
         then
@@ -28,25 +28,21 @@ do
 
         for detector_location in ME ID
         do
-
             i=0
             until [ $i -eq $max_iter ]
             do
-
                 y=$((i-1))
-                for file_type in Data1516 Data17 Data18 MC1516 MC17 MC18
+                for file_type in MCSherpa1516 MCSherpa17 MCSherpa18 Data1516 Data17 Data18 MC1516 MC17 MC18 
                 do
-
-                    job_base=Injection_Feb10_${file_type}_inject_${inject}_method_${method}_region_${detector_location}_loose_preselection_tight_select_after_correction_${selection}
+                    job_base=Injection_Mar1_${file_type}_inject_${inject}_method_${method}_region_${detector_location}_loose_preselection_tight_select_after_correction_${selection}
                     if [ $i -gt 1 ]
                     then
-                        python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type ${file_type} --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}" --corrections ${jobdir}/${job_base}_round_${y}/OutputFiles 
+                        python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type ${file_type} --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v05 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}" --corrections ${jobdir}/${job_base}_round_${y}/OutputFiles --test
                     else
-                        python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type ${file_type} --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}"  
+                        python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type ${file_type} --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v05 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}"  --test
                     fi
                 done
                 i=$((i+1))
-
             done
         done
    done

@@ -14,10 +14,12 @@ set_atlas_style()
 parser = argparse.ArgumentParser(description='Make a suite of plots for the muon momentum scale calibration')
 parser.add_argument('--file_name', '-fn', dest="file_name", type=str, required=True, help='the name of the file to read from')
 parser.add_argument('--output_location', '-ol', dest="output_location", type=str, required=True, help="The name of the output folder in which to store the plots")
+parser.add_argument('--mc_channel', '-mch', dest="MC", type=str, default="MC")
+#'/project/def-psavard/ladamek/momentumvalidationoutput/Mar1_nocalib/Output.root'
 args = parser.parse_args()
 output_location = args.output_location
 hm = HistogramManager(args.file_name)
-hm.channels = ["Data", "MC"]
+hm.channels = ["Data", args.MC]
 
 def draw_2d_histogram(histogram, description = "", normalize = True, output_location=""):
     if normalize:
@@ -56,13 +58,14 @@ for histogram_flavour in histogram_flavours:
             bias_hist = calculate_sagitta_bias(h_pos["Data"], h_neg["Data"])
             draw_2d_histogram(bias_hist, description, output_location = output_location)
 
-            draw_2d_histogram(h_pos["MC"], description, output_location = output_location)
-            draw_2d_histogram(h_neg["MC"], description, output_location = output_location)
-            bias_hist = calculate_sagitta_bias(h_pos["MC"], h_neg["MC"])
+            draw_2d_histogram(h_pos[args.MC], description, output_location = output_location)
+            draw_2d_histogram(h_neg[args.MC], description, output_location = output_location)
+            bias_hist = calculate_sagitta_bias(h_pos[args.MC], h_neg[args.MC])
             draw_2d_histogram(bias_hist, description, output_location = output_location)
 
         histograms = ["{}_{}_Mass_Histogram_{}".format(histogram_flavour, detector_location, i) for i in ["Inclusive"]]
         for histogram_name in histograms:
+            continue
             histograms = hm.get_histograms(histogram_name)
             #for key in histograms:
             #    print("location: {}, channel: {}, RME {:.4f}".format(detector_location ,key, histograms[key].GetRME()))
@@ -71,8 +74,8 @@ for histogram_flavour in histogram_flavours:
             draw_data_vs_mc(histograms,\
                                 ratio_min = 0.9,\
                                 ratio_max = 1.1,\
-                                colours = {"MC":ROOT.kGreen +2, "Data":ROOT.kBlack},\
-                                legend_labels = {"Data":"Data", "MC":"PP8 Z#rightarrow#mu#mu"},\
+                                colours = {args.MC:ROOT.kGreen +2, "Data":ROOT.kBlack},\
+                                legend_labels = {"Data":"Data", args.MC:"PP8 Z#rightarrow#mu#mu"},\
                                 legend_coordinates = (0.6, 0.6, 0.9, 0.85),\
                                 x_axis_label = "M_{#mu#mu}^{"+detector_location+"} [GeV]",\
                                 y_axis_label="Events",\
@@ -92,8 +95,8 @@ for histogram_flavour in histogram_flavours:
                 draw_data_vs_mc(histograms,\
                                 ratio_min = 0.9,\
                                 ratio_max = 1.1,\
-                                colours = {"MC":ROOT.kGreen +2, "Data":ROOT.kBlack},\
-                                legend_labels = {"Data":"Data", "MC":"PP8 Z#rightarrow#mu#mu"},\
+                                colours = {args.MC:ROOT.kGreen +2, "Data":ROOT.kBlack},\
+                                legend_labels = {"Data":"Data", args.MC:"PP8 Z#rightarrow#mu#mu"},\
                                 legend_coordinates = (0.6, 0.6, 0.9, 0.9),\
                                 x_axis_label = "M_{#mu#mu} [GeV]",\
                                 y_axis_label="Events",\
@@ -116,9 +119,9 @@ for histogram_flavour in histogram_flavours:
             bias_hist = calculate_sagitta_bias(h_pos["Data"], h_neg["Data"])
             draw_2d_histogram(bias_hist, "    #sqrt{s} = 13 TeV, 139 fb^{-1}", output_location = output_location)
 
-            draw_2d_histogram(h_pos["MC"], "    #sqrt{s} = 13 TeV, Simulation", output_location = output_location)
-            draw_2d_histogram(h_neg["MC"], "    #sqrt{s} = 13 TeV, Simulation", output_location = output_location)
-            bias_hist = calculate_sagitta_bias(h_pos["MC"], h_neg["MC"])
+            draw_2d_histogram(h_pos[args.MC], "    #sqrt{s} = 13 TeV, Simulation", output_location = output_location)
+            draw_2d_histogram(h_neg[args.MC], "    #sqrt{s} = 13 TeV, Simulation", output_location = output_location)
+            bias_hist = calculate_sagitta_bias(h_pos[args.MC], h_neg[args.MC])
             draw_2d_histogram(bias_hist, "    #sqrt{s} = 13 TeV, Simulation", output_location = output_location)
 
         from binnings import binnings

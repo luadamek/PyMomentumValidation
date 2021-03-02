@@ -13,9 +13,23 @@ import uproot as ur
 #    
 
 def get_dataframe(root_file, start, stop,  variables, selection):
+    print("Reading {}".format(root_file))
     #calculate what bin events belong in
+    print("reading {} events".format(stop - start))
     df = ur.open(root_file)["MuonMomentumCalibrationTree"].pandas.df(branches = variables, entrystart = start, entrystop = stop)
-    if selection: df = df.query(selection) #apply the selection
+    #overweight events
+    #if "TotalWeight" in variables:
+    #   print("Skimming overweight events")
+    #   orig_sumw = np.sum(df["TotalWeight"].values)
+    #   before = len(df)
+    #   skipped = df.query("abs(TotalWeight) > 2.5")["TotalWeight"].values
+    #   df = df.query("abs(TotalWeight) < 2.5")
+    #   new_sumw = np.sum(df["TotalWeight"].values)
+    #   df["TotalWeight"] = df["TotalWeight"].values * (orig_sumw / new_sumw)
+    #   print("Skimmed {} events".format(before - len(df)))
+    #   print("Skipped weights {}".format(skipped))
+    #if selection: df = df.query(selection) #apply the selection
+    #print("Events passing selection {}".format(len(df)))
     return df
 
 import numpy as np

@@ -145,6 +145,7 @@ for root_file in all_startstops:
                 time = "00:01:00"
                 memory="6000M"
         job = Job(this_jobname, this_jobdir, these_commands, time = time, memory=memory)
+        if "364100" in root_file: job.run_local()
         jobset.add_job(job)
         job_counter += 1
 
