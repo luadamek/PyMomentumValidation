@@ -133,10 +133,10 @@ for root_file in all_startstops:
         if args.method == "matrix":
             if args.fold == "None":
                 memory = "15000M"
-                time = "00:02:30"
+                time = "00:07:00"
             else:
-                time = "00:02:00"
                 memory="8000M"
+                time = "00:03:00"
         elif args.method == "delta_qm":
             if args.fold == "None":
                 time = "00:02:00"
@@ -145,7 +145,6 @@ for root_file in all_startstops:
                 time = "00:01:00"
                 memory="6000M"
         job = Job(this_jobname, this_jobdir, these_commands, time = time, memory=memory)
-        if "364100" in root_file: job.run_local()
         jobset.add_job(job)
         job_counter += 1
 

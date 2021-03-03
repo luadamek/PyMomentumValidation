@@ -406,8 +406,11 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
 
 #This is a script that fills the histograms for
 def fill_histograms(hist_filler, output_filename):
-
-
+    from selections import sel_small_weight
+    hist_filler.apply_selection_for_channel("MCSherpa", [sel_small_weight])
+    hist_filler.apply_selection_for_channel("MCSherpa1516", [sel_small_weight])
+    hist_filler.apply_selection_for_channel("MCSherpa17", [sel_small_weight])
+    hist_filler.apply_selection_for_channel("MCSherpa18", [sel_small_weight])
 
     for varname, var in zip(["ID", "CB", "ME"], [calc_id_mass, calc_cb_mass, calc_me_mass]):
         histogram_name = "{}_mass".format(varname)

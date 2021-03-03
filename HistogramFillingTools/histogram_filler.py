@@ -102,7 +102,6 @@ class HistogramFiller:
         self.all_calibrations = []
         self.subchannels = {} #dictionary of new_channel to dictionary of old_channel and selections
 
-
     def apply_calibration_for_channel(self, channel, calibration, selections = []):
         if channel not in self.calibrations: self.calibrations[channel] = []
         self.calibrations[channel].append((calibration, selections))

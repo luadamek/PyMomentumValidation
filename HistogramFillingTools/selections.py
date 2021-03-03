@@ -20,15 +20,18 @@ sel_pos_leading_id = Calculation(pos_leading_id, branches)
 
 def neg_leading_id(event):
     return get_leading(event, "ID", "Neg")
-
 branches = ["Neg_ID_Pt", "Neg_ID_Pt"]
 sel_neg_leading_id = Calculation(neg_leading_id, branches)
 
 def pos_leading_me(event):
     return get_leading(event, "ME", "Pos")
-
 branches = ["Pos_ME_Pt", "Neg_ME_Pt"]
 sel_pos_leading_me = Calculation(pos_leading_me, branches)
+
+def small_weight(event):
+    return abs(event["TotalWeight"]) < 80.0
+branches = ["TotalWeight"]
+sel_small_weight = Calculation(small_weight, branches)
 
 def neg_leading_me(event):
     return get_leading(event, "ME", "Neg")
