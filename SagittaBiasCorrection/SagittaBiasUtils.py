@@ -159,6 +159,7 @@ def get_parser():
     parser.add_argument("--qm_corrections", "-qmc", type=str, dest="qm_corrections", default="", required=False)
     parser.add_argument("--no_cleaning_selection", "-ncsel", action="store_false")
     parser.add_argument("--fold", "-f", type=str, default="None")
+    parser.add_argument("--default_correction", "-dc", action="store_true", dest="default_correction")
     return parser
 
 
@@ -180,8 +181,11 @@ def get_df_for_job(args):
         injection_histogram_function = get_histogram_function(args.inject)
 
     variables = ["Pos_{}_Eta", "Neg_{}_Eta", "Pos_{}_Phi", "Neg_{}_Phi", "Pos_{}_Pt", "Neg_{}_Pt", "Pair_{}_Mass", "TotalWeight"] #all of the variables needed
+    if args.default_correction:
+        variables += [ "Pos_{}_CalibPt", "Neg_{}_CalibPt"]
 
     variables = [v.format(args.detector_location) for v in variables]
+    print(variables)
 
     if args.detector_location == "ID": eta_edges = eta_edges_ID
     else: eta_edges = eta_edges_else
@@ -195,8 +199,15 @@ def get_df_for_job(args):
         variables += ["EvtNumber"]
         variables = list(set(variables))
 
-
     df = get_dataframe(args.filename, args.start, args.stop, variables, "")
+    if args.default_correction: 
+        print("APPLYING DEFAULT MC CALIBRATION")
+        from DefaultCalibration import DefaultCorrection
+        correction = DefaultCorrection()
+        data = convert_df_to_data(df)
+        data = correction.calibrate(data, region=args.detector_location)
+        df = put_data_back_in_df(data, df)
+        del data
 
     if args.fold != "None":
         int_fold = None

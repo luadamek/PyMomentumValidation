@@ -31,7 +31,6 @@ histnames = \
 
 
 for input_file, output_location in zip(input_files, output_locations):
-
     set_atlas_style()
     hist_manager = HistogramManager(input_file)
     hist_manager.list_histograms("Mass")
@@ -64,7 +63,6 @@ for input_file, output_location in zip(input_files, output_locations):
                        x_axis_label = "M_{#mu#mu}^{"+location+"}[GeV]"
                        x_range=None
                        mins_maxes=None
-                       for key in new_histograms: new_histograms[key].Rebin(4)
                   elif "PT" in histogram_name_base:
                        x_axis_label = None
                        if "Lead" in histogram_name_base: x_range = (30.0, 100.0)

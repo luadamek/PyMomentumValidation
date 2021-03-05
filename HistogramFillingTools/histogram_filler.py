@@ -110,6 +110,9 @@ class HistogramFiller:
             if s.name not in [sel.name for sel in self.all_selections]:
                 self.all_selections.append(s)
 
+        if hasattr(calibration, "get_branches"):
+            self.all_variables = list(set(self.all_variables + calibration.get_branches()))
+
     def apply_selection_for_channel(self, channel, selections):
         if channel not in self.selections_for_channels:
             self.selections_for_channels[channel] = selections

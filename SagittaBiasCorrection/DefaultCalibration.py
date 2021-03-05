@@ -6,13 +6,17 @@ class DefaultCorrection:
 
     def get_branches(self):
         branches = []
-        for uncalib, calib in zip(["Pos_{}_Pt", "Neg_{}_Pt"],  ["Pos_{}_CalibPt", "Neg_{}_CalibPt"]):
-            branches.append(uncalib.format(region))
-            branches.append(calib.format(region))
+        for region in ["ID", "ME"]:
+            for uncalib, calib in zip(["Pos_{}_Pt", "Neg_{}_Pt"],  ["Pos_{}_CalibPt", "Neg_{}_CalibPt"]):
+                branches.append(uncalib.format(region))
+                branches.append(calib.format(region))
         return branches
 
-    def calibrate(self, data):
-        for region in ["ID", "ME"]:
+    def calibrate(self, data, region=None):
+        print("Applying the deafult correction")
+        if region is None: regions = [region]
+        else: regions = ["ID", "ME"]
+        for region in regions:
             for uncalib, calib in zip(["Pos_{}_Pt", "Neg_{}_Pt"],  ["Pos_{}_CalibPt", "Neg_{}_CalibPt"]):
                 pt = uncalib.format(region)
                 pt_calib = calib.format(region)

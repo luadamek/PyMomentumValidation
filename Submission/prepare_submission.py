@@ -75,7 +75,8 @@ def apply_calibrations(kind, hist_fillers):
                 if "mconly" in kind: apply_to = mc
                 hist_filler.apply_calibration_for_channel(apply_to, calib, selections=selections)
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels=""):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False):
+        from DefaultCalibration import DefaultCorrection
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
 
@@ -159,6 +160,10 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
             hist_filler = HistogramFiller(trees, tree_name, calc_weight, selection_string = "", partitions = partition)
             filler_list.append(hist_filler)
 
+        for hist_filler in filler_list:
+            for channel in ["MCCalib", "MC1516Calib", "MC17Calib", "MC18Calib", "MCSherpaCalib", "MCSherpa1516Calib", "MCSherpa17Calib", "MCSherpa18Calib"]:
+                hist_filler.apply_calibration_for_channel(channel, DefaultCorrection())
+
         if inject is not None:
            injections = []
            from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_random
@@ -225,6 +230,7 @@ if __name__ == "__main__":
         parser.add_argument('--testjob', '-tj', dest="test_job", action="store_true", help="Submit a test job")
         parser.add_argument('--inject', "-inj", dest="inject", type=str, default="")
         parser.add_argument('--inject_channels', "-inj_ch", dest="inject_channels", type=str, default="MC,MC1516,MC17,MC18")
+        parser.add_argument('--default_correction', "-def_calib", dest="default_correction", action="store_true")
         args = parser.parse_args()
 
         #Create a pickle file and list for each submission
@@ -240,7 +246,7 @@ if __name__ == "__main__":
             inject = None
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

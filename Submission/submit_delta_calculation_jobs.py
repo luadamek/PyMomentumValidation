@@ -21,6 +21,7 @@ parser.add_argument('--select_after_corrections', "-sel_af_corr", type=str, requ
 parser.add_argument('--method' , '-meth', type=str, default="matrix", required=False)
 parser.add_argument('--fold', '-f', type=str, default="None", dest="fold")
 parser.add_argument('--bootstraps', '-bs', type=int, default=-1, dest="bootstraps")
+parser.add_argument('--default_correction', '-dc', action="store_true", dest="default_correction")
 args = parser.parse_args()
 
 file_type = args.file_type
@@ -36,6 +37,7 @@ jobdir = args.jobdir
 preselection = args.preselection
 select_before_corrections = args.select_before_corrections
 select_after_corrections = args.select_after_corrections
+default_correction = args.default_correction
 fold = args.fold
 tree_name = "MuonMomentumCalibrationTree"
 
@@ -128,12 +130,13 @@ for root_file in all_startstops:
         if select_after_corrections: command += " --select_after_corrections \"{}\"".format(select_after_corrections)
         if fold != "None": command += " --fold {}".format(fold)
         if args.bootstraps> 0: command += "--bootstraps {}".format(bootstrap_filename)
+        if args.default_correction: command += "  --default_correction  "
         these_commands = commands + [command]
 
         if args.method == "matrix":
             if args.fold == "None":
                 memory = "15000M"
-                time = "00:07:00"
+                time = "00:03:00"
             else:
                 memory="8000M"
                 time = "00:03:00"
