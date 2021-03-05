@@ -11,9 +11,9 @@ import os
 
 
 input_files = [\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_nocalib/Output.root",\
-#"/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_deltaqm_calib_21/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_matrix_calib_7/Output.root"\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_v03_v2_nocalib/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_v03_v2_deltaqm_calib_21/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_v03_v2_matrix_calib_7/Output.root"\
 ]
 
 #Mar4_nocalib_inject_${inject}_correct
@@ -37,12 +37,12 @@ for input_file, output_location in zip(input_files, output_locations):
     hist_manager.merge_channels("MC", ["MC1516", "MC17", "MC18"])
     hist_manager.merge_channels("Data", ["Data1516", "Data17", "Data18"])
 
-    for data, mc, mc_sherpa, integrated_lumi in zip(["Data", "Data1516", "Data17", "Data18"], ["MC", "MC1516", "MC17", "MC18"], ["MCSherpa", "MCSherpa1516", "MCSherpa17", "MCSherpa18"], ["139", "36.2", "44.3", "58.5"]):
+    for data, mc, mc_sherpa, mc_corr, mc_sherpa_corr, integrated_lumi in zip(["Data", "Data1516", "Data17", "Data18"], ["MC", "MC1516", "MC17", "MC18"], ["MCSherpa", "MCSherpa1516", "MCSherpa17", "MCSherpa18"], ["MCCorr", "MC1516Corr", "MC17Corr", "MC18Corr"], ["MCSherpaCorr", "MCSherpa1516Corr", "MCSherpa17Corr", "MCSherpa18Corr"], ["139", "36.2", "44.3", "58.5"]):
 
 
-       colors = {data: ROOT.kBlack, mc: ROOT.kBlue, mc_sherpa: ROOT.kGreen}
-       styles = {data: 24, mc:26, mc_sherpa:28}
-       legend_labels = {data: "Data", mc: "PP8 Z#rightarrow#mu#mu", mc_sherpa: "Sherpa Z#rightarrow#mu#mu"}
+       colors = {data: ROOT.kBlack, mc: ROOT.kBlue, mc_sherpa: ROOT.kGreen, mc_corr: ROOT.kMagenta, mc_sherpa_corr: ROOT.kViolet}
+       styles = {data: 24, mc:26, mc_sherpa:28, mc_corr:29, mc_sherpa_corr:30}
+       legend_labels = {data: "Data", mc: "PP8 Z#rightarrow#mu#mu", mc_sherpa: "Sherpa Z#rightarrow#mu#mu", mc_corr: "PP8 Calibrated", mc_sherpa_corr: "Sherpa Calibrated"}
 
        for histogram_name_base in histnames: #["MassSpectrum_{location}_{identified}", "CosThetaStar_{location}_{identified}"]:
            for location in ["ID", "ME"]:

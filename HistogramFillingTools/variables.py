@@ -356,33 +356,23 @@ def get_selected_event(event, selection):
 *............................................................................*
 '''
 
-def cb_mass(event):
-    return event["Pair_CB_Mass"]
-branches = ["Pair_CB_Mass"]
-calc_cb_mass = Calculation(cb_mass, branches)
-
-def id_mass(event):
-    return event["Pair_ID_Mass"]
-branches = ["Pair_ID_Mass"]
-calc_id_mass = Calculation(id_mass, branches)
-
-def ms_mass(event):
-    safe =  check_safe_event(event,"Pos", "MS") & check_safe_event(event,"Neg", "MS")
-    to_return = np.zeros(len(event["Pos_MS_Pt"])) - 999.0
+def arbitrary_mass(event, region):
+    safe =  check_safe_event(event,"Pos", region) & check_safe_event(event,"Neg", region)
+    to_return = np.zeros(len(event["Pos_{}_Pt".format(region)])) - 999.0
     safe_event = get_selected_event(event, safe)
 
     #return safe_event["Pair_MS_Mass"]
-    pos_pt = safe_event["Pos_MS_Pt"]
-    neg_pt = safe_event["Neg_MS_Pt"]
+    pos_pt = safe_event["Pos_{}_Pt".format(region)]
+    neg_pt = safe_event["Neg_{}_Pt".format(region)]
 
-    pos_px = pos_pt * np.cos(safe_event["Pos_MS_Phi"])
-    neg_px = neg_pt * np.cos(safe_event["Neg_MS_Phi"])
+    pos_px = pos_pt * np.cos(safe_event["Pos_{}_Phi".format(region)])
+    neg_px = neg_pt * np.cos(safe_event["Neg_{}_Phi".format(region)])
 
-    pos_py = pos_pt * np.sin(safe_event["Pos_MS_Phi"])
-    neg_py = neg_pt * np.sin(safe_event["Neg_MS_Phi"])
+    pos_py = pos_pt * np.sin(safe_event["Pos_{}_Phi".format(region)])
+    neg_py = neg_pt * np.sin(safe_event["Neg_{}_Phi".format(region)])
 
-    pos_pz = pos_pt * np.sinh(safe_event["Pos_MS_Eta"])
-    neg_pz = neg_pt * np.sinh(safe_event["Neg_MS_Eta"])
+    pos_pz = pos_pt * np.sinh(safe_event["Pos_{}_Eta".format(region)])
+    neg_pz = neg_pt * np.sinh(safe_event["Neg_{}_Eta".format(region)])
 
     muon_mass = 105.658/1000.0
     pos_e_str = "sqrt( (muon_mass**2) + (pos_px ** 2) + (pos_py ** 2) + (pos_pz ** 2))"
@@ -393,8 +383,33 @@ def ms_mass(event):
 
     return to_return
 
-branches = ["Pos_MS_Pt", "Neg_MS_Pt", "Pos_MS_Phi", "Neg_MS_Phi", "Pos_MS_Eta", "Neg_MS_Eta"]
-calc_ms_mass = Calculation(ms_mass, branches)
+def cb_mass(event):
+    return event["Pair_CB_Mass"]
+branches = ["Pair_CB_Mass"]
+calc_cb_mass = Calculation(cb_mass, branches)
+
+def recalc_cb_mass(event):
+    return arbitrary_mass(event, "CB")
+calc_recalc_cb_mass = Calculation(cb_mass, ["Pos_CB_Pt", "Neg_CB_Pt", "Pos_CB_Eta", "Neg_CB_Eta", "Pos_CB_Phi", "Neg_CB_Phi"])
+
+def id_mass(event):
+    return event["Pair_ID_Mass"]
+branches = ["Pair_ID_Mass"]
+calc_id_mass = Calculation(id_mass, branches)
+
+def recalc_id_mass(event):
+    return arbitrary_mass(event, "ID")
+calc_recalc_id_mass = Calculation(id_mass, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"])
+
+def recalc_me_mass(event):
+    return arbitrary_mass(event, "ME")
+calc_recalc_me_mass = Calculation(me_mass, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
+
+def ms_mass(event):
+    arbitrary_mass(event, "MS")
+    return to_return
+calc_ms_mass = Calculation(ms_mass, ["Pos_MS_Pt", "Neg_MS_Pt", "Pos_MS_Eta", "Neg_MS_Eta", "Pos_MS_Phi", "Neg_MS_Phi"])
+
 
 def me_mass(event):
     return event["Pair_ME_Mass"]
