@@ -1,5 +1,5 @@
 from variables import calc_id_mass, calc_cb_mass, calc_me_mass
-from selections import range_selection_function
+from selections import range_selection_function, sel_nonzero_id_pts, sel_nonzero_me_pts
 from histogram_filler import create_selection_function, write_histograms
 import ROOT
 from BiasCorrection import SagittaBiasCorrection
@@ -507,8 +507,8 @@ def fill_histograms(hist_filler, output_filename):
                                      ylabel="Number of Events")
             
 
-    for sel_id, sel_me, name in zip([[sel_forward_id], [sel_backward_id]],\
-                                    [[sel_forward_me], [sel_backward_me]],\
+    for sel_id, sel_me, name in zip([[sel_forward_id, sel_nonzero_id_pts], [sel_backward_id, sel_nonzero_id_pts]],\
+                                    [[sel_forward_me, sel_nonzero_me_pts], [sel_backward_me, sel_nonzero_me_pts]],\
                                     ["forward", "backward"]):
         #make invariant mass histograms for ID tracks
         histogram_name_base = "MassSpectrum_ID_{identified}"
@@ -656,7 +656,7 @@ def fill_histograms(hist_filler, output_filename):
         histogram_name = histogram_name_base.format(identified = name)
         hist_filler.book_histogram_fill(histogram_name,\
                                              calc_cos_theta_star_id,\
-                                             selections = sel_id + [mass_selZ_func_ID],\
+                                             selections = sel_id + [mass_selZ_func_ID, sel_nonzero_id_pts],\
                                              bins = 100,\
                                              range_low = -1.0,\
                                              range_high = 1.0,\
@@ -667,7 +667,7 @@ def fill_histograms(hist_filler, output_filename):
         histogram_name = histogram_name_base.format(identified = name)
         hist_filler.book_histogram_fill(histogram_name,\
                                              calc_cos_theta_star_me,\
-                                             selections = sel_me + [mass_selZ_func_ME],\
+                                             selections = sel_me + [mass_selZ_func_ME, sel_nonzero_me_pts],\
                                              bins = 100,\
                                              range_low = -1.0,\
                                              range_high = 1.0,\

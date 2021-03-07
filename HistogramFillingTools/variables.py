@@ -403,7 +403,7 @@ calc_recalc_id_mass = Calculation(id_mass, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Et
 
 def recalc_me_mass(event):
     return arbitrary_mass(event, "ME")
-calc_recalc_me_mass = Calculation(me_mass, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
+calc_recalc_me_mass = Calculation(recalc_me_mass, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
 
 def ms_mass(event):
     arbitrary_mass(event, "MS")

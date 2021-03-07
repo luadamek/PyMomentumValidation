@@ -15,8 +15,17 @@ def get_leading(event,  location, charge):
 def pos_leading_id(event):
     return get_leading(event, "ID", "Pos")
 
+
 branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
 sel_pos_leading_id = Calculation(pos_leading_id, branches)
+
+def nonzero_id_pts(event):
+    return (event["Pos_ID_Pt"] > 0.0) & (event["Neg_ID_Pt"] > 0.0)
+sel_nonzero_id_pts = Calculation(nonzero_id_pts, ["Pos_ID_Pt", "Neg_ID_Pt"])
+
+def nonzero_me_pts(event):
+    return (event["Pos_ME_Pt"] > 0.0) & (event["Neg_ME_Pt"] > 0.0)
+sel_nonzero_me_pts = Calculation(nonzero_me_pts, ["Pos_ME_Pt", "Neg_ME_Pt"])
 
 def neg_leading_id(event):
     return get_leading(event, "ID", "Neg")
