@@ -4,7 +4,7 @@ class DefaultCorrection:
 
     #the histogram is a segitta bias correction map for delta s
     def __init__(self):
-        pass
+        self.branches = self.get_branches()
 
     def get_branches(self):
         branches = []

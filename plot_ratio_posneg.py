@@ -11,12 +11,12 @@ import os
 
 
 input_files = [\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_v03_v2_nocalib/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_v03_v2_deltaqm_calib_21/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_v03_v2_matrix_calib_7/Output.root"\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_v03_v2_nocalib/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_v03_v2_deltaqm_calib_21/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_v03_v2_matrix_calib_7/Output.root"\
 ]
 
-#Mar4_nocalib_inject_${inject}_correct
+#Mar7_nocalib_inject_${inject}_correct
 
 output_locations = [os.path.join(os.getenv("PWD"), "PosNegRatio" + el.split("/")[-2]) for el in input_files]
 
@@ -109,8 +109,8 @@ for input_file, output_location in zip(input_files, output_locations):
                     mins_maxes=None
                draw_histograms(divided_histograms,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), y_axis_label="N(+ leading)/N(- leading)", logy=False, extra_descr="#splitline:#sqrt{s} = 13 TeV, " + integrated_lumi + " fb^{-1}", to_return = False, ftype = ".pdf", plot_dir = output_location, x_axis_label = x_axis_label, x_range=x_range, mins_maxes=mins_maxes)
 
-mc_noinjection = "/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_nocalib/Output.root"
-basename = "/project/def-psavard/ladamek/momentumvalidationoutput/Mar4_nocalib_inject_{inject}_correct/Output.root"
+mc_noinjection = "/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_nocalib/Output.root"
+basename = "/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_nocalib_inject_{inject}_correct/Output.root"
 compare_against = ["Local", "GlobalPlusLocal", "Global", "Random"]
 for injection in compare_against:
 
@@ -125,7 +125,7 @@ for injection in compare_against:
        hist_manager_injected = HistogramManager(injected_file)
        hist_manager_raw = HistogramManager(raw_file)
 
-       output_location = "/project/def-psavard/ladamek/pymomentumvalidation/Mar4_nocalib_inject_{inject}_correct_plots/".format(inject = injection)
+       output_location = "/project/def-psavard/ladamek/pymomentumvalidation/Mar7_nocalib_inject_{inject}_correct_plots/".format(inject = injection)
 
        for histogram_name_base in ["MassSpectrum_{location}_{identified}", "CosThetaStar_{location}_{identified}"]:
 
