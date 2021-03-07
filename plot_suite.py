@@ -1,7 +1,6 @@
 import argparse
 from histogram_manager import HistogramManager
 import atlasplots
-from BiasCorrection import calculate_sagitta_bias
 import ROOT
 from binnings import global_pt_binning, global_pt_binning_zipped
 from utils import draw_text

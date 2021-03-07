@@ -29,16 +29,19 @@ histnames = \
 "MassSpectrum_{location}_{identified}", "CosThetaStar_{location}_{identified}", \
 ]
 
+mc_sherpa = None
+mc_sherpa_corr = None
 
 for input_file, output_location in zip(input_files, output_locations):
     set_atlas_style()
     hist_manager = HistogramManager(input_file)
     hist_manager.list_histograms("Mass")
     hist_manager.merge_channels("MC", ["MC1516", "MC17", "MC18"])
+    hist_manager.merge_channels("MCCalib", ["MC1516Calib", "MC17Calib", "MC18Calib"])
     hist_manager.merge_channels("Data", ["Data1516", "Data17", "Data18"])
 
-    for data, mc, mc_sherpa, mc_corr, mc_sherpa_corr, integrated_lumi in zip(["Data", "Data1516", "Data17", "Data18"], ["MC", "MC1516", "MC17", "MC18"], ["MCSherpa", "MCSherpa1516", "MCSherpa17", "MCSherpa18"], ["MCCorr", "MC1516Corr", "MC17Corr", "MC18Corr"], ["MCSherpaCorr", "MCSherpa1516Corr", "MCSherpa17Corr", "MCSherpa18Corr"], ["139", "36.2", "44.3", "58.5"]):
-
+    #for data, mc, mc_sherpa, mc_corr, mc_sherpa_corr, integrated_lumi in zip(["Data", "Data1516", "Data17", "Data18"], ["MC", "MC1516", "MC17", "MC18"], ["MCSherpa", "MCSherpa1516", "MCSherpa17", "MCSherpa18"], ["MCCalib", "MC1516Calib", "MC17Calib", "MC18Calib"], ["MCSherpaCalib", "MCSherpa1516Calib", "MCSherpa17Calib", "MCSherpa18Calib"], ["139", "36.2", "44.3", "58.5"]):
+    for data, mc, mc_corr, integrated_lumi in zip(["Data", "Data1516", "Data17", "Data18"], ["MC", "MC1516", "MC17", "MC18"], ["MCCalib", "MC1516Calib", "MC17Calib", "MC18Calib"], ["139", "36.2", "44.3", "58.5"]):
 
        colors = {data: ROOT.kBlack, mc: ROOT.kBlue, mc_sherpa: ROOT.kGreen, mc_corr: ROOT.kMagenta, mc_sherpa_corr: ROOT.kViolet}
        styles = {data: 24, mc:26, mc_sherpa:28, mc_corr:29, mc_sherpa_corr:30}
@@ -53,7 +56,8 @@ for input_file, output_location in zip(input_files, output_locations):
                   hist_name = histogram_name_base.format(location=location, identified=name)
                   histograms = hist_manager.get_histograms(hist_name)
                   sets_of_histograms[name] = histograms
-                  to_plot = [data, mc, mc_sherpa]
+                  #to_plot = [data, mc, mc_sherpa]
+                  to_plot = [data, mc, mc_corr]
                   new_histograms = {key:histograms[key] for key in to_plot}
                   if "CosTheta" in histogram_name_base:
                        x_axis_label = "cos#theta*_{"+location+"}"
@@ -79,7 +83,7 @@ for input_file, output_location in zip(input_files, output_locations):
                pos_histograms = sets_of_histograms["poslead"]
                neg_histograms = sets_of_histograms["neglead"]
                for key in pos_histograms:
-                   if key != data and key != mc and key != mc_sherpa: continue
+                   if key != data and key != mc and key != mc_sherpa and key != mc_corr and key != mc_sherpa_corr: continue
                    divided_histograms[key] = pos_histograms[key].Clone( pos_histograms[key].GetName() + "_OVER_" + neg_histograms[key].GetName() )
                    divided_histograms[key].Divide(neg_histograms[key])
                    divided_histograms[key].GetXaxis().SetTitle(pos_histograms[key].GetXaxis().GetTitle())
