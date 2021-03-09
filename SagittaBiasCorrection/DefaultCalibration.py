@@ -1,4 +1,4 @@
-from variables import recalc_id_mass, recalc_me_mass, calc_recalc_id_mass, calc_recalc_me_mass
+from variables import recalc_id_mass, recalc_me_mass, calc_recalc_id_mass, calc_recalc_me_mass, calc_recalc_cb_mass, recalc_cb_mass
 
 class DefaultCorrection:
 
@@ -8,18 +8,19 @@ class DefaultCorrection:
 
     def get_branches(self):
         branches = []
-        for region in ["ID", "ME"]:
+        for region in ["ID", "ME", "CB"]:
             for uncalib, calib in zip(["Pos_{}_Pt", "Neg_{}_Pt"],  ["Pos_{}_CalibPt", "Neg_{}_CalibPt"]):
                 branches.append(uncalib.format(region))
                 branches.append(calib.format(region))
                 branches+=calc_recalc_id_mass.branches
                 branches+=calc_recalc_me_mass.branches
+                branches+=calc_recalc_cb_mass.branches
         return branches
 
     def calibrate(self, data, region=None):
         print("Applying the deafult correction")
         if region is not None: regions = [region]
-        else: regions = ["ID", "ME"]
+        else: regions = ["ID", "ME", "CB"]
         for region in regions:
             for uncalib, calib in zip(["Pos_{}_Pt", "Neg_{}_Pt"],  ["Pos_{}_CalibPt", "Neg_{}_CalibPt"]):
                 pt = uncalib.format(region)
@@ -41,5 +42,7 @@ class DefaultCorrection:
                 data[variable_name] = recalc_id_mass(data)
             if region == "ME":
                 data[variable_name] = recalc_me_mass(data)
+            if region == "CB":
+                data[variable_name] = recalc_cb_mass(data)
         return data
 

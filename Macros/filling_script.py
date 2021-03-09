@@ -1,5 +1,5 @@
 from variables import calc_id_mass, calc_cb_mass, calc_me_mass
-from selections import range_selection_function, sel_nonzero_id_pts, sel_nonzero_me_pts
+from selections import range_selection_function, sel_nonzero_id_pts, sel_nonzero_me_pts, sel_min_fifteen_id_pts, sel_min_fifteen_me_pts
 from histogram_filler import create_selection_function, write_histograms
 import ROOT
 from BiasCorrection import SagittaBiasCorrection
@@ -507,8 +507,8 @@ def fill_histograms(hist_filler, output_filename):
                                      ylabel="Number of Events")
             
 
-    for sel_id, sel_me, name in zip([[sel_forward_id, sel_nonzero_id_pts], [sel_backward_id, sel_nonzero_id_pts]],\
-                                    [[sel_forward_me, sel_nonzero_me_pts], [sel_backward_me, sel_nonzero_me_pts]],\
+    for sel_id, sel_me, name in zip([[sel_forward_id, sel_min_fifteen_id_pts], [sel_backward_id, sel_min_fifteen_id_pts]],\
+                                    [[sel_forward_me, sel_min_fifteen_me_pts], [sel_backward_me, sel_min_fifteen_me_pts]],\
                                     ["forward", "backward"]):
         #make invariant mass histograms for ID tracks
         histogram_name_base = "MassSpectrum_ID_{identified}"
@@ -533,8 +533,8 @@ def fill_histograms(hist_filler, output_filename):
                                              xlabel ='M_{#mu#mu}^{ME} [GeV]',\
                                              ylabel = 'Number Events')
 
-    for sel_id, sel_me, name in zip([[sel_pos_leading_id], [sel_neg_leading_id], []],\
-                                    [[sel_pos_leading_me], [sel_neg_leading_me], []],\
+    for sel_id, sel_me, name in zip([[sel_pos_leading_id, sel_min_fifteen_id_pts], [sel_neg_leading_id, sel_min_fifteen_id_pts], []],\
+                                    [[sel_pos_leading_me, sel_min_fifteen_me_pts], [sel_neg_leading_me, sel_min_fifteen_me_pts], []],\
                                     ["poslead", "neglead", "Inclusive"]):
 
         #I will come back and fix this
@@ -617,6 +617,18 @@ def fill_histograms(hist_filler, output_filename):
                                              range_low = 91.2-12.0,\
                                              range_high = 91.2+12.0,\
                                              xlabel ='M_{#mu#mu}^{ID} [GeV]',\
+                                             ylabel = 'Number Events')
+
+        #make invariant mass histograms for CB tracks
+        histogram_name_base = "MassSpectrum_CB_{identified}"
+        histogram_name = histogram_name_base.format(identified = name)
+        hist_filler.book_histogram_fill(histogram_name,\
+                                             calc_cb_mass,\
+                                             selections = sel_id,\
+                                             bins = 100,\
+                                             range_low = 91.2-12.0,\
+                                             range_high = 91.2+12.0,\
+                                             xlabel ='M_{#mu#mu}^{CB} [GeV]',\
                                              ylabel = 'Number Events')
 
         histogram_name_base = "MassSpectrum_ME_{identified}"

@@ -416,6 +416,11 @@ def me_mass(event):
 branches = ["Pair_ME_Mass"]
 calc_me_mass = Calculation(me_mass, branches)
 
+def cb_mass(event):
+    return event["Pair_CB_Mass"]
+branches = ["Pair_CB_Mass"]
+calc_cb_mass = Calculation(cb_mass, branches)
+
 def cb_pt(event):
     return event["Pair_CB_Pt"]
 branches = ["Pair_CB_Pt"]
