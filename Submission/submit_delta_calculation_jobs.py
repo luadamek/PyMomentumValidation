@@ -22,6 +22,7 @@ parser.add_argument('--method' , '-meth', type=str, default="matrix", required=F
 parser.add_argument('--fold', '-f', type=str, default="None", dest="fold")
 parser.add_argument('--bootstraps', '-bs', type=int, default=-1, dest="bootstraps")
 parser.add_argument('--default_correction', '-dc', action="store_true", dest="default_correction")
+parser.add_argument('--coarse_binning', '-cb', action="store_true", dest="coarse_binning")
 args = parser.parse_args()
 
 file_type = args.file_type
@@ -131,6 +132,7 @@ for root_file in all_startstops:
         if fold != "None": command += " --fold {}".format(fold)
         if args.bootstraps> 0: command += "--bootstraps {}".format(bootstrap_filename)
         if args.default_correction: command += "  --default_correction  "
+        if args.coarse_binning: command += " --coarse_binning"
         these_commands = commands + [command]
 
         if args.method == "matrix":
@@ -140,6 +142,9 @@ for root_file in all_startstops:
             else:
                 memory="8000M"
                 time = "00:03:00"
+            if args.coarse_binning:
+                memory="8000M"
+                time="00:02:00"
         elif args.method == "delta_qm":
             if args.fold == "None":
                 time = "00:02:00"

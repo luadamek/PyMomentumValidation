@@ -2,7 +2,6 @@ import argparse
 from array import array
 from histogram_manager import HistogramManager
 import atlasplots
-from BiasCorrection import calculate_sagitta_bias
 import ROOT
 from binnings import global_pt_binning, global_pt_binning_zipped
 from plotting_utils import draw_text, draw_2d_histogram
@@ -117,11 +116,13 @@ def get_difference_histogram(meas, injected, name, low_hi = None):
 
 delta_qm_round = 21
 matrix_round = 5
-methods = ["delta_qm", "matrix"]
+#methods = ["delta_qm", "matrix"]
+methods = ["matrix"]
 
 base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec17_inject_{inject}_region_{detector_location}_{end_string}_round_{round}"
 
 for region in ["ID", "ME"]:
+    continue
     for end_string in ["loose_preselection_tight_select_after_correction"]:#"tight_preselection", "loose_preselection_tight_select_before_correction", "loose_preselection_tight_select_after_correction"]:
         for method in methods:
            for bias in ["Random", "Global" , "Local", "None", "GlobalPlusLocal"]: #, "Data"]:#, "Null"]:A
@@ -215,32 +216,40 @@ for region in ["ID", "ME"]:
 
                        draw_2d_histogram(effect_injection, "    #sqrt{s}= 13 TeV "+mc_descr+"", normalize = False, output_location=output_location, palette_override = ROOT.kInvertedDarkBodyRadiator)
 
-DATE = "Feb10"
-base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_{syst_var}_round_{round}/OutputFiles/"
+DATE = "Mar1"
+#base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_{syst_var}_round_{round}/OutputFiles/"
+base_directory = "/project/def-psavard/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_{syst_var}_coarse_round_{round}/OutputFiles/"
+#/project/def-psavard/ladamek/sagittabias_matrices/Injection_Mar1_Data1516_inject_None_method_matrix_region_ID_loose_preselection_tight_select_after_correction_nom_round_0/
 #base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_loose_preselection_tight_select_after_correction__fold_{syst_var}_round_{round}/OutputFiles/"
 
-matrix_round = 7
-delta_qm_round = 21
+matrix_round = 4
+#delta_qm_round = 
 end_string = "loose_preselection_tight_select_after_correction"
 dict_histograms = {}
 for variation in ["nom"]:#, "up", "down"]:
     dict_histograms[variation] = {}
-    for data_filetype, mc_filetype in [("Data1516", "MC1516"), ("Data17", "MC17"), ("Data18", "MC18")]:
+    #for data_filetype, mc_filetype in [("Data1516", "MC1516"), ("Data17", "MC17"), ("Data18", "MC18"), ("Data1516", "MCSherpa1516"), ("Data17", "MCSherpa17"), ("Data18", "MCSherpa18"), ("Data", "MCSherpa"), ("Data", "MC")]:
+    for data_filetype, mc_filetype in [("Data", "MCSherpa"), ("Data", "MC")]:
         dict_histograms[variation][data_filetype+"_"+mc_filetype]={}
-        if data_filetype == "Data1516":
+        if data_filetype == "Data":
+            integrated_lumi = "139"
+        elif data_filetype == "Data1516":
             integrated_lumi = "36.2"
         elif data_filetype == "Data17":
             integrated_lumi = "44.3"
         elif data_filetype == "Data18":
             integrated_lumi = "58.5"
-        if mc_filetype == "MC1516":
+        if mc_filetype == "MC1516" or mc_filetype == "MCSherpa1516":
             mc_descr = "mc16a"
-        elif mc_filetype == "MC17":
+        elif mc_filetype == "MC17" or mc_filetype == "MCSherpa17":
             mc_descr = "mc16d"
-        elif mc_filetype == "MC18":
+        elif mc_filetype == "MC18" or mc_filetype == "MCSherpa18":
             mc_descr = "mc16e"
+        elif mc_filetype == "MC" or mc_filetype == "MCSherpa":
+            mc_descr = "mc16ade"
 
-        for region in ["ME", "ID"]:
+        #for region in ["ME", "ID"]:
+        for region in ["ID"]:
             dict_histograms[variation][data_filetype+"_"+mc_filetype][region]={}
             extrema_uncorr = -10000000
             extrema_corr = -10000000
@@ -330,14 +339,14 @@ for variation in ["nom"]:#, "up", "down"]:
                 difference.SetName(difference.GetName() + "Difference_{mc_filetype}_{data_filetype}".format(data_filetype=data_filetype, mc_filetype=mc_filetype))
                 draw_2d_histogram(difference, description, normalize = False, output_location=os.getenv("MomentumValidationDir"))
 
-                one_d_diff_hist = get_difference_histogram(corr_hists[0], corr_hists[1], difference.GetName()+"1DDiffHist")[0]
-                one_d_diff_hist.GetXaxis().SetTitle(difference.GetZaxis().GetTitle())
-                c = ROOT.TCanvas()
-                c.SetBottomMargin(0.2)
-                one_d_diff_hist.GetYaxis().SetTitle("Number of Estimates")
-                one_d_diff_hist.Draw()
-                c.Draw()
-                c.Print(os.path.join(output_location, one_d_diff_hist.GetName() + ".png"))
+                #one_d_diff_hist = get_difference_histogram(corr_hists[0], corr_hists[1], difference.GetName()+"1DDiffHist")[0]
+                #one_d_diff_hist.GetXaxis().SetTitle(difference.GetZaxis().GetTitle())
+                #c = ROOT.TCanvas()
+                #c.SetBottomMargin(0.2)
+                #one_d_diff_hist.GetYaxis().SetTitle("Number of Estimates")
+                #one_d_diff_hist.Draw()
+                #c.Draw()
+                #c.Print(os.path.join(output_location, one_d_diff_hist.GetName() + ".png"))
                 
 
                 extrema_difference_uncorr = abs(difference_uncorr.GetMinimum())
@@ -361,19 +370,21 @@ for variation in ["nom"]:#, "up", "down"]:
                 draw_2d_histogram(difference_mc, description, normalize = False, output_location=os.getenv("MomentumValidationDir"))
 
                 #make a plot of the percent difference between both calibrations for a 45 GeV muon
+                '''
                 method_histograms_data = [m.Clone(m.GetName() + "PercentDifference_{mc_filetype}_{data_filetype}_{region}".format(data_filetype=data_filetype, mc_filetype=mc_filetype, region=region)) for m in method_histograms_data]
                 method_histograms_mc = [m.Clone(m.GetName() + "PercentDifference_{mc_filetype}_{data_filetype}_{region}".format(data_filetype=data_filetype, mc_filetype=mc_filetype, region=region)) for m in method_histograms_mc]
                 method_histograms_data_corr = [m.Clone(m.GetName() + "PercentDifference_{mc_filetype}_{data_filetype}_{region}".format(data_filetype=data_filetype, mc_filetype=mc_filetype, region=region)) for m in method_histograms_data_corr]
 
-                diff_data       = get_effect_histogram(method_histograms_data[0], meas=method_histograms_data[1], compare = True, template=method_histograms_data[0])
+                diff_data = get_effect_histogram(method_histograms_data[0], meas=method_histograms_data[1], compare = True, template=method_histograms_data[0])
                 description = "    #sqrt{s} = 13 TeV, " + integrated_lumi + " fb^{-1}"
                 draw_2d_histogram(diff_data, description, normalize = False, output_location=os.getenv("MomentumValidationDir"), palette_override = ROOT.kInvertedDarkBodyRadiator)
-                diff_mc         = get_effect_histogram(method_histograms_mc[0], meas=method_histograms_mc[1], compare = True, template=method_histograms_data[0])
+                diff_mc = get_effect_histogram(method_histograms_mc[0], meas=method_histograms_mc[1], compare = True, template=method_histograms_data[0])
                 description = "    #sqrt{s} = 13 TeV "+mc_descr+""
                 draw_2d_histogram(diff_mc, description, normalize = False, output_location=os.getenv("MomentumValidationDir"), palette_override = ROOT.kInvertedDarkBodyRadiator)
                 diff_data_corr  = get_effect_histogram(method_histograms_data_corr[0], meas=method_histograms_data_corr[1], compare = True, template=method_histograms_data[0])
                 description = "    #sqrt{s} = 13 TeV, " + integrated_lumi + " fb^{-1}"
                 draw_2d_histogram(diff_data_corr, description, normalize = False, output_location=os.getenv("MomentumValidationDir"), palette_override = ROOT.kInvertedDarkBodyRadiator)
+                '''
 
 
 up_differences = {}

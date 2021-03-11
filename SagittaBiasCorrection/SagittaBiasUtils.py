@@ -21,14 +21,17 @@ from BiasCorrection import SagittaBiasCorrection
 import ROOT
 
 eta_edges_ID = np.linspace(-2.5, +2.5 , 25)
+eta_edges_ID_coarse = np.linspace(-2.5, +2.5 , 13)
 #eta_edges_ID[0] = -2.65
 #eta_edges_ID[-1] = 2.65
 
 eta_edges_else = np.linspace(-2.7, +2.7 , 27)
+eta_edges_else_coarse = np.linspace(-2.7, +2.7 , 14)
 #eta_edges_else[0] = -2.85
 #eta_edges_else[-1] = 2.85
 
 phi_edges = np.linspace(-1.0 * math.pi, +1.0 * math.pi, 25)
+phi_edges_coarse = np.linspace(-1.0 * math.pi, +1.0 * math.pi, 13)
 def convert_df_to_data(df):
     data = {}
     for c in df.columns:
@@ -105,6 +108,11 @@ def get_variables(region):
         neg_varx = calc_neg_id_eta
         pos_vary = calc_pos_id_phi
         neg_vary = calc_neg_id_phi
+    if region == "CB":
+        pos_varx = calc_pos_cb_eta
+        neg_varx = calc_neg_cb_eta
+        pos_vary = calc_pos_cb_phi
+        neg_vary = calc_neg_cb_phi
     elif region == "MS":
         pos_varx = calc_pos_ms_eta
         neg_varx = calc_neg_ms_eta
@@ -160,6 +168,7 @@ def get_parser():
     parser.add_argument("--no_cleaning_selection", "-ncsel", action="store_false")
     parser.add_argument("--fold", "-f", type=str, default="None")
     parser.add_argument("--default_correction", "-dc", action="store_true", dest="default_correction")
+    parser.add_argument("--coarse_binning", "-cb", action="store_true", dest="coarse_binning")
     return parser
 
 
@@ -176,6 +185,7 @@ def apply_cleaning_selection(df, args):
 
 from utils import get_dataframe
 def get_df_for_job(args):
+    global phi_edges
 
     if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
         injection_histogram_function = get_histogram_function(args.inject)
@@ -187,8 +197,15 @@ def get_df_for_job(args):
     variables = [v.format(args.detector_location) for v in variables]
     print(variables)
 
-    if args.detector_location == "ID": eta_edges = eta_edges_ID
-    else: eta_edges = eta_edges_else
+    if args.detector_location == "ID":
+        if not args.coarse_binning: eta_edges = eta_edges_ID
+        else: eta_edges = eta_edges_ID_coarse
+    else:
+        if not args.coarse_binning: eta_edges = eta_edges_else
+        else: eta_edges = eta_edges_else_coarse
+
+    if args.coarse_binning:
+        phi_edges = phi_edges_coarse
 
     do_add_pair_mass = False
     if "v03" in args.filename and "v2" in args.filename and "Pair_MS_Mass" in variables:
