@@ -112,10 +112,15 @@ class HistogramFiller:
 
 
     def apply_selection_for_channel(self, channel, selections):
-        if channel not in self.selections_for_channels:
-            self.selections_for_channels[channel] = selections
+        if channel == "__ALL__":
+            for chan in self.channels:
+                if channel not in self.selections_for_channels: self.selections_for_channels[channel] = [el for el in selections]
+                else: self.selections_for_channels[channel] += selections
         else:
-            self.selections_for_channels[channel] += selections
+            if channel not in self.selections_for_channels:
+                self.selections_for_channels[channel] = [el for el in selections]
+            else:
+                self.selections_for_channels[channel] += selections
         for selection in selections:
             if selection.name not in [sel.name for sel in self.all_selections]:
                 self.all_selections.append(selection)

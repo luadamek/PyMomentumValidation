@@ -21,17 +21,17 @@ from BiasCorrection import SagittaBiasCorrection
 import ROOT
 
 eta_edges_ID = np.linspace(-2.5, +2.5 , 25)
-eta_edges_ID_coarse = np.linspace(-2.5, +2.5 , 13)
+eta_edges_ID_coarse = np.linspace(-2.5, +2.5 , 25)
 #eta_edges_ID[0] = -2.65
 #eta_edges_ID[-1] = 2.65
 
 eta_edges_else = np.linspace(-2.7, +2.7 , 27)
-eta_edges_else_coarse = np.linspace(-2.7, +2.7 , 14)
+eta_edges_else_coarse = np.linspace(-2.7, +2.7 , 27)
 #eta_edges_else[0] = -2.85
 #eta_edges_else[-1] = 2.85
 
 phi_edges = np.linspace(-1.0 * math.pi, +1.0 * math.pi, 25)
-phi_edges_coarse = np.linspace(-1.0 * math.pi, +1.0 * math.pi, 13)
+phi_edges_coarse = np.linspace(-1.0 * math.pi, +1.0 * math.pi, 2)
 def convert_df_to_data(df):
     data = {}
     for c in df.columns:
@@ -108,7 +108,7 @@ def get_variables(region):
         neg_varx = calc_neg_id_eta
         pos_vary = calc_pos_id_phi
         neg_vary = calc_neg_id_phi
-    if region == "CB":
+    elif region == "CB":
         pos_varx = calc_pos_cb_eta
         neg_varx = calc_neg_cb_eta
         pos_vary = calc_pos_cb_phi
@@ -190,14 +190,16 @@ def get_df_for_job(args):
     if (args.inject != "") and (args.inject != None) and (args.inject != "None"):
         injection_histogram_function = get_histogram_function(args.inject)
 
-    variables = ["Pos_{}_Eta", "Neg_{}_Eta", "Pos_{}_Phi", "Neg_{}_Phi", "Pos_{}_Pt", "Neg_{}_Pt", "Pair_{}_Mass", "TotalWeight"] #all of the variables needed
+    variables = ["Pos_{}_Eta", "Neg_{}_Eta", "Pos_{}_Phi", "Neg_{}_Phi", "Pos_{}_Pt", "Neg_{}_Pt", "Pair_{}_Mass", "TotalWeight", "Pair_IsOppCharge", ] #all of the variables needed
     if args.default_correction:
         variables += [ "Pos_{}_CalibPt", "Neg_{}_CalibPt"]
 
     variables = [v.format(args.detector_location) for v in variables]
+    variables += ["Pos_CB_Pt", "Neg_CB_Pt"]
+    variables = list(set(variables))
     print(variables)
 
-    if args.detector_location == "ID":
+    if args.detector_location == "ID" or args.detector_location == "CB":
         if not args.coarse_binning: eta_edges = eta_edges_ID
         else: eta_edges = eta_edges_ID_coarse
     else:

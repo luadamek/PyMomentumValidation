@@ -591,6 +591,16 @@ def subleading_id_pt(event):
 branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
 calc_subleading_id_pt = Calculation(subleading_id_pt, branches)
 
+def leading_cb_pt(event):
+    return get_variable(event, "ID", "Pt", leading=True)
+branches = ["Pos_CB_Pt", "Neg_CB_Pt"]
+calc_leading_cb_pt = Calculation(leading_cb_pt, branches)
+
+def subleading_cb_pt(event):
+    return get_variable(event, "ID", "Pt", leading=False)
+branches = ["Pos_CB_Pt", "Neg_CB_Pt"]
+calc_subleading_cb_pt = Calculation(subleading_cb_pt, branches)
+
 def leading_me_pt(event):
     return get_variable(event, "ME", "Pt", leading=True)
 branches = ["Pos_ME_Pt", "Neg_ME_Pt"]
@@ -612,6 +622,18 @@ def subleading_id_eta(event):
 branches = ["Pos_ID_Eta", "Neg_ID_Eta"]
 calc_subleading_id_eta = Calculation(subleading_id_eta, branches)
 
+
+def leading_cb_eta(event):
+    return get_variable(event, "ID", "Eta", leading=True)
+branches = ["Pos_CB_Eta", "Neg_CB_Eta"]
+calc_leading_cb_eta = Calculation(leading_cb_eta, branches)
+
+def subleading_cb_eta(event):
+    return get_variable(event, "ID", "Eta", leading=False)
+branches = ["Pos_CB_Eta", "Neg_CB_Eta"]
+calc_subleading_cb_eta = Calculation(subleading_cb_eta, branches)
+
+
 def leading_me_eta(event):
     return get_variable(event, "ME", "Eta", leading=True)
 branches = ["Pos_ME_Eta", "Neg_ME_Eta"]
@@ -632,6 +654,19 @@ def subleading_id_phi(event):
     return get_variable(event, "ID", "Phi", leading=False)
 branches = ["Pos_ID_Phi", "Neg_ID_Phi"]
 calc_subleading_id_phi = Calculation(subleading_id_phi, branches)
+
+
+def leading_cb_phi(event):
+    return get_variable(event, "ID", "Phi", leading=True)
+branches = ["Pos_CB_Phi", "Neg_CB_Phi"]
+calc_leading_cb_phi = Calculation(leading_cb_phi, branches)
+
+def subleading_cb_phi(event):
+    return get_variable(event, "ID", "Phi", leading=False)
+branches = ["Pos_CB_Phi", "Neg_CB_Phi"]
+calc_subleading_cb_phi = Calculation(subleading_cb_phi, branches)
+
+
 
 def leading_me_phi(event):
     return get_variable(event, "ME", "Phi", leading=True)
@@ -760,18 +795,27 @@ def cos_theta_star_me(event):
 calc_cos_theta_star_me = Calculation(cos_theta_star_me, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
 
 def forward_id(event):
-    return cos_theta_star_id(event) > 0.0
+    to_return = cos_theta_star_id(event) > 0.0
+    return to_return
 sel_forward_id = Calculation(forward_id, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"])
 
 def backward_id(event):
-    return np.logical_not(backward_id)
-sel_backward_id = Calculation(forward_id, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"])
-
+    return np.logical_not(forward_id(event))
+sel_backward_id = Calculation(backward_id, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"])
 
 def forward_me(event):
     return cos_theta_star_me(event) > 0.0
 sel_forward_me = Calculation(forward_me, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
 
 def backward_me(event):
-    return np.logical_not(backward_me)
-sel_backward_me = Calculation(forward_me, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
+    return np.logical_not(forward_me(event))
+sel_backward_me = Calculation(backward_me, ["Pos_ME_Pt", "Neg_ME_Pt", "Pos_ME_Eta", "Neg_ME_Eta", "Pos_ME_Phi", "Neg_ME_Phi"])
+
+def forward_cb(event):
+    return cos_theta_star_cb(event) > 0.0
+sel_forward_cb = Calculation(forward_cb, ["Pos_CB_Pt", "Neg_CB_Pt", "Pos_CB_Eta", "Neg_CB_Eta", "Pos_CB_Phi", "Neg_CB_Phi"])
+
+def backward_cb(event):
+    return np.logical_not(forward_cb(event))
+sel_backward_cb = Calculation(backward_cb, ["Pos_CB_Pt", "Neg_CB_Pt", "Pos_CB_Eta", "Neg_CB_Eta", "Pos_CB_Phi", "Neg_CB_Phi"])
+

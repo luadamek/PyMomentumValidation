@@ -11,7 +11,8 @@ import os
 
 
 input_files = [\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_v03_v2_nocalib/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Mar12_v05_nocalib/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Mar12_v05_matrix/Output.root",\
 #"/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_v03_v2_deltaqm_calib_21/Output.root",\
 #"/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_v03_v2_matrix_calib_7/Output.root"\
 ]
@@ -37,15 +38,15 @@ for input_file, output_location in zip(input_files, output_locations):
     hist_manager = HistogramManager(input_file)
     hist_manager.list_histograms("Mass")
     hist_manager.merge_channels("MC", ["MC1516", "MC17", "MC18"])
-    hist_manager.merge_channels("MCCalib", ["MC1516Calib", "MC17Calib", "MC18Calib"])
+   # hist_manager.merge_channels("MCCalib", ["MC1516Calib", "MC17Calib", "MC18Calib"])
     hist_manager.merge_channels("Data", ["Data1516", "Data17", "Data18"])
 
     #for data, mc, mc_sherpa, mc_corr, mc_sherpa_corr, integrated_lumi in zip(["Data", "Data1516", "Data17", "Data18"], ["MC", "MC1516", "MC17", "MC18"], ["MCSherpa", "MCSherpa1516", "MCSherpa17", "MCSherpa18"], ["MCCalib", "MC1516Calib", "MC17Calib", "MC18Calib"], ["MCSherpaCalib", "MCSherpa1516Calib", "MCSherpa17Calib", "MCSherpa18Calib"], ["139", "36.2", "44.3", "58.5"]):
-    for data, mc, mc_corr, integrated_lumi in zip(["Data", "Data1516", "Data17", "Data18"], ["MC", "MC1516", "MC17", "MC18"], ["MCCalib", "MC1516Calib", "MC17Calib", "MC18Calib"], ["139", "36.2", "44.3", "58.5"]):
+    for data, mc, integrated_lumi in zip(["Data", "Data1516", "Data17", "Data18"], ["MC", "MC1516", "MC17", "MC18"], ["139", "36.2", "44.3", "58.5"]):
 
-       colors = {data: ROOT.kBlack, mc: ROOT.kBlue, mc_sherpa: ROOT.kGreen, mc_corr: ROOT.kMagenta, mc_sherpa_corr: ROOT.kViolet}
-       styles = {data: 24, mc:26, mc_sherpa:28, mc_corr:29, mc_sherpa_corr:30}
-       legend_labels = {data: "Data", mc: "PP8 Z#rightarrow#mu#mu", mc_sherpa: "Sherpa Z#rightarrow#mu#mu", mc_corr: "PP8 Calibrated", mc_sherpa_corr: "Sherpa Calibrated"}
+       colors = {data: ROOT.kBlack, mc: ROOT.kBlue, mc_sherpa: ROOT.kGreen}
+       styles = {data: 24, mc:26, mc_sherpa:28}
+       legend_labels = {data: "Data", mc: "PP8 Z#rightarrow#mu#mu", mc_sherpa: "Sherpa Z#rightarrow#mu#mu"}
 
        for histogram_name_base in histnames: #["MassSpectrum_{location}_{identified}", "CosThetaStar_{location}_{identified}"]:
            for location in ["ID", "ME"]:
@@ -57,7 +58,7 @@ for input_file, output_location in zip(input_files, output_locations):
                   histograms = hist_manager.get_histograms(hist_name)
                   sets_of_histograms[name] = histograms
                   #to_plot = [data, mc, mc_sherpa]
-                  to_plot = [data, mc, mc_corr]
+                  to_plot = [data, mc]
                   new_histograms = {key:histograms[key] for key in to_plot}
                   if "CosTheta" in histogram_name_base:
                        x_axis_label = "cos#theta*_{"+location+"}"
@@ -83,7 +84,7 @@ for input_file, output_location in zip(input_files, output_locations):
                pos_histograms = sets_of_histograms["poslead"]
                neg_histograms = sets_of_histograms["neglead"]
                for key in pos_histograms:
-                   if key != data and key != mc and key != mc_sherpa and key != mc_corr and key != mc_sherpa_corr: continue
+                   if key != data and key != mc and key != mc_sherpa: continue
                    divided_histograms[key] = pos_histograms[key].Clone( pos_histograms[key].GetName() + "_OVER_" + neg_histograms[key].GetName() )
                    divided_histograms[key].Divide(neg_histograms[key])
                    divided_histograms[key].GetXaxis().SetTitle(pos_histograms[key].GetXaxis().GetTitle())

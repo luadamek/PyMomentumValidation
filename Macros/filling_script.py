@@ -1,5 +1,6 @@
 from variables import calc_id_mass, calc_cb_mass, calc_me_mass
-from selections import range_selection_function, sel_nonzero_id_pts, sel_nonzero_me_pts, sel_min_fifteen_id_pts, sel_min_fifteen_me_pts
+from selections import range_selection_function, sel_nonzero_id_pts, sel_nonzero_me_pts, sel_min_fifteen_id_pts, sel_min_fifteen_me_pts, sel_unprescaled_trigger, sel_opp_charge
+from selections import range_selection_function, sel_nonzero_id_pts, sel_nonzero_cb_pts, sel_min_fifteen_id_pts, sel_min_fifteen_cb_pts, sel_unprescaled_trigger, sel_opp_charge
 from histogram_filler import create_selection_function, write_histograms
 import ROOT
 from BiasCorrection import SagittaBiasCorrection
@@ -21,8 +22,18 @@ from variables import \
                       calc_leading_me_phi, calc_subleading_me_phi,\
                       calc_weight_var
 
+from selections import sel_pos_leading_id, sel_neg_leading_id
+from selections import sel_pos_leading_me, sel_neg_leading_me
+from variables import calc_leading_id_pt, calc_leading_id_phi, calc_leading_id_eta
+from variables import calc_leading_cb_pt, calc_leading_cb_phi, calc_leading_cb_eta
+from variables import calc_leading_me_pt, calc_leading_me_phi, calc_leading_me_eta
+from variables import calc_subleading_id_pt, calc_subleading_id_phi, calc_subleading_id_eta
+from variables import calc_subleading_cb_pt, calc_subleading_cb_phi, calc_subleading_cb_eta
+from variables import calc_subleading_me_pt, calc_subleading_me_phi, calc_subleading_me_eta
+
 ###################################################################
 from selections import sel_pos_leading_id, sel_neg_leading_id
+from selections import sel_pos_leading_cb, sel_neg_leading_cb
 from selections import sel_pos_leading_me, sel_neg_leading_me
 import numpy as np
 #put this as the default pt binning somewhere
@@ -185,9 +196,6 @@ def book_histograms(hist_filler, eta_ID_bin_options, eta_bin_options, phi_bin_op
                                               zlabel="<M_{#mu#mu}> [Gev]",\
                                               error_option="")
 
-    from selections import sel_pos_leading_id, sel_neg_leading_id
-    from selections import sel_pos_leading_me, sel_neg_leading_me
-    from variables import calc_leading_id_pt, calc_leading_id_phi, calc_leading_id_eta
 
     #book a tprofile of the average mass
     histogram_name_base = "{histsetname}_{charge}_{location}_LeadingAverageMassProfile_{count}"
@@ -411,6 +419,7 @@ def fill_histograms(hist_filler, output_filename):
     hist_filler.apply_selection_for_channel("MCSherpa1516", [sel_small_weight])
     hist_filler.apply_selection_for_channel("MCSherpa17", [sel_small_weight])
     hist_filler.apply_selection_for_channel("MCSherpa18", [sel_small_weight])
+    hist_filler.apply_selection_for_channel("__ALL__", [sel_unprescaled_trigger, sel_opp_charge])
 
     for varname, var in zip(["ID", "CB", "ME"], [calc_id_mass, calc_cb_mass, calc_me_mass]):
         histogram_name = "{}_mass".format(varname)
@@ -465,8 +474,8 @@ def fill_histograms(hist_filler, output_filename):
     mass_selJPSI_func_CB = create_selection_function(range_selection_function, [mass_CB], mass_CB, 2.8, 3.4)
     mass_selJPSI_func_ME = create_selection_function(range_selection_function, [mass_ME], mass_ME, 2.8, 3.4)
 
-    from variables import calc_cos_theta_star_id, calc_cos_theta_star_ms, calc_cos_theta_star_me
-    from variables import sel_forward_id, sel_backward_id, sel_forward_me, sel_backward_me
+    from variables import calc_cos_theta_star_id, calc_cos_theta_star_ms, calc_cos_theta_star_me, calc_cos_theta_star_cb
+    from variables import sel_forward_id, sel_backward_id, sel_forward_me, sel_backward_me, sel_forward_cb, sel_backward_cb
 
     hist_filler.book_histogram_fill("WeightVariable_ID",\
                                      calc_weight_var,\
@@ -505,10 +514,10 @@ def fill_histograms(hist_filler, output_filename):
                                      range_high=300.0,\
                                      xlabel="P_T [GeV]",\
                                      ylabel="Number of Events")
-            
 
-    for sel_id, sel_me, name in zip([[sel_forward_id, sel_min_fifteen_id_pts], [sel_backward_id, sel_min_fifteen_id_pts]],\
+    for sel_id, sel_me, sel_cb, name in zip([[sel_forward_id, sel_min_fifteen_id_pts], [sel_backward_id, sel_min_fifteen_id_pts]],\
                                     [[sel_forward_me, sel_min_fifteen_me_pts], [sel_backward_me, sel_min_fifteen_me_pts]],\
+                                    [[sel_forward_cb, sel_min_fifteen_cb_pts], [sel_backward_cb, sel_min_fifteen_cb_pts]],\
                                     ["forward", "backward"]):
         #make invariant mass histograms for ID tracks
         histogram_name_base = "MassSpectrum_ID_{identified}"
@@ -533,8 +542,20 @@ def fill_histograms(hist_filler, output_filename):
                                              xlabel ='M_{#mu#mu}^{ME} [GeV]',\
                                              ylabel = 'Number Events')
 
-    for sel_id, sel_me, name in zip([[sel_pos_leading_id, sel_min_fifteen_id_pts], [sel_neg_leading_id, sel_min_fifteen_id_pts], []],\
+        histogram_name_base = "MassSpectrum_CB_{identified}"
+        histogram_name = histogram_name_base.format(identified = name)
+        hist_filler.book_histogram_fill(histogram_name,\
+                                             calc_cb_mass,\
+                                             selections = sel_cb,\
+                                             bins = 100,\
+                                             range_low = 91.2-12.0,\
+                                             range_high = 91.2+12.0,\
+                                             xlabel ='M_{#mu#mu}^{CB} [GeV]',\
+                                             ylabel = 'Number Events')
+
+    for sel_id, sel_me, sel_cb, name in zip([[sel_pos_leading_id, sel_min_fifteen_id_pts], [sel_neg_leading_id, sel_min_fifteen_id_pts], []],\
                                     [[sel_pos_leading_me, sel_min_fifteen_me_pts], [sel_neg_leading_me, sel_min_fifteen_me_pts], []],\
+                                    [[sel_pos_leading_cb, sel_min_fifteen_cb_pts], [sel_neg_leading_cb, sel_min_fifteen_cb_pts], []],\
                                     ["poslead", "neglead", "Inclusive"]):
 
         #I will come back and fix this
@@ -542,20 +563,26 @@ def fill_histograms(hist_filler, output_filename):
         varlist = \
         [\
          calc_leading_id_pt, calc_subleading_id_pt,\
+         calc_leading_cb_pt, calc_subleading_cb_pt,\
          calc_leading_me_pt, calc_subleading_me_pt,\
          calc_leading_id_eta, calc_subleading_id_eta,\
+         calc_leading_cb_eta, calc_subleading_cb_eta,\
          calc_leading_me_eta, calc_subleading_me_eta,\
          calc_leading_id_phi, calc_subleading_id_phi,\
+         calc_leading_cb_phi, calc_subleading_cb_phi,\
          calc_leading_me_phi, calc_subleading_me_phi,\
         ]
 
         histnames = \
         [\
          "PT_Leading_ID", "PT_Subleading_ID",\
+         "PT_Leading_CB", "PT_Subleading_CB",\
          "PT_Leading_ME", "PT_Subleading_ME",\
          "Eta_Leading_ID", "Eta_Subleading_ID",\
+         "Eta_Leading_CB", "Eta_Subleading_CB",\
          "Eta_Leading_ME", "Eta_Subleading_ME",\
          "Phi_Leading_ID", "Phi_Subleading_ID",\
+         "Phi_Leading_CB", "Phi_Subleading_CB",\
          "Phi_Leading_ME", "Phi_Subleading_ME",\
         ]
 
@@ -563,8 +590,11 @@ def fill_histograms(hist_filler, output_filename):
         [\
          (5.0, 100.0), (5.0, 70.0),\
          (5.0, 100.0), (5.0, 70.0),\
+         (5.0, 100.0), (5.0, 70.0),\
+         (-2.5, 2.5), (-2.5, 2.5),\
          (-2.5, 2.5), (-2.5, 2.5),\
          (-2.7, 2.7), (-2.7, 2.7),\
+         (-3.14, 3.14), (-3.14, +3.14),\
          (-3.14, 3.14), (-3.14, +3.14),\
          (-3.14, +3.14), (-3.14, +3.14),\
         ]
@@ -577,23 +607,32 @@ def fill_histograms(hist_filler, output_filename):
          50, 50,\
          50, 50,\
          50, 50,\
+         50, 50,\
+         50, 50,\
+         50, 50,\
         ]
 
         x_labels = \
         [\
          "P_{T}^{ID, Lead} [GeV]", "P_{T}^{ID, Sub} [GeV]",\
+         "P_{T}^{CB, Lead} [GeV]", "P_{T}^{CB, Sub} [GeV]",\
          "P_{T}^{ME, Lead} [GeV]", "P_{T}^{ME, Sub} [GeV]",\
          "#eta^{ID, Lead}", "#eta^{ID, Sub}",\
+         "#eta^{CB, Lead}", "#eta^{CB, Sub}",\
          "#eta^{ME, Lead}", "#eta^{ME, Sub}",\
          "#phi^{ID, Lead}", "#phi^{ID, Sub}",\
+         "#phi^{CB, Lead}", "#phi^{CB, Sub}",\
          "#phi^{ME, Lead}", "#phi^{ME, Sub}",\
         ]
 
-        from selections import sel_nom_delta_selection_id, sel_nom_delta_selection_me
+        from selections import sel_nom_delta_selection_id, sel_nom_delta_selection_me, sel_nom_delta_selection_cb
         for xvar, histname, x_range, x_label, nbins  in zip(varlist, histnames, x_ranges, x_labels, nbins_all):
             if "ID" in histname:
                 base_sel = [sel_nom_delta_selection_id]
                 sel = sel_id
+            if "CB" in histname:
+                base_sel = [sel_nom_delta_selection_cb]
+                sel = sel_cb
             if "ME" in histname:
                 base_sel = [sel_nom_delta_selection_me]
                 sel = sel_me
@@ -624,7 +663,7 @@ def fill_histograms(hist_filler, output_filename):
         histogram_name = histogram_name_base.format(identified = name)
         hist_filler.book_histogram_fill(histogram_name,\
                                              calc_cb_mass,\
-                                             selections = sel_id,\
+                                             selections = sel_cb,\
                                              bins = 100,\
                                              range_low = 91.2-12.0,\
                                              range_high = 91.2+12.0,\
@@ -673,6 +712,17 @@ def fill_histograms(hist_filler, output_filename):
                                              range_low = -1.0,\
                                              range_high = 1.0,\
                                              xlabel ='cos#theta*_{ID}',\
+                                             ylabel = 'Number Events')
+
+        histogram_name_base = "CosThetaStar_CB_{cbentified}"
+        histogram_name = histogram_name_base.format(cbentified = name)
+        hist_filler.book_histogram_fill(histogram_name,\
+                                             calc_cos_theta_star_cb,\
+                                             selections = sel_cb + [mass_selZ_func_CB, sel_nonzero_cb_pts],\
+                                             bins = 100,\
+                                             range_low = -1.0,\
+                                             range_high = 1.0,\
+                                             xlabel ='cos#theta*_{CB}',\
                                              ylabel = 'Number Events')
 
         histogram_name_base = "CosThetaStar_ME_{identified}"

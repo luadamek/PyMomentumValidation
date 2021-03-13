@@ -47,6 +47,7 @@ files["v05"]["Data"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) 
 files["v05"]["MC"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364", "r10201", "r10724"]]
 #files["v05"]["MCCalib"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364", "r10201", "r10724"]]
 files["v05"]["MCSherpa"] = ["mc16_13TeV.364*.Sh_*{}*.root".format(el) for el in ["r9364", "r10201", "r10724"]]
+files["v05"]["MCMadGraph"] = ["mc16_13TeV.363*.MG_Ht*{}*.root".format(el) for el in ["r9364", "r10201", "r10724"]]
 files["v05"]["MCTTbar"] = ["mc16_13TeV.41047*ttbar*nonallhad*{}*.root".format(el) for el in ["r9364", "r10201", "r10724"]]
 #files["v05"]["MCSherpaCalib"] = ["mc16_13TeV.364*.Sh_*{}*.root".format(el) for el in ["r9364", "r10201", "r10724"]]
 files["v05"]["MC_JPSI"] = ["mc16_13TeV.*.Pythia8B_A14_CTEQ6L1_Jpsimu6*{}*.root".format(el) for el in ["r9364", "r10201", "r10724"]]

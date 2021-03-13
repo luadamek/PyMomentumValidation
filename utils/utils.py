@@ -25,6 +25,11 @@ def get_dataframe(root_file, start, stop,  variables, selection):
        df = df.query("abs(TotalWeight) < 80")
        print("Skimmed {} events".format(before - len(df)))
        print("Skipped weights {}".format(skipped))
+    if selection == "": selection = "((Pos_CB_Pt > 6.25) or (Neg_CB_Pt > 6.25))"
+    else: selection += " and ((Pos_CB_Pt > 6.25) or (Neg_CB_Pt > 6.25))"
+    selection += " and (Pair_IsOppCharge > 0.5)"
+    print(selection)
+    print(variables)
     if selection: df = df.query(selection) #apply the selection
     print("Events passing selection {}".format(len(df)))
     return df

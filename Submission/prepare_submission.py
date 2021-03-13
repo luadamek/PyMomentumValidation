@@ -3,7 +3,8 @@ import os
 from histogram_filler import HistogramFiller
 from variables import calc_weight, calc_pos_id_eta, calc_pos_id_phi, calc_neg_id_eta, calc_neg_id_phi,\
 calc_pos_ms_eta, calc_pos_ms_phi, calc_neg_ms_eta, calc_neg_ms_phi,\
-calc_pos_me_eta, calc_pos_me_phi, calc_neg_me_eta, calc_neg_me_phi
+calc_pos_me_eta, calc_pos_me_phi, calc_neg_me_eta, calc_neg_me_phi,\
+calc_pos_cb_eta, calc_pos_cb_phi, calc_neg_cb_eta, calc_neg_cb_phi
 import ROOT
 import pickle
 import argparse
@@ -18,17 +19,15 @@ def apply_calibrations(kind, hist_fillers):
          base_filename = "/scratch/ladamek/sagittabias_matrices/Injection_Feb10_{filetype}_inject_None_method_delta_qm_region_{region}_loose_preselection_tight_select_after_correction_nom_round_21/OutputFiles"
          import DeltaQMIterativeMethod
          func = DeltaQMIterativeMethod.get_deltas_from_job
-
     elif "matrix" in kind:
-         base_filename = "/scratch/ladamek/sagittabias_matrices/Injection_Feb10_{filetype}_inject_None_method_matrix_region_{region}_loose_preselection_tight_select_after_correction_nom_round_7/OutputFiles"
+         #base_filename = "/scratch/ladamek/sagittabias_matrices/Injection_Feb10_{filetype}_inject_None_method_matrix_region_{region}_loose_preselection_tight_select_after_correction_nom_round_7/OutputFiles"
+         base_filename = "/project/def-psavard/ladamek/sagittabias_matrices/Injection_Mar10_{filetype}_inject_None_method_matrix_region_{region}_loose_preselection_tight_select_after_correction_nom_round_3/OutputFiles/"
          import MatrixInversion
          func = MatrixInversion.get_deltas_from_job
-
     else: raise ValueError("Calibration {} not found".format(kind))
 
-    from selections import sel_nom_delta_preselection_id, sel_nom_delta_preselection_me
-
-    for region in ["ID", "ME"]:
+    from selections import sel_nom_delta_preselection_id, sel_nom_delta_preselection_me, sel_nom_delta_preselection_cb
+    for region in ["ID", "ME", "CB"]:
         for data, mc in [("Data1516", "MC1516"), ("Data17", "MC17"), ("Data18", "MC18")]:
             dir_data = base_filename.format(filetype=data, region=region)
             dir_mc = base_filename.format(filetype=mc, region=region)
@@ -50,7 +49,7 @@ def apply_calibrations(kind, hist_fillers):
             elif xvar_name == "CB_Eta":
                 xvar_pos = calc_pos_cb_eta
                 xvar_neg = calc_neg_cb_eta
-                selections = []
+                selections = [sel_nom_delta_preselection_cb]
             elif xvar_name == "ME_Eta":
                 xvar_pos = calc_pos_me_eta
                 xvar_neg = calc_neg_me_eta
@@ -62,7 +61,7 @@ def apply_calibrations(kind, hist_fillers):
             elif yvar_name == "MS_Phi":
                 yvar_pos = calc_pos_ms_phi
                 yvar_neg = calc_neg_ms_phi
-            elif xvar_name == "CB_Phi":
+            elif yvar_name == "CB_Phi":
                 xvar_pos = calc_pos_cb_phi
                 xvar_neg = calc_neg_cb_phi
             elif yvar_name == "ME_Phi":
