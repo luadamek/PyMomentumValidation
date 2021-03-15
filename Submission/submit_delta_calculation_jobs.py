@@ -83,15 +83,23 @@ if args.bootstraps > 0:
          assert len(bin_edges) == len(edges)
 
          cum_subtraction = 0
+         to_subtract = 0
+         last_root_file = None
          for bindex ,(start, stop, edge_low, edge_high, root_file, startstop) in enumerate(zip(bin_edges[:-1], bin_edges[1:], edges[:-1], edges[1:], root_files, startstops)):
              assert len(np.unique(binned[start:stop])) == 1
+             if last_root_file is None: last_root_file = root_file
+             if root_file != last_root_file:
+                 cum_subtraction += to_subtract
+                 to_subtract = 0
+                 last_root_file = root_file
              these_indices = strapped_indices[start:stop] - cum_subtraction
-             cum_subtraction += (edge_high - edge_low)
-             bootstraps[root_file][startstop].append("/scratch-deleted-2021-mar-20/ladamek/raw_bootstraps/strap_{}.pkl".format(i))
+             to_subtract += (edge_high - edge_low)
+             bootstraps[root_file][startstop].append("/scratch-deleted-2021-mar-20/ladamek/raw_bootstraps/strap_{}.pkl".format(counter))
              with open(bootstraps[root_file][startstop][-1], "wb") as f:
                  import pickle as pkl
                  pkl.dump(these_indices, f)
              counter += 1
+             # print(these_indices)
              #.append(these_indices) #can I keep all of this in memory???
              assert np.all(these_indices > -1)
              #with open("Bootstraps_{}.pkl".format(root_file), "wb") as f:
@@ -155,7 +163,7 @@ for root_file in all_startstops:
                 time="00:02:00"
             if args.bootstraps > 0:
                 memory = "15000M"
-                time="04:00:00"
+                time="01:30:00"
         elif args.method == "delta_qm":
             if args.fold == "None":
                 time = "00:02:00"
@@ -167,7 +175,7 @@ for root_file in all_startstops:
         jobset.add_job(job)
         job_counter += 1
 
-if test: jobset.jobs[0].run_local()
+if test: jobset.jobs[-1].run_local()
 else:
     jobset.submit()
     import time

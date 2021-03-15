@@ -47,7 +47,7 @@ job_names_to_file = {\
 
 for data_key, mc_key in zip(["Data", "Data1516", "Data17", "Data18"], ["MC", "MC1516", "MC17", "MC18"]):
     data = {"Track Type": [],"Method":[], "Corrected":[], "Data_or_MC":[], "RMS [GeV]":[], "RMS Stat Err [GeV]": [], "Mean [GeV]":[], "Mean Stat Err [GeV]": []}
-    for location in ["ID", "ME"]:
+    for location in ["ID", "ME", "CB]:
         for jn in job_names:
            method = job_names_to_method[jn]
            corrected = job_names_to_correction[jn]

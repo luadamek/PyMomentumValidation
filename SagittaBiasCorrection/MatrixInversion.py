@@ -195,16 +195,16 @@ if __name__ == "__main__":
             with open(bootstrap_fname, "rb") as f:
                 import pickle as pkl
                 bootstraps = pkl.load(f)
-                print(bootstraps)
-            keep = bootstraps[np.in1d(bootstraps,df["read_index"].values)] #only keep those values  that passed the selection for the dataframe
-            print(bootstraps)
-            print(df["read_index"].values)
-            print(df)
-            print(keep)
+                #print(bootstraps)
+            keep = bootstraps[np.in1d(bootstraps,df.index.values)] #only keep those values  that passed the selection for the dataframe
+            #print(bootstraps)
+            #print(df["read_index"].values)
+            #print(df)
+            #print(keep)
             this_df = df.loc[keep]
-            print(this_df)
-            print(len(this_df))
-            this_cov, this_equal_to, this_nentries = get_cov_matrices(df, args.detector_location)
+            #print(this_df)
+            #print(len(this_df))
+            this_cov, this_equal_to, this_nentries = get_cov_matrices(this_df, args.detector_location)
             cov.append(this_cov)
             equal_to.append(this_equal_to)
             nentries.append(this_nentries)
