@@ -14,8 +14,6 @@ def get_leading(event,  location, charge):
 
 def pos_leading_id(event):
     return get_leading(event, "ID", "Pos")
-
-
 branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
 sel_pos_leading_id = Calculation(pos_leading_id, branches)
 
@@ -31,7 +29,6 @@ def nonzero_cb_pts(event):
     return (event["Pos_CB_Pt"] > 0.0) & (event["Neg_CB_Pt"] > 0.0)
 sel_nonzero_cb_pts = Calculation(nonzero_cb_pts, ["Pos_CB_Pt", "Neg_CB_Pt"])
 
-
 def min_fifteen_id_pts(event):
     return (event["Pos_ID_Pt"] > 15.0) & (event["Neg_ID_Pt"] > 15.0)
 sel_min_fifteen_id_pts  = Calculation(min_fifteen_id_pts, ["Pos_ID_Pt", "Neg_ID_Pt"])
@@ -43,7 +40,6 @@ sel_min_fifteen_me_pts = Calculation(min_fifteen_me_pts, ["Pos_ME_Pt", "Neg_ME_P
 def min_fifteen_cb_pts(event):
     return (event["Pos_CB_Pt"] > 15.0) & (event["Neg_CB_Pt"] > 15.0)
 sel_min_fifteen_cb_pts = Calculation(min_fifteen_cb_pts, ["Pos_CB_Pt", "Neg_CB_Pt"])
-
 
 def neg_leading_id(event):
     return get_leading(event, "ID", "Neg")

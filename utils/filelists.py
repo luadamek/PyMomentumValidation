@@ -44,6 +44,7 @@ files["v03_v2"]["MC18_JPSI"] = ["split/mc16_13TeV.*.Pythia8B_A14_CTEQ6L1_Jpsimu6
 
 files["v05"] = {}
 files["v05"]["Data"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["15", "16", "17", "18"]]
+files["v05"]["DataTEST"] = ["data15_13TeV.periodAllYear.physics_Main.PhysCont.DAOD_MUON1.grp15_v01_p4144_muonptcalib_v05_EXT0_0.root"]
 files["v05"]["MC"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364", "r10201", "r10724"]]
 #files["v05"]["MCCalib"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364", "r10201", "r10724"]]
 files["v05"]["MCSherpa"] = ["mc16_13TeV.364*.Sh_*{}*.root".format(el) for el in ["r9364", "r10201", "r10724"]]

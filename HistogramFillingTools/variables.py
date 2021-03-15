@@ -592,12 +592,12 @@ branches = ["Pos_ID_Pt", "Neg_ID_Pt"]
 calc_subleading_id_pt = Calculation(subleading_id_pt, branches)
 
 def leading_cb_pt(event):
-    return get_variable(event, "ID", "Pt", leading=True)
+    return get_variable(event, "CB", "Pt", leading=True)
 branches = ["Pos_CB_Pt", "Neg_CB_Pt"]
 calc_leading_cb_pt = Calculation(leading_cb_pt, branches)
 
 def subleading_cb_pt(event):
-    return get_variable(event, "ID", "Pt", leading=False)
+    return get_variable(event, "CB", "Pt", leading=False)
 branches = ["Pos_CB_Pt", "Neg_CB_Pt"]
 calc_subleading_cb_pt = Calculation(subleading_cb_pt, branches)
 
@@ -624,12 +624,12 @@ calc_subleading_id_eta = Calculation(subleading_id_eta, branches)
 
 
 def leading_cb_eta(event):
-    return get_variable(event, "ID", "Eta", leading=True)
+    return get_variable(event, "CB", "Eta", leading=True)
 branches = ["Pos_CB_Eta", "Neg_CB_Eta"]
 calc_leading_cb_eta = Calculation(leading_cb_eta, branches)
 
 def subleading_cb_eta(event):
-    return get_variable(event, "ID", "Eta", leading=False)
+    return get_variable(event, "CB", "Eta", leading=False)
 branches = ["Pos_CB_Eta", "Neg_CB_Eta"]
 calc_subleading_cb_eta = Calculation(subleading_cb_eta, branches)
 
@@ -657,12 +657,12 @@ calc_subleading_id_phi = Calculation(subleading_id_phi, branches)
 
 
 def leading_cb_phi(event):
-    return get_variable(event, "ID", "Phi", leading=True)
+    return get_variable(event, "CB", "Phi", leading=True)
 branches = ["Pos_CB_Phi", "Neg_CB_Phi"]
 calc_leading_cb_phi = Calculation(leading_cb_phi, branches)
 
 def subleading_cb_phi(event):
-    return get_variable(event, "ID", "Phi", leading=False)
+    return get_variable(event, "CB", "Phi", leading=False)
 branches = ["Pos_CB_Phi", "Neg_CB_Phi"]
 calc_subleading_cb_phi = Calculation(subleading_cb_phi, branches)
 
@@ -784,7 +784,7 @@ calc_cos_theta_star_id = Calculation(cos_theta_star_id, ["Pos_ID_Pt", "Neg_ID_Pt
 
 def cos_theta_star_cb(event):
     return cos_theta_star(event, "CB")
-calc_cos_theta_star_cb = Calculation(cos_theta_star_id, ["Pos_CB_Pt", "Neg_CB_Pt", "Pos_CB_Eta", "Neg_CB_Eta", "Pos_CB_Phi", "Neg_CB_Phi"])
+calc_cos_theta_star_cb = Calculation(cos_theta_star_cb, ["Pos_CB_Pt", "Neg_CB_Pt", "Pos_CB_Eta", "Neg_CB_Eta", "Pos_CB_Phi", "Neg_CB_Phi"])
 
 def cos_theta_star_ms(event):
     return cos_theta_star(event, "MS")

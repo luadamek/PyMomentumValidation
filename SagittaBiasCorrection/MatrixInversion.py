@@ -26,9 +26,7 @@ from variables import \
 from BiasCorrection import SagittaBiasCorrection
 
 from SagittaBiasUtils import eta_edges_ID, eta_edges_else, phi_edges, convert_df_to_data, put_data_back_in_df, inject_bias, add_pair_mass, get_histogram_function, merge_results, find_bindex
-def get_cov_matrices(df, global_binning_pos, global_binning_neg, detector_location, debug = False):
-    df["pos_bindex"] = global_binning_pos.get_global_bindex(df)
-    df["neg_bindex"] = global_binning_neg.get_global_bindex(df)
+def get_cov_matrices(df, detector_location, debug = False):
     #get rid of overflow
     if debug: print("Before overflow correction {}".format(len(df)))
     df = df.query("(pos_bindex >= 0) and (neg_bindex >= 0)")
@@ -65,7 +63,6 @@ def get_cov_matrices(df, global_binning_pos, global_binning_neg, detector_locati
 
     return cov, equal_to, np.sum(weights)
 
-
 def get_deltas_from_job(outfile_location, update_cache = False):
     import glob
     import os
@@ -73,7 +70,7 @@ def get_deltas_from_job(outfile_location, update_cache = False):
     import ROOT
 
     matrices = glob.glob(os.path.join(outfile_location, "*.pkl"))
-    matrices = [m for m in matrices if "CACHE" not in os.path.split(m)[-1]]
+    matrices = [m for m in matrices if "CACHE" not in os.path.split(m)[-1] and "BOOTSTRAP" not in os.path.split(m)[-1]]
 
     cache_file = os.path.join(outfile_location, "CACHE.pkl")
     failed = True
@@ -87,6 +84,7 @@ def get_deltas_from_job(outfile_location, update_cache = False):
 
     except Exception as e: pass
 
+    results = None
     if update_cache:
         if len(matrices) == 0: raise ValueError("Couldn't create the cache because there were no files to read...")
         print("Failed to open cache. Opening each pkl file instead")
@@ -96,27 +94,56 @@ def get_deltas_from_job(outfile_location, update_cache = False):
                 print("opening {}".format(m))
                 opened.append(pkl.load(f))
 
-        cov = merge_results(opened, "cov")
-        b = merge_results(opened, "b")
+        covs = merge_results(opened, "cov")
+        bs = merge_results(opened, "b")
 
-        import numpy as np
-        deltas = np.linalg.solve(cov, b)
+        if not type(covs) == list:
+           cov, b = covs, bs
+           import numpy as np
+           deltas = np.linalg.solve(cov, b)
 
-        binning = opened[0]["pos_binning"]
-        detector_location = opened[0]["detector_location"]
+           binning = opened[0]["pos_binning"]
+           detector_location = opened[0]["detector_location"]
 
-        from SagittaBiasUtils import place_deltas_into_histogram
-        delta_hist, var_dict = place_deltas_into_histogram(deltas, binning, detector_location)
-        corrections = None
-        if "corrections" in opened[0] and opened[0]["corrections"] != "":
-            corrections = opened[0]["corrections"]
+           from SagittaBiasUtils import place_deltas_into_histogram
+           delta_hist, var_dict = place_deltas_into_histogram(deltas, binning, detector_location)
+           corrections = None
+           if "corrections" in opened[0] and opened[0]["corrections"] != "":
+               corrections = opened[0]["corrections"]
 
-        import pickle as pkl
-        with open(cache_file, "wb") as f:
-            pkl.dump((delta_hist,  var_dict, detector_location, corrections), f)
+           import pickle as pkl
+           with open(cache_file, "wb") as f:
+               pkl.dump((delta_hist,  var_dict, detector_location, corrections), f)
 
-        del opened
-        print("Done opening")
+           del opened
+           print("Done opening")
+
+        else:
+           results = []
+           for cov, b in zip(covs, bs):
+               import numpy as np
+               deltas = np.linalg.solve(cov, b)
+
+               binning = opened[0]["pos_binning"]
+               detector_location = opened[0]["detector_location"]
+
+               from SagittaBiasUtils import place_deltas_into_histogram
+               delta_hist, var_dict = place_deltas_into_histogram(deltas, binning, detector_location)
+               corrections = None
+               if "corrections" in opened[0] and opened[0]["corrections"] != "":
+                   corrections = opened[0]["corrections"]
+               results.append((delta_hist,  var_dict, detector_location, corrections))
+
+           import pickle as pkl
+           with open(cache_file, "wb") as f:
+               pkl.dump(results, f)
+
+           for el in matrices:
+               import os
+               os.system("rm {}".format(m))
+
+           del opened
+           print("Done opening")
 
     if failed and not update_cache:
         raise ValueError("Call this function with update_cache True if there is no cache file already")
@@ -125,7 +152,8 @@ def get_deltas_from_job(outfile_location, update_cache = False):
         for c in corrections.split(","):
             delta_hist.Add(get_deltas_from_job(c)[0], 1.0)
 
-    return delta_hist,  var_dict, detector_location
+    if results is None: return delta_hist,  var_dict, detector_location
+    else: return results
 
 if __name__ == "__main__":
     from SagittaBiasUtils import get_parser
@@ -134,11 +162,11 @@ if __name__ == "__main__":
     parser.add_argument('--filename', type=str, dest='filename')
     parser.add_argument('--start', type=int, dest='start')
     parser.add_argument('--stop', type=int, dest='stop')
+    parser.add_argument('--bootstraps', type=str, dest="bootstraps", required=False, default="")
     args = parser.parse_args()
     args.method = "matrix"
 
     df, eta_edges, phi_edges = get_df_for_job(args)
-
     #create a phi binning:
     phi_binning_pos = Binning("Pos_{}_Phi".format(args.detector_location), phi_edges, None, repr_override=None)
     phi_binning_neg = Binning("Neg_{}_Phi".format(args.detector_location), phi_edges, None, repr_override=None)
@@ -154,8 +182,32 @@ if __name__ == "__main__":
     global_binning_pos.recursively_include_overflow(False)
     global_binning_neg = Binning("Neg_{}_Eta".format(args.detector_location), eta_edges, neg_eta_subbins)
     global_binning_neg.recursively_include_overflow(False)
+    df["pos_bindex"] = global_binning_pos.get_global_bindex(df)
+    df["neg_bindex"] = global_binning_neg.get_global_bindex(df)
 
-    cov, equal_to, nentries = get_cov_matrices(df, global_binning_pos, global_binning_neg, args.detector_location)
+    if not args.bootstraps:
+        cov, equal_to, nentries = get_cov_matrices(df, args.detector_location)
+    else:
+        cov = []
+        equal_to = []
+        nentries = []
+        for bootstrap_fname in args.bootstraps.split(","):
+            with open(bootstrap_fname, "rb") as f:
+                import pickle as pkl
+                bootstraps = pkl.load(f)
+                print(bootstraps)
+            keep = bootstraps[np.in1d(bootstraps,df["read_index"].values)] #only keep those values  that passed the selection for the dataframe
+            print(bootstraps)
+            print(df["read_index"].values)
+            print(df)
+            print(keep)
+            this_df = df.loc[keep]
+            print(this_df)
+            print(len(this_df))
+            this_cov, this_equal_to, this_nentries = get_cov_matrices(df, args.detector_location)
+            cov.append(this_cov)
+            equal_to.append(this_equal_to)
+            nentries.append(this_nentries)
 
     if not os.path.exists(os.path.split(args.output_filename)[0]):
         os.makedirs(os.path.split(args.output_filename)[0])

@@ -62,8 +62,8 @@ def apply_calibrations(kind, hist_fillers):
                 yvar_pos = calc_pos_ms_phi
                 yvar_neg = calc_neg_ms_phi
             elif yvar_name == "CB_Phi":
-                xvar_pos = calc_pos_cb_phi
-                xvar_neg = calc_neg_cb_phi
+                yvar_pos = calc_pos_cb_phi
+                yvar_neg = calc_neg_cb_phi
             elif yvar_name == "ME_Phi":
                 yvar_pos = calc_pos_me_phi
                 yvar_neg = calc_neg_me_phi

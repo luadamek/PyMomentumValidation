@@ -216,20 +216,24 @@ for region in ["ID", "ME"]:
 
                        draw_2d_histogram(effect_injection, "    #sqrt{s}= 13 TeV "+mc_descr+"", normalize = False, output_location=output_location, palette_override = ROOT.kInvertedDarkBodyRadiator)
 
-DATE = "Mar1"
+DATE = "Mar10"
 #base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_{syst_var}_round_{round}/OutputFiles/"
-base_directory = "/project/def-psavard/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_{syst_var}_coarse_round_{round}/OutputFiles/"
+#base_directory_dict = {}
+#base_directory_dict["ID"] = "/project/def-psavard/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_{syst_var}_round_{round}/OutputFiles/"
+#base_directory_dict["ME"] = base_directory_dict["ID"]
+#base_directory_dict["CB"] = "/project/def-psavard/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_{syst_var}__round_{round}/OutputFiles/"
+base_directory = "/project/def-psavard/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_{end_string}_{syst_var}_round_{round}/OutputFiles/"
 #/project/def-psavard/ladamek/sagittabias_matrices/Injection_Mar1_Data1516_inject_None_method_matrix_region_ID_loose_preselection_tight_select_after_correction_nom_round_0/
 #base_directory = "/scratch/ladamek/sagittabias_matrices/Injection_" + DATE + "_{file_type}_inject_{inject}_method_{method}_region_{detector_location}_loose_preselection_tight_select_after_correction__fold_{syst_var}_round_{round}/OutputFiles/"
 
-matrix_round = 4
+matrix_round = 3
 #delta_qm_round = 
 end_string = "loose_preselection_tight_select_after_correction"
 dict_histograms = {}
 for variation in ["nom"]:#, "up", "down"]:
     dict_histograms[variation] = {}
-    #for data_filetype, mc_filetype in [("Data1516", "MC1516"), ("Data17", "MC17"), ("Data18", "MC18"), ("Data1516", "MCSherpa1516"), ("Data17", "MCSherpa17"), ("Data18", "MCSherpa18"), ("Data", "MCSherpa"), ("Data", "MC")]:
-    for data_filetype, mc_filetype in [("Data", "MCSherpa"), ("Data", "MC")]:
+    for data_filetype, mc_filetype in [("Data1516", "MC1516"), ("Data17", "MC17"), ("Data18", "MC18")]:
+    #for data_filetype, mc_filetype in [("Data", "MCSherpa"), ("Data", "MC")]:
         dict_histograms[variation][data_filetype+"_"+mc_filetype]={}
         if data_filetype == "Data":
             integrated_lumi = "139"
@@ -249,7 +253,8 @@ for variation in ["nom"]:#, "up", "down"]:
             mc_descr = "mc16ade"
 
         #for region in ["ME", "ID"]:
-        for region in ["ID"]:
+        for region in ["ID", "ME", "CB"]:
+            #base_directory = base_directory_dict[region]
             dict_histograms[variation][data_filetype+"_"+mc_filetype][region]={}
             extrema_uncorr = -10000000
             extrema_corr = -10000000

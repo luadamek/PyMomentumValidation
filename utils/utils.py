@@ -12,19 +12,24 @@ import uproot as ur
 #def calc_mass(pts, etas, phis, masses=0.0):
 #    
 
+#CACHE = {}
 def get_dataframe(root_file, start, stop,  variables, selection):
     print("Reading {}".format(root_file))
     #calculate what bin events belong in
     print("reading {} events".format(stop - start))
+    #global CACHE
+    #key = "{}_{}_{}_{}_{}".format(root_file, start, stop, "_".join(variables), selection)
+    #if root_file not in CACHE:
     df = ur.open(root_file)["MuonMomentumCalibrationTree"].pandas.df(branches = variables, entrystart = start, entrystop = stop)
+    df["read_index"] = np.arange(0, len(df))
     if "TotalWeight" in variables:
-       print("Skimming overweight events")
-       orig_sumw = np.sum(df["TotalWeight"].values)
-       before = len(df)
-       skipped = df.query("abs(TotalWeight) > 80")["TotalWeight"].values
-       df = df.query("abs(TotalWeight) < 80")
-       print("Skimmed {} events".format(before - len(df)))
-       print("Skipped weights {}".format(skipped))
+        print("Skimming overweight events")
+        orig_sumw = np.sum(df["TotalWeight"].values)
+        before = len(df)
+        skipped = df.query("abs(TotalWeight) > 80")["TotalWeight"].values
+        df = df.query("abs(TotalWeight) < 80")
+        print("Skimmed {} events".format(before - len(df)))
+        print("Skipped weights {}".format(skipped))
     if selection == "": selection = "((Pos_CB_Pt > 6.25) or (Neg_CB_Pt > 6.25))"
     else: selection += " and ((Pos_CB_Pt > 6.25) or (Neg_CB_Pt > 6.25))"
     selection += " and (Pair_IsOppCharge > 0.5)"
@@ -32,6 +37,9 @@ def get_dataframe(root_file, start, stop,  variables, selection):
     print(variables)
     if selection: df = df.query(selection) #apply the selection
     print("Events passing selection {}".format(len(df)))
+    #   CACHE[key] = df
+    #else:
+    #   df = CACHE[key]
     return df
 
 import numpy as np

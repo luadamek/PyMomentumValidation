@@ -190,6 +190,9 @@ class SagittaBiasCorrection:
                 to_correct_data[key] = data[key]
             safe =  check_safe_event(to_correct_data,"Pos", self.flavour) & check_safe_event(to_correct_data,"Neg", self.flavour)
             to_correct_selection = np.logical_or(pos_selection, neg_selection) & safe
+            print("Correcting variables")
+            print(to_correct_selection, self.flavour)
+            print(np.sum(1*to_correct_selection), self.flavour)
             for key in keys:
                 to_correct_data[key] = to_correct_data[key][to_correct_selection]
             pos_pt = self.pos_pt_var.eval(to_correct_data)

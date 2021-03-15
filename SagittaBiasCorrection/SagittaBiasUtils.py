@@ -97,10 +97,18 @@ def place_deltas_into_histogram(deltas, binning, detector_location):
 
     return delta_hist, {"x_var":x_var, "y_var":y_var}
 
-def merge_results(list_of_covs,key ):
-    total = sum([el["nentries"] for el in list_of_covs])
-    total_cov = sum([el["nentries"] * el[key] for el in list_of_covs])
-    return total_cov/total
+def merge_results(list_of_covs, key ):
+    if not type(list_of_covs[0][key]) == list:
+        total = sum([el["nentries"] for el in list_of_covs])
+        total_cov = sum([el["nentries"] * el[key] for el in list_of_covs])
+        return total_cov/total
+    else:
+        total = []
+        total_cov = []
+        for i in range(0, len(list_of_covs[0][key])):
+            total.append(sum([el["nentries"][i] for el in list_of_covs]))
+            total_cov.append(sum([el["nentries"][i] * el[key][i] for el in list_of_covs]))
+        return [el_cov/ el_total for (el_cov, el_total) in zip(total_cov, total)]
 
 def get_variables(region):
     if region == "ID":

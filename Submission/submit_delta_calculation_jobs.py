@@ -54,7 +54,8 @@ for root_file in files:
     for startstop in startstops:
         all_startstops[root_file].append(startstop)
         bootstraps[root_file][startstop] = []
-        
+
+counter = 0
 if args.bootstraps > 0:
     #ok now get the N bootstraps
     indices = np.arange(0, total_events)
@@ -86,8 +87,16 @@ if args.bootstraps > 0:
              assert len(np.unique(binned[start:stop])) == 1
              these_indices = strapped_indices[start:stop] - cum_subtraction
              cum_subtraction += (edge_high - edge_low)
-             bootstraps[root_file][startstop].append(these_indices)
+             bootstraps[root_file][startstop].append("/scratch-deleted-2021-mar-20/ladamek/raw_bootstraps/strap_{}.pkl".format(i))
+             with open(bootstraps[root_file][startstop][-1], "wb") as f:
+                 import pickle as pkl
+                 pkl.dump(these_indices, f)
+             counter += 1
+             #.append(these_indices) #can I keep all of this in memory???
              assert np.all(these_indices > -1)
+             #with open("Bootstraps_{}.pkl".format(root_file), "wb") as f:
+             #   import pickle as pkl
+             #   pkl.dump(
 
          print("Done strap {}".format(i))
     
@@ -112,11 +121,10 @@ for root_file in all_startstops:
         if not os.path.exists(output_location): os.makedirs(output_location)
         output_filename = outfile_base.format(job_counter)
         if args.bootstraps > 0:
-            bootstrap_filename = os.path.join(output_location, "BOOTSTRAPS_{}.pkl".format(job_counter))
-            with open(bootstrap_filename, "wb") as f:
-                import pickle as pkl
-                pkl.dump(bootstraps[root_file][startstop], f)
-                print("Dumping to {}".format(bootstrap_filename))
+            bootstrap_filename = os.path.join(output_location, "BOOTSTRAPS_JOB_{}_BOOTSTRAP_{}.pkl")
+            bootstrap_filelist = []
+            for i, bootstrap in enumerate(bootstraps[root_file][startstop]):
+               bootstrap_filelist.append(bootstrap)
         output_filename = os.path.join(output_location, output_filename)
 
         this_jobname = jobname.format(job_counter)
@@ -130,7 +138,7 @@ for root_file in all_startstops:
         if select_before_corrections: command += " --select_before_corrections \"{}\"".format(select_before_corrections)
         if select_after_corrections: command += " --select_after_corrections \"{}\"".format(select_after_corrections)
         if fold != "None": command += " --fold {}".format(fold)
-        if args.bootstraps> 0: command += "--bootstraps {}".format(bootstrap_filename)
+        if args.bootstraps> 0: command += " --bootstraps {}".format(",".join(bootstrap_filelist))
         if args.default_correction: command += "  --default_correction  "
         if args.coarse_binning: command += " --coarse_binning"
         these_commands = commands + [command]
@@ -145,6 +153,9 @@ for root_file in all_startstops:
             if args.coarse_binning:
                 memory="8000M"
                 time="00:02:00"
+            if args.bootstraps > 0:
+                memory = "15000M"
+                time="04:00:00"
         elif args.method == "delta_qm":
             if args.fold == "None":
                 time = "00:02:00"

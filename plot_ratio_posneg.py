@@ -11,8 +11,8 @@ import os
 
 
 input_files = [\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar12_v05_nocalib/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar12_v05_matrix/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Mar16_v05_nocalib/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Mar16_v05_matrix/Output.root",\
 #"/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_v03_v2_deltaqm_calib_21/Output.root",\
 #"/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_v03_v2_matrix_calib_7/Output.root"\
 ]
@@ -49,7 +49,8 @@ for input_file, output_location in zip(input_files, output_locations):
        legend_labels = {data: "Data", mc: "PP8 Z#rightarrow#mu#mu", mc_sherpa: "Sherpa Z#rightarrow#mu#mu"}
 
        for histogram_name_base in histnames: #["MassSpectrum_{location}_{identified}", "CosThetaStar_{location}_{identified}"]:
-           for location in ["ID", "ME"]:
+           for location in ["ID", "ME", "CB"]:
+
                #make a plot of the ratio of the mass distribution for +'ve and ='ve tracks
                sets_of_histograms = {}
                for name in ["poslead", "neglead"]:
