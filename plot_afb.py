@@ -26,10 +26,10 @@ def get_afb_hist(hist_nf, hist_nb, descr):
     return hist_return
 
 histogram_name = "MassSpectrum_{region}_{for_or_bwd}"
-#Mar16_v05_matrix
+#Apr2_v05_matrix
 input_files = [\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar16_v05_nocalib/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar16_v05_matrix/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_v05_nocalib/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_v05_matrix/Output.root",\
 ]
 
 from plotting_utils import draw_histograms
@@ -39,7 +39,19 @@ for input_f in input_files:
     hm.merge_channels("MC", ["MC1516", "MC17", "MC18"])
     hm.merge_channels("Data", ["Data1516", "Data17", "Data18"])
     output_location = "AfbPlots"
-    for mc_channel, data_channel in zip(["MC", "MC1516", "MC17", "MC18"], ["Data", "Data1516", "Data17", "Data18"]):
+    for mc_channel,\
+        data_channel,\
+        mc_stat_up,\
+        mc_stat_down,\
+        mc_resbias_up,\
+        mc_resbias_down\
+        in zip(\
+        ["MC", "MC1516", "MC17", "MC18"], \
+        ["Data", "Data1516", "Data17", "Data18"],\
+        ["MC_stat_up", "MC1516_stat_up", "MC17_stat_up", "MC18_stat_up"],\
+        ["MC_stat_down", "MC1516_stat_down", "MC17_stat_down", "MC18_stat_down"]):
+        ["MC_resbias_up", "MC1516_resbias_up", "MC17_resbias_up", "MC18_resbias_up"],\
+        ["MC_resbias_down", "MC1516_resbias_down", "MC17_resbias_down", "MC18_resbias_down"]):
        for det_location in ["CB", "ID", "ME"]: #"CB"]: add cb tracks in the future
            if data_channel == "Data":
                integrated_lumi = "139"
@@ -59,8 +71,6 @@ for input_f in input_files:
            for chan in [mc_channel, data_channel]:
                afb_hist[chan] = get_afb_hist(fwd_hist[chan], bwd_hist[chan], descr = input_f.split("/")[-2])
            draw_histograms(afb_hist,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), logy=False, to_return = False, ftype = ".pdf", plot_dir = output_location, x_axis_label = x_axis_label, y_axis_label = "AFB",         extra_descr="#splitline:#sqrt{s} = 13 TeV, " + integrated_lumi + " fb^{-1}")
-
-
 
 
 
