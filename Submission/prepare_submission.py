@@ -12,6 +12,7 @@ from batchsub import Job, JobSet
 from MatrixInversion import get_deltas_from_job
 from BiasCorrection import SagittaBiasCorrection
 import pickle as pkl
+from selections import sel_nom_delta_preselection_id, sel_nom_delta_preselection_me, sel_nom_delta_preselection_cb
 
 def apply_calibrations(kind, hist_fillers):
     if kind is None or len(kind) == 0: return
@@ -20,15 +21,15 @@ def apply_calibrations(kind, hist_fillers):
          import DeltaQMIterativeMethod
          func = DeltaQMIterativeMethod.get_deltas_from_job
     elif "matrix" in kind:
-         #base_filename = "/scratch/ladamek/sagittabias_matrices/Injection_Feb10_{filetype}_inject_None_method_matrix_region_{region}_loose_preselection_tight_select_after_correction_nom_round_7/OutputFiles"
-         base_filename = "/project/def-psavard/ladamek/sagittabias_matrices/Injection_Mar10_{filetype}_inject_None_method_matrix_region_{region}_loose_preselection_tight_select_after_correction_nom_round_3/OutputFiles/"
+         base_filename = "/project/def-psavard/ladamek/sagittabias_matrices/Injection_Mar10_{filetype}_inject_None_method_matrix_region_{region}_loose_preselection_tight_select_after_correction_nom_round_5/OutputFiles/"
          import MatrixInversion
          func = MatrixInversion.get_deltas_from_job
     else: raise ValueError("Calibration {} not found".format(kind))
 
-    from selections import sel_nom_delta_preselection_id, sel_nom_delta_preselection_me, sel_nom_delta_preselection_cb
     for region in ["ID", "ME", "CB"]:
         for data, mc in [("Data1516", "MC1516"), ("Data17", "MC17"), ("Data18", "MC18")]:
+            #if region == "CB":
+            #    base_filename = "/project/def-psavard/ladamek/sagittabias_matrices/NoTrigThresh_Injection_Mar10_{filetype}_inject_None_method_matrix_region_{region}_loose_preselection_tight_select_after_correction_nom_round_5/OutputFiles/"
             dir_data = base_filename.format(filetype=data, region=region)
             dir_mc = base_filename.format(filetype=mc, region=region)
 
@@ -73,6 +74,80 @@ def apply_calibrations(kind, hist_fillers):
                 apply_to = data
                 if "mconly" in kind: apply_to = mc
                 hist_filler.apply_calibration_for_channel(apply_to, calib, selections=selections)
+
+def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = False):
+    syst_var_file = "/project/def-psavard/ladamek/stat_variations/stat_syst_vars.root"
+    #ok go and get the histograms from this root_file and apply the systematic variations
+    #histname = "{}_{}_{}".format(file_type, detector_location, "staterr")
+    for period in ["17", "18", "1516"]:
+        for detector_location in ["ID", "ME"]:
+            if detector_location == "ID":
+                xvar_pos = calc_pos_id_eta
+                xvar_neg = calc_neg_id_eta
+                selections = [sel_nom_delta_preselection_id]
+            elif detector_location == "MS":
+                xvar_pos = calc_pos_ms_eta
+                xvar_neg = calc_neg_ms_eta
+                selections = []
+            elif detector_location == "CB":
+                xvar_pos = calc_pos_cb_eta
+                xvar_neg = calc_neg_cb_eta
+                selections = [sel_nom_delta_preselection_cb]
+            elif detector_location == "ME":
+                xvar_pos = calc_pos_me_eta
+                xvar_neg = calc_neg_me_eta
+                selections = [sel_nom_delta_preselection_me]
+            else: raise ValueError()
+            if detector_location == "ID":
+                yvar_pos = calc_pos_id_phi
+                yvar_neg = calc_neg_id_phi
+            elif detector_location == "MS":
+                yvar_pos = calc_pos_ms_phi
+                yvar_neg = calc_neg_ms_phi
+            elif detector_location == "CB":
+                yvar_pos = calc_pos_cb_phi
+                yvar_neg = calc_neg_cb_phi
+            elif detector_location == "ME":
+                yvar_pos = calc_pos_me_phi
+                yvar_neg = calc_neg_me_phi
+            else: raise ValueError()
+
+            if stat_syst:
+                rf = ROOT.TFile(syst_var_file, "READ")
+                rf.ls()
+                histname = "Data{}_{}_{}".format(period, detector_location, "staterr")
+                hist = rf.Get(histname)
+                hist.Clone()
+                hist.SetDirectory(0)
+                rf.Close()
+                hist.Print()
+                print("retrieved the stathist {}".format(histname))
+
+            if resbias_syst:
+                #get the resbias systematic histogram
+                resbias_histograms = "/project/def-psavard/ladamek/sagittabias_matrices/ResbiasInjection_MC{period}_inject_ResbiasData{period}_method_matrix_region_{detector_location}_loose_preselection_tight_select_after_correction_nom/OutputFiles/".format(period=period, detector_location=detector_location)
+                resbias_sub = "/project/def-psavard/ladamek/sagittabias_matrices/Injection_Mar10_MC{period}_inject_None_method_matrix_region_{region}_loose_preselection_tight_select_after_correction_nom_round_0/OutputFiles/".format(period=period, region=detector_location)
+                from MatrixInversion import get_deltas_from_job
+                hist = get_deltas_from_job(resbias_histograms)[0]
+                hist = hist.Clone()
+                hist_sub = get_deltas_from_job(resbias_sub)[0]
+                hist.Add(hist_sub, -1.0)
+                hist.SetDirectory(0)
+
+            hist_up = hist.Clone()
+            hist_up.Scale(1.0)
+            hist_down = hist.Clone()
+            hist_down.Scale(-1.0)
+
+            for var, varhist in zip(["up", "down"], [hist_up, hist_down]):
+                for hist_filler in hist_fillers:
+                    calib = SagittaBiasCorrection([varhist], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = detector_location)
+                    if stat_syst:
+                        channel = "MC{}_stat_{}".format(period, var)
+                    if resbias_syst:
+                        channel = "MC{}_resbias_{}".format(period, var)
+                    hist_filler.apply_calibration_for_channel(channel, calib, selections=selections)
+
 
 def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False):
         from DefaultCalibration import DefaultCorrection
@@ -196,6 +271,9 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
 
         if load_calibrations is not None:
             apply_calibrations(load_calibrations, filler_list)
+
+        apply_systematic_variations(filler_list, stat_syst=True)
+        apply_systematic_variations(filler_list, resbias_syst=True)
 
 
         #create a pickle file for each submission

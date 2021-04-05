@@ -645,6 +645,39 @@ branches = ["Pos_ME_Eta", "Neg_ME_Eta"]
 calc_subleading_me_eta = Calculation(subleading_me_eta, branches)
 
 ###################################################################
+def leading_id_abs_eta(event):
+    return np.abs(get_variable(event, "ID", "Eta", leading=True))
+branches = ["Pos_ID_Eta", "Neg_ID_Eta"]
+calc_leading_id_abs_eta = Calculation(leading_id_abs_eta, branches)
+
+def subleading_id_abs_eta(event):
+    return np.abs(get_variable(event, "ID", "Eta", leading=False))
+branches = ["Pos_ID_Eta", "Neg_ID_Eta"]
+calc_subleading_id_abs_eta = Calculation(subleading_id_abs_eta, branches)
+
+
+def leading_cb_abs_eta(event):
+    return np.abs(get_variable(event, "CB", "Eta", leading=True))
+branches = ["Pos_CB_Eta", "Neg_CB_Eta"]
+calc_leading_cb_abs_eta = Calculation(leading_cb_abs_eta, branches)
+
+def subleading_cb_abs_eta(event):
+    return np.abs(get_variable(event, "CB", "Eta", leading=False))
+branches = ["Pos_CB_Eta", "Neg_CB_Eta"]
+calc_subleading_cb_abs_eta = Calculation(subleading_cb_abs_eta, branches)
+
+
+def leading_me_abs_eta(event):
+    return np.abs(get_variable(event, "ME", "Eta", leading=True))
+branches = ["Pos_ME_Eta", "Neg_ME_Eta"]
+calc_leading_me_abs_eta = Calculation(leading_me_abs_eta, branches)
+
+def subleading_me_abs_eta(event):
+    return np.abs(get_variable(event, "ME", "Eta", leading=False))
+branches = ["Pos_ME_Eta", "Neg_ME_Eta"]
+calc_subleading_me_abs_eta = Calculation(subleading_me_abs_eta, branches)
+
+###################################################################
 def leading_id_phi(event):
     return get_variable(event, "ID", "Phi", leading=True)
 branches = ["Pos_ID_Phi", "Neg_ID_Phi"]
@@ -655,7 +688,6 @@ def subleading_id_phi(event):
 branches = ["Pos_ID_Phi", "Neg_ID_Phi"]
 calc_subleading_id_phi = Calculation(subleading_id_phi, branches)
 
-
 def leading_cb_phi(event):
     return get_variable(event, "CB", "Phi", leading=True)
 branches = ["Pos_CB_Phi", "Neg_CB_Phi"]
@@ -665,8 +697,6 @@ def subleading_cb_phi(event):
     return get_variable(event, "CB", "Phi", leading=False)
 branches = ["Pos_CB_Phi", "Neg_CB_Phi"]
 calc_subleading_cb_phi = Calculation(subleading_cb_phi, branches)
-
-
 
 def leading_me_phi(event):
     return get_variable(event, "ME", "Phi", leading=True)

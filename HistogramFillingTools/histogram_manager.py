@@ -7,7 +7,7 @@ class HistogramManager:
     histograms = []
     filename = None
 
-    def __init__(self, file_name):
+    def __init__(self, file_name, rebin=None):
        print("Initializing histogram manager on file {}".format(file_name))
        self.filename = file_name
        t_file = ROOT.TFile(self.filename, "READ")
@@ -19,6 +19,7 @@ class HistogramManager:
            self.histograms = [key.replace(channel, "") for key in self.histograms]
        self.histograms = list(set(self.histograms))
        t_file.Close()
+       self.rebin=rebin
 
        self.channels_merged = {}
 
@@ -46,6 +47,8 @@ class HistogramManager:
            histogram_dict[channel].SetDirectory(0)
            if rebin is not None:
                histogram_dict[channel].Rebin(rebin)
+           elif self.rebin is not None:
+               histogram_dict[channel].Rebin(self.rebin)
 
        for channel in self.channels_merged:
            histogram_dict[channel] = None

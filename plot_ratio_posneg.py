@@ -9,12 +9,10 @@ from atlasplots import set_atlas_style, atlas_label
 from MatrixInversion import get_deltas_from_job
 import os
 
-
+#Mar22_NoTrigThreshold
 input_files = [\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar16_v05_nocalib/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Mar16_v05_matrix/Output.root",\
-#"/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_v03_v2_deltaqm_calib_21/Output.root",\
-#"/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_v03_v2_matrix_calib_7/Output.root"\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_v05_nocalib/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_v05_matrix/Output.root",\
 ]
 
 #Mar7_nocalib_inject_${inject}_correct
@@ -30,14 +28,28 @@ histnames = \
 "MassSpectrum_{location}_{identified}", "CosThetaStar_{location}_{identified}", \
 ]
 
+#OK Study the agreement between data and mc
+systematics =      {"Sagitta_Stat": {"Up": "_stat_up", "Down":"_stat_down"}, "Sagitta_ResBias" : {"Up" : "_resbias_up", "Down" : "_resbias_down"}}
+systematic_names = {"Sagitta_Stat": {"Up": " stat up", "Down":" stat down"}, "Sagitta_ResBias" : {"Up" : " resbias up", "Down" : " resbias down"}} 
+
+CB_color_cycle = [r'#377eb8', r'#ff7f00',r'#dede00', r'#4daf4a',\
+                  r'#f781bf', r'#a65628', r'#e41a1c', r'#984ea3']
+
+extra_colours = [ROOT.TColor.GetColor(c) for c in CB_color_cycle]
+
+
 mc_sherpa = None
 mc_sherpa_corr = None
 
 for input_file, output_location in zip(input_files, output_locations):
     set_atlas_style()
-    hist_manager = HistogramManager(input_file)
+    hist_manager = HistogramManager(input_file, rebin=4)
     hist_manager.list_histograms("Mass")
     hist_manager.merge_channels("MC", ["MC1516", "MC17", "MC18"])
+    hist_manager.merge_channels("MC_stat_up", ["MC1516_stat_up", "MC17_stat_up", "MC18_stat_up"])
+    hist_manager.merge_channels("MC_stat_down", ["MC1516_stat_down", "MC17_stat_down", "MC18_stat_down"])
+    hist_manager.merge_channels("MC_resbias_up", ["MC1516_resbias_up", "MC17_resbias_up", "MC18_resbias_up"])
+    hist_manager.merge_channels("MC_resbias_down", ["MC1516_resbias_down", "MC17_resbias_down", "MC18_resbias_down"])
    # hist_manager.merge_channels("MCCalib", ["MC1516Calib", "MC17Calib", "MC18Calib"])
     hist_manager.merge_channels("Data", ["Data1516", "Data17", "Data18"])
 
@@ -47,6 +59,14 @@ for input_file, output_location in zip(input_files, output_locations):
        colors = {data: ROOT.kBlack, mc: ROOT.kBlue, mc_sherpa: ROOT.kGreen}
        styles = {data: 24, mc:26, mc_sherpa:28}
        legend_labels = {data: "Data", mc: "PP8 Z#rightarrow#mu#mu", mc_sherpa: "Sherpa Z#rightarrow#mu#mu"}
+       colour_counter = 0
+       for syst in systematics:
+           for key in systematics[syst]:
+               colors[mc + systematics[syst][key]] = extra_colours[colour_counter]
+               legend_labels[mc  + systematics[syst][key]] = legend_labels[mc] + systematic_names[syst][key]
+               styles[mc + systematics[syst][key]] = styles[mc] + colour_counter
+               colour_counter += 1
+
 
        for histogram_name_base in histnames: #["MassSpectrum_{location}_{identified}", "CosThetaStar_{location}_{identified}"]:
            for location in ["ID", "ME", "CB"]:
@@ -60,6 +80,10 @@ for input_file, output_location in zip(input_files, output_locations):
                   sets_of_histograms[name] = histograms
                   #to_plot = [data, mc, mc_sherpa]
                   to_plot = [data, mc]
+                  for syst in systematics:
+                      for key in systematics[syst]:
+                          to_plot.append(mc + systematics[syst][key])
+
                   new_histograms = {key:histograms[key] for key in to_plot}
                   if "CosTheta" in histogram_name_base:
                        x_axis_label = "cos#theta*_{"+location+"}"
@@ -85,8 +109,8 @@ for input_file, output_location in zip(input_files, output_locations):
                pos_histograms = sets_of_histograms["poslead"]
                neg_histograms = sets_of_histograms["neglead"]
                for key in pos_histograms:
-                   if key != data and key != mc and key != mc_sherpa: continue
-                   divided_histograms[key] = pos_histograms[key].Clone( pos_histograms[key].GetName() + "_OVER_" + neg_histograms[key].GetName() )
+                   if key != data and key != mc and key != mc_sherpa and key not in to_plot: continue
+                   divided_histograms[key] = pos_histograms[key].Clone("Pos_OVER_Neg" + hist_name + key )
                    divided_histograms[key].Divide(neg_histograms[key])
                    divided_histograms[key].GetXaxis().SetTitle(pos_histograms[key].GetXaxis().GetTitle())
 
@@ -109,7 +133,7 @@ for input_file, output_location in zip(input_files, output_locations):
                     x_axis_label = None
                     x_range=None
                     mins_maxes=None
-               draw_histograms(divided_histograms,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), y_axis_label="N(+ leading)/N(- leading)", logy=False, extra_descr="#splitline:#sqrt{s} = 13 TeV, " + integrated_lumi + " fb^{-1}", to_return = False, ftype = ".pdf", plot_dir = output_location, x_axis_label = x_axis_label, x_range=x_range, mins_maxes=mins_maxes)
+               draw_histograms(divided_histograms,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), y_axis_label="N(+ leading)/N(- leading)", logy=False, extra_descr="#splitline:#sqrt{s} = 13 TeV, " + integrated_lumi + " fb^{-1}", to_return = False, ftype = ".pdf", plot_dir = output_location, x_axis_label = x_axis_label, x_range=x_range, mins_maxes=mins_maxes, savename = "Pos_OVER_Neg" + hist_name + key)
 
 mc_noinjection = "/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_nocalib/Output.root"
 basename = "/project/def-psavard/ladamek/momentumvalidationoutput/Mar7_nocalib_inject_{inject}_correct/Output.root"

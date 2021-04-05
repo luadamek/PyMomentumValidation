@@ -66,6 +66,22 @@ def injection_histogram_data(detector_location = "ID"):
     sagitta_hist.Add(sagitta_hist_subtraction, -1.0)
     return solution_histogram(sagitta_hist)
 
+def injection_histogram_resbias(detector_location = "ID", period="1516"):
+    base_filename = "/project/def-psavard/ladamek/sagittabias_matrices/Injection_Mar10_{filetype}_inject_None_method_matrix_region_{region}_loose_preselection_tight_select_after_correction_nom_round_5/OutputFiles/"
+    directory = base_filename.format(filetype="Data{}".format(period), region=detector_location)
+    from MatrixInversion import get_deltas_from_job
+    sagitta_hist, _, __ = get_deltas_from_job(directory, final_only=True)
+    return solution_histogram(sagitta_hist)
+
+def injection_histogram_resbias_1516(detector_location = "ID"):
+    return injection_histogram_resbias(detector_location = detector_location, period="1516")
+
+def injection_histogram_resbias_17(detector_location = "ID"):
+    return injection_histogram_resbias(detector_location = detector_location, period="17")
+
+def injection_histogram_resbias_18(detector_location = "ID"):
+    return injection_histogram_resbias(detector_location = detector_location, period="18")
+
 def get_injection_values_global(eta_edges, phi_edges, detector_location = "ID"):
     values = np.zeros((len(eta_edges)-1, len(phi_edges)-1))
     values -= 0.3

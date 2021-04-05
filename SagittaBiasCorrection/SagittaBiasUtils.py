@@ -152,13 +152,16 @@ def add_pair_mass(df):
     return df
 
 def get_histogram_function(inject):
-    from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_null, injection_histogram_data, injection_histogram_random
+    from BiasInjection import injection_histogram_local, injection_histogram_global, injection_histogram_globalpluslocal, injection_histogram_null, injection_histogram_data, injection_histogram_random, injection_histogram_resbias_1516, injection_histogram_resbias_17, injection_histogram_resbias_18
     if inject == "Global": injection_function = injection_histogram_global
     if inject == "Random": injection_function = injection_histogram_random
     if inject == "GlobalPlusLocal": injection_function = injection_histogram_globalpluslocal
     if inject == "Local": injection_function = injection_histogram_local
     if inject == "Null": injection_function = injection_histogram_null
     if inject == "Data": injection_function = injection_histogram_data
+    if inject == "ResbiasData1516": injection_function = injection_histogram_resbias_1516
+    if inject == "ResbiasData17": injection_function = injection_histogram_resbias_17
+    if inject == "ResbiasData18": injection_function = injection_histogram_resbias_18
     return injection_function
 
 def get_parser():

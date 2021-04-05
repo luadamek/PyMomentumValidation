@@ -56,6 +56,31 @@ files["v05"]["Data1516"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(
 files["v05"]["Data17"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["17"]]
 files["v05"]["Data18"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["18"]]
 files["v05"]["MC1516"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+files["v05"]["MC17_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+files["v05"]["MC18_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+files["v05"]["MC1516_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+files["v05"]["MC17_resbias_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+files["v05"]["MC18_resbias_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+files["v05"]["MC1516_resbias_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+files["v05"]["MC17_stat_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+files["v05"]["MC18_stat_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+files["v05"]["MC1516_stat_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+files["v05"]["MC17_stat_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+files["v05"]["MC18_stat_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+files["v05"]["MC1516_stat_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+#files["v05"]["MC17_stat_random_up"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["17"]]
+#files["v05"]["MC18_stat_random_up"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["18"]]
+#files["v05"]["MC1516_stat_random_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+#files["v05"]["MC17_stat_random_down"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["17"]]
+#files["v05"]["MC18_stat_random_down"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["18"]]
+#files["v05"]["MC1516_stat_random_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
 files["v05"]["MC17"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
 files["v05"]["MC18"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
 files["v05"]["MCSherpa1516"] = ["mc16_13TeV.364*.Sh_*{}*.root".format(el) for el in ["r9364"]]

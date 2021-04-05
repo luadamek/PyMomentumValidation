@@ -130,7 +130,7 @@ class MCCorrection:
         corrections_pos = {key:None for key in ["s0", "s1", "r0", "r1", "r2"]}
         corrections_neg = {key:None for key in ["s0", "s1", "r0", "r1", "r2"]}
         for variable in corrections:
-           if getattr(self, variable) is None:
+           if getattr(self, variable) is  None:
                corrections_pos[variables] = np.zeros(len(data))
                corrections_neg[variables] = np.zeros(len(data))
                continue
@@ -149,7 +149,6 @@ class MCCorrection:
            bindex_x_neg[overflow_x_neg] = nbins_x - 1
 
            nbins_y = len(self.edges_y[variable]) -1
-           bindex_y_pos = np.digitize(self.pos_vary.eval(data), self.edges_y[variable]) - 1
            underflow_y_pos = bindex_y_pos == -1
            overflow_y_pos = bindex_y_pos == nbins_y
            bindex_y_pos[underflow_y_pos] = 0
@@ -173,8 +172,8 @@ class MCCorrection:
            print(min(self.edges_y[variable]), max(self.edges_y[variable]))
            print(np.sum(1 * np.logical_not(not_overflow_neg)))
 
-           correction_for_data_pos = self.corrections[bindex_x_pos, bindex_y_pos]
-           correction_for_data_neg = self.corrections[bindex_x_neg, bindex_y_neg]
+           correction_for_data_pos = self.corrections[variable][bindex_x_pos, bindex_y_pos]
+           correction_for_data_neg = self.corrections[variable][bindex_x_neg, bindex_y_neg]
 
            pos_selection = np.logical_and.reduce([el.eval(data) for el in self.pos_selections] + [not_overflow_pos])
            neg_selection = np.logical_and.reduce([el.eval(data) for el in self.neg_selections] + [not_overflow_neg])
@@ -192,8 +191,8 @@ class MCCorrection:
             df[pos_pt_name] = corrections_pos["s0"] + (1.0 + corrections_pos["s1"]) * df["pos_pt_name"].values
             df[neg_pt_name] = corrections_neg["s0"] + (1.0 + corrections_neg["s1"]) * df["neg_pt_name"].values
         else:
-            df[pos_pt_name] = (df["pos_pt_name"].values - corrections_pos["s0"])/(1.0 + corrections_pos["s1"])
-            df[neg_pt_name] = (df["neg_pt_name"].values - corrections_neg["s0"])/(1.0 + corrections_neg["s1"])
+            df[pos_pt_name] = (df[pos_pt_name].values - corrections_pos["s0"])/(1.0 + corrections_pos[s1])
+            df[neg_pt_name] = (df[neg_pt_name].values - corrections_neg["s0"])/(1.0 + corrections_neg[s1])
 
         if hasattr(data, "dtype"): keys =  data.dtype.names
         else: keys = list(data.keys())

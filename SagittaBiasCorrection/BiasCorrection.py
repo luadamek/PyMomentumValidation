@@ -29,6 +29,7 @@ def extract_binning_from_axis(axis):
 
 def extract_binning_from_histogram(hist):
     edges = {}
+    hist.Print()
     if isinstance(hist, ROOT.TH1):
         nedges = 1
         axes = {"x": hist.GetXaxis()}
@@ -46,7 +47,7 @@ def extract_binning_from_histogram(hist):
 class SagittaBiasCorrection:
 
     #the histogram is a segitta bias correction map for delta s
-    def __init__(self, histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = ""):
+    def __init__(self, histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "", apply_randomly = False):
         assert flavour in ["ID", "MS", "CB", "ME"]
         self.flavour = flavour
         if flavour == "ID":
@@ -107,6 +108,7 @@ class SagittaBiasCorrection:
             for j in range(1, len(self.edges_y)):
                 corrections[i-1, j-1] = sum([el.GetBinContent(i, j) for el in self.histograms])
         self.corrections = corrections
+        self.apply_randomly = apply_randomly
         print(self.corrections)
 
     def calibrate(self, data):
@@ -151,6 +153,9 @@ class SagittaBiasCorrection:
 
         correction_for_data_pos = self.corrections[bindex_x_pos, bindex_y_pos]
         correction_for_data_neg = self.corrections[bindex_x_neg, bindex_y_neg]
+        if self.apply_randomly:
+            correction_for_data_pos = np.random.normal(loc=0.0, scale=correction_for_data_pos)
+            correction_for_data_neg = np.random.normal(loc=0.0, scale=correction_for_data_neg)
 
         #ok, now correct the pT
         pos_pt_name = "Pos_{}_Pt".format(self.flavour)

@@ -26,6 +26,7 @@ from variables import \
 from BiasCorrection import SagittaBiasCorrection
 
 from SagittaBiasUtils import eta_edges_ID, eta_edges_else, phi_edges, convert_df_to_data, put_data_back_in_df, inject_bias, add_pair_mass, get_histogram_function, merge_results, find_bindex
+
 def get_cov_matrices(df, detector_location, debug = False):
     #get rid of overflow
     if debug: print("Before overflow correction {}".format(len(df)))
@@ -33,8 +34,8 @@ def get_cov_matrices(df, detector_location, debug = False):
     if debug: print("After overflow correction {}".format(len(df)))
 
     n_corr_bins = global_binning_pos.get_global_nbins()#number of bins in which to apply the correction
-    e_vector = np.zeros((n_corr_bins, len(df)))
 
+    e_vector = np.zeros((n_corr_bins, len(df)))
     weights = df.eval("TotalWeight").values
 
     if debug: print("Printing the weights")
@@ -63,7 +64,7 @@ def get_cov_matrices(df, detector_location, debug = False):
 
     return cov, equal_to, np.sum(weights)
 
-def get_deltas_from_job(outfile_location, update_cache = False):
+def get_deltas_from_job(outfile_location, update_cache = False, final_only=False):
     import glob
     import os
     import pickle as pkl
@@ -74,17 +75,20 @@ def get_deltas_from_job(outfile_location, update_cache = False):
 
     cache_file = os.path.join(outfile_location, "CACHE.pkl")
     failed = True
+    results = None
+    corrections = None
     try:
         print("Trying to open {}".format(cache_file))
         import pickle as pkl
         with open(cache_file, "rb") as f:
-            delta_hist,  var_dict, detector_location, corrections = pkl.load(f)
+            stuff = pkl.load(f)
+            if type(stuff) == tuple: delta_hist,  var_dict, detector_location, corrections = stuff
+            else: results = stuff
         print("Successfully opened {}".format(cache_file))
         failed = False
 
     except Exception as e: pass
 
-    results = None
     if update_cache:
         if len(matrices) == 0: raise ValueError("Couldn't create the cache because there were no files to read...")
         print("Failed to open cache. Opening each pkl file instead")
@@ -138,9 +142,9 @@ def get_deltas_from_job(outfile_location, update_cache = False):
            with open(cache_file, "wb") as f:
                pkl.dump(results, f)
 
-           for el in matrices:
-               import os
-               os.system("rm {}".format(m))
+           #for el in matrices:
+           #    import os
+           #    os.system("rm {}".format(m))
 
            del opened
            print("Done opening")
@@ -148,7 +152,7 @@ def get_deltas_from_job(outfile_location, update_cache = False):
     if failed and not update_cache:
         raise ValueError("Call this function with update_cache True if there is no cache file already")
 
-    if corrections is not None:
+    if corrections is not None and not final_only:
         for c in corrections.split(","):
             delta_hist.Add(get_deltas_from_job(c)[0], 1.0)
 

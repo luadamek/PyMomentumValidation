@@ -515,6 +515,109 @@ def fill_histograms(hist_filler, output_filename):
                                      xlabel="P_T [GeV]",\
                                      ylabel="Number of Events")
 
+    #book some tprofile histograms to study the average mass in bins of abs eta, phi, and both
+    #fill_2d_tprofile_histograms(self, histogram_name, data, variable_x, variable_y, variable_z, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", zlabel="", error_option="")
+    from variables import calc_leading_id_eta, calc_leading_id_phi, calc_leading_me_eta, calc_leading_me_phi, calc_leading_cb_eta, calc_leading_cb_phi
+    from variables import calc_leading_id_abs_eta, calc_leading_me_abs_eta, calc_leading_cb_abs_eta
+    hist_filler.book_2dtprofile_fill("2DAverageMassBinnedID",\
+                                     calc_leading_id_eta,\
+                                     calc_leading_id_phi,\
+                                     calc_id_mass,\
+                                     selections = [mass_selZ_func_ID],\
+                                     bins_x = 20,\
+                                     range_low_x = -2.5,\
+                                     range_high_x = 2.5,\
+                                     bins_y = 20,\
+                                     range_low_y = -3.14,\
+                                     range_high_y = 3.14,\
+                                     xlabel = "#eta^{ID}",\
+                                     ylabel = "#phi^{ID}")
+
+
+    hist_filler.book_2dtprofile_fill("2DAverageMassBinnedME",\
+                                     calc_leading_me_eta,\
+                                     calc_leading_me_phi,\
+                                     calc_me_mass,\
+                                     selections = [mass_selZ_func_ME],\
+                                     bins_x = 20,\
+                                     range_low_x = -2.7,\
+                                     range_high_x = 2.7,\
+                                     bins_y = 20,\
+                                     range_low_y = -3.14,\
+                                     range_high_y = 3.14,\
+                                     xlabel = "#eta^{ME}",\
+                                     ylabel = "#phi^{ME}")
+
+    hist_filler.book_2dtprofile_fill("2DAverageMassBinnedCB",\
+                                     calc_leading_cb_eta,\
+                                     calc_leading_cb_phi,\
+                                     calc_cb_mass,\
+                                     selections = [mass_selZ_func_CB],\
+                                     bins_x = 20,\
+                                     range_low_x = -2.5,\
+                                     range_high_x = 2.5,\
+                                     bins_y = 20,\
+                                     range_low_y = -3.14,\
+                                     range_high_y = 3.14,\
+                                     xlabel = "#eta^{CB}",\
+                                     ylabel = "#phi^{CB}")
+
+    hist_filler.book_tprofile_fill("AverageMassBinnedID",\
+                                     calc_leading_id_eta,\
+                                     calc_id_mass,\
+                                     selections = [mass_selZ_func_ID],\
+                                     bins = 20,\
+                                     range_low = -2.5,\
+                                     range_high = 2.5,\
+                                     xlabel = "#eta^{ID}")
+
+    hist_filler.book_tprofile_fill("AverageMassBinnedME",\
+                                     calc_leading_me_eta,\
+                                     calc_me_mass,\
+                                     selections = [mass_selZ_func_ME],\
+                                     bins = 20,\
+                                     range_low = -2.7,\
+                                     range_high = 2.7,\
+                                     xlabel = "#eta^{ME}")
+
+    hist_filler.book_tprofile_fill("AverageMassBinnedCB",\
+                                     calc_leading_cb_eta,\
+                                     calc_cb_mass,\
+                                     selections = [mass_selZ_func_CB],\
+                                     bins = 20,\
+                                     range_low = -2.5,\
+                                     range_high = 2.5,\
+                                     xlabel = "#eta^{CB}")
+
+
+    hist_filler.book_tprofile_fill("AverageMassBinnedID_abseta",\
+                                     calc_leading_id_abs_eta,\
+                                     calc_id_mass,\
+                                     selections = [mass_selZ_func_ID],\
+                                     bins = 20,\
+                                     range_low = 0.0,\
+                                     range_high = 2.5,\
+                                     xlabel = "|#eta^{ID}|")
+
+    hist_filler.book_tprofile_fill("AverageMassBinnedME_abseta",\
+                                     calc_leading_me_abs_eta,\
+                                     calc_me_mass,\
+                                     selections = [mass_selZ_func_ME],\
+                                     bins = 20,\
+                                     range_low = 0.0,\
+                                     range_high = 2.7,\
+                                     xlabel = "|#eta^{ME}|")
+
+    hist_filler.book_tprofile_fill("AverageMassBinnedCB_abseta",\
+                                     calc_leading_cb_abs_eta,\
+                                     calc_cb_mass,\
+                                     selections = [mass_selZ_func_CB],\
+                                     bins = 20,\
+                                     range_low = 0.0,\
+                                     range_high = 2.5,\
+                                     xlabel = "|#eta^{CB}|")
+
+
     for sel_id, sel_me, sel_cb, name in zip([[sel_forward_id, sel_min_fifteen_id_pts], [sel_backward_id, sel_min_fifteen_id_pts]],\
                                     [[sel_forward_me, sel_min_fifteen_me_pts], [sel_backward_me, sel_min_fifteen_me_pts]],\
                                     [[sel_forward_cb, sel_min_fifteen_cb_pts], [sel_backward_cb, sel_min_fifteen_cb_pts]],\
