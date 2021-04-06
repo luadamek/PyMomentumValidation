@@ -13,6 +13,7 @@ from MatrixInversion import get_deltas_from_job
 from BiasCorrection import SagittaBiasCorrection
 import pickle as pkl
 from selections import sel_nom_delta_preselection_id, sel_nom_delta_preselection_me, sel_nom_delta_preselection_cb
+from WeightedCBCorrectionCov import WeightedCBCorrectionCov
 
 def apply_calibrations(kind, hist_fillers):
     if kind is None or len(kind) == 0: return
@@ -149,7 +150,7 @@ def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = 
                     hist_filler.apply_calibration_for_channel(channel, calib, selections=selections)
 
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False):
         from DefaultCalibration import DefaultCorrection
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
@@ -189,7 +190,7 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         outfile_name =  "\"" + os.path.join(slurm_directory, job_name + "_{}.root\".format(str(i))")
 
 
-        plotting_instructions_python.append("fill_histograms(plots, {}".format(outfile_name)) 
+        plotting_instructions_python.append("fill_histograms(plots, {}".format(outfile_name))
         plotting_instructions_python[-1] += ")"
         with open(python_executable, 'w') as f:
             for line in plotting_instructions_python:
@@ -235,8 +236,15 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
             filler_list.append(hist_filler)
 
         for hist_filler in filler_list:
+            if default_correction: continue
             for channel in ["MCCalib", "MC1516Calib", "MC17Calib", "MC18Calib", "MCSherpaCalib", "MCSherpa1516Calib", "MCSherpa17Calib", "MCSherpa18Calib"]:
                 hist_filler.apply_calibration_for_channel(channel, DefaultCorrection())
+
+        if default_correction:
+            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", DefaultCorrection())
+
+        if cov_combination:
+            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", WeightedCBCorrectionCov())
 
         if inject is not None:
            injections = []
@@ -287,7 +295,7 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
             commands.append("export USER=ladamek")
             commands.append("source ./setup.sh")
             commands.append("python {py_exec} --num={num} --picklefile={picklefile} --jobName={jobName}".format(py_exec=python_executable, num=i, jobName = job_name + "_" + str(i), picklefile=filler_file))
-            job = Job(job_name + "_" + str(i), os.path.join(slurm_directory, "job_{}".format(i)), commands, time = queue_flavour, memory="8000M")
+            job = Job(job_name + "_" + str(i), os.path.join(slurm_directory, "job_{}".format(i)), commands, time = queue_flavour, memory="12000M")
             jobset.add_job(job)
 
         jobset_file = os.path.join(slurm_directory, "jobset.pkl")
@@ -308,6 +316,7 @@ if __name__ == "__main__":
         parser.add_argument('--inject', "-inj", dest="inject", type=str, default="")
         parser.add_argument('--inject_channels', "-inj_ch", dest="inject_channels", type=str, default="MC,MC1516,MC17,MC18")
         parser.add_argument('--default_correction', "-def_calib", dest="default_correction", action="store_true")
+        parser.add_argument('--cov_combination', '-cov_comb', dest="cov_combination", action="store_true")
         args = parser.parse_args()
 
         #Create a pickle file and list for each submission
@@ -323,7 +332,7 @@ if __name__ == "__main__":
             inject = None
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

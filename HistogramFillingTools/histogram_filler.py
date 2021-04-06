@@ -103,19 +103,23 @@ class HistogramFiller:
         self.subchannels = {} #dictionary of new_channel to dictionary of old_channel and selections
 
     def apply_calibration_for_channel(self, channel, calibration, selections = []):
-        if channel not in self.calibrations: self.calibrations[channel] = []
-        self.calibrations[channel].append((calibration, selections))
-        self.all_calibrations.append(calibration)
+        if channel == "__ALL__":
+            for this_chan in self.channels:
+                self.apply_calibration_for_channel(this_chan, calibration, selections = selections)
+                print("applying calibration for {}".format(this_chan))
+        else:
+            if channel not in self.calibrations: self.calibrations[channel] = []
+            self.calibrations[channel].append((calibration, selections))
+            self.all_calibrations.append(calibration)
         for s in selections:
             if s.name not in [sel.name for sel in self.all_selections]:
-                self.all_selections.append(s)
+               self.all_selections.append(s)
 
 
     def apply_selection_for_channel(self, channel, selections):
         if channel == "__ALL__":
-            for chan in self.channels:
-                if channel not in self.selections_for_channels: self.selections_for_channels[channel] = [el for el in selections]
-                else: self.selections_for_channels[channel] += selections
+            for this_chan in self.channels:
+                self.apply_selection_for_channel(this_chan, selections)
         else:
             if channel not in self.selections_for_channels:
                 self.selections_for_channels[channel] = [el for el in selections]
@@ -447,7 +451,18 @@ process = psutil.Process(os.getpid())
 
 def branchDresser(branches):
     '''this is a function that dresses branches with variable length arrays. See http://scikit-hep.org/root_numpy/reference/generated/root_numpy.tree2array.html for details. You need to define a maximum length and what filler variables to use. Fortunately, there are no vector branches in any EOP trees.'''
-    return branches
+    #rename the cov matrix branches like this in order to always take the q/p component [("Neg_ID_TrackCovMatrix", -1.0)]
+    clean_branches = []
+    for b in branches:
+        found = False
+        for charge in ["Pos", "Neg"]:
+            for location in ["ID", "ME", "CB"]:
+                this_branchname = "{}_{}_TrackCovMatrix".format(charge, location)
+                if b == this_branchname:
+                    clean_branches.append(("{}_{}_TrackCovMatrix".format(charge, location), -1.0, 15))
+                    found = True
+        if not found: clean_branches.append(b)
+    return clean_branches
 
 def get_x_section_weight(filename):
     '''
@@ -497,8 +512,10 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, t
     if data is None:
         raise ValueError("Could not retrieve the data.")
 
+
     #only apply the calibrations with the corresponding selections
     for c, c_sels in zip(calibrations, calibration_selections):
+        print("Applying calibration")
         data_calib = c.calibrate(data)
         passes = np.ones(len(data))>0
         for c_sel in c_sels:
