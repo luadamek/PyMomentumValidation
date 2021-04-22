@@ -7,11 +7,13 @@ if os.getenv("USER") == "ladamek":
     if "cedar" in os.getenv("HOSTNAME") or "cdr" in os.getenv("HOSTNAME"): dir_v03_v2="/project/def-psavard/ForLukas/muonptcalib_v03_combined/v2/"
     if "cedar" in os.getenv("HOSTNAME") or "cdr" in os.getenv("HOSTNAME"): dir_v05="/project/def-psavard/ForLukas/muonptcalib_v05_merged_Min/"
     if "graham" in os.getenv("HOSTNAME") or "gra" in os.getenv("HOSTNAME"): dir_v05="/project/def-psavard/ladamek/ForLukas/muonptcalib_v05_merged_Min/"
+    if "graham" in os.getenv("HOSTNAME") or "gra" in os.getenv("HOSTNAME"): dir_v05_standardvars="/project/def-psavard/ladamek/ForLukas/muonptcalib_v05_standardvars"
 
 directories = {}
 directories["v03"] = dir_v03
 directories["v03_v2"] = dir_v03_v2
 directories["v05"] = dir_v05
+directories["v05_standardvars"] = dir_v05_standardvars
 
 files = {}
 files["v03"] = {}
@@ -57,13 +59,29 @@ files["v05"]["Data17"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el
 files["v05"]["Data18"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["18"]]
 files["v05"]["MC1516"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
 
-files["v05"]["MC17_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
-files["v05"]["MC18_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
-files["v05"]["MC1516_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+#files["v05"]["MC17_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+#files["v05"]["MC18_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+#files["v05"]["MC1516_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
 
-files["v05"]["MC17_resbias_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
-files["v05"]["MC18_resbias_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
-files["v05"]["MC1516_resbias_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+#files["v05"]["MC17_resbias_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+#files["v05"]["MC18_resbias_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+#files["v05"]["MC1516_resbias_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+#files["v05"]["MC17_resbias_up_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+#files["v05"]["MC18_resbias_up_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+#files["v05"]["MC1516_resbias_up_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+#files["v05"]["MC17_resbias_down_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+#files["v05"]["MC18_resbias_down_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+#files["v05"]["MC1516_resbias_down_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+#files["v05"]["MC17_resbias_up_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+#files["v05"]["MC18_resbias_up_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+#files["v05"]["MC1516_resbias_up_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+#files["v05"]["MC17_resbias_down_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+#files["v05"]["MC18_resbias_down_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+#files["v05"]["MC1516_resbias_down_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
 
 files["v05"]["MC17_stat_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
 files["v05"]["MC18_stat_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
@@ -72,6 +90,23 @@ files["v05"]["MC1516_stat_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1
 files["v05"]["MC17_stat_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
 files["v05"]["MC18_stat_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
 files["v05"]["MC1516_stat_down"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+files["v05"]["MC17_stat_up_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+files["v05"]["MC18_stat_up_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+files["v05"]["MC1516_stat_up_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+files["v05"]["MC17_stat_down_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+files["v05"]["MC18_stat_down_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+files["v05"]["MC1516_stat_down_ID"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+files["v05"]["MC17_stat_up_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+files["v05"]["MC18_stat_up_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+files["v05"]["MC1516_stat_up_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
+files["v05"]["MC17_stat_down_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
+files["v05"]["MC18_stat_down_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
+files["v05"]["MC1516_stat_down_ME"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
+
 
 #files["v05"]["MC17_stat_random_up"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["17"]]
 #files["v05"]["MC18_stat_random_up"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["18"]]
@@ -98,3 +133,5 @@ files["v05"]["MC18_JPSI"] = ["mc16_13TeV.*.Pythia8B_A14_CTEQ6L1_Jpsimu6*{}*.root
 files["v05"]["MCTTbar1516"] = ["mc16_13TeV.41047*ttbar*nonallhad*{}*.root".format(el) for el in ["r9364"]]
 files["v05"]["MCTTbar17"] = ["mc16_13TeV.41047*ttbar*nonallhad*{}*.root".format(el) for el in ["r10201"]]
 files["v05"]["MCTTbar18"] = ["mc16_13TeV.41047*ttbar*nonallhad*{}*.root".format(el) for el in ["r10724"]]
+
+files["v05_standardvars"] = files["v05"]

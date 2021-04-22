@@ -94,7 +94,7 @@ if args.bootstraps > 0:
                  last_root_file = root_file
              these_indices = strapped_indices[start:stop] - cum_subtraction
              to_subtract += (edge_high - edge_low)
-             bootstraps[root_file][startstop].append("/scratch-deleted-2021-mar-20/ladamek/raw_bootstraps/strap_{}.pkl".format(counter))
+             bootstraps[root_file][startstop].append("/project/def-psavard/ladamek/raw_bootstraps/strap_{}.pkl".format(counter))
              with open(bootstraps[root_file][startstop][-1], "wb") as f:
                  import pickle as pkl
                  pkl.dump(these_indices, f)

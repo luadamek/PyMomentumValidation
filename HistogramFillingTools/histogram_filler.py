@@ -106,7 +106,6 @@ class HistogramFiller:
         if channel == "__ALL__":
             for this_chan in self.channels:
                 self.apply_calibration_for_channel(this_chan, calibration, selections = selections)
-                print("applying calibration for {}".format(this_chan))
         else:
             if channel not in self.calibrations: self.calibrations[channel] = []
             self.calibrations[channel].append((calibration, selections))
@@ -311,7 +310,7 @@ class HistogramFiller:
                 fill_profile(histogram_dictionary[channel], to_fill, to_weight)
         return histogram_dictionary
 
-    def fill_tprofile_histograms(self, histogram_name, data, variable_x, variable_y, selections = [], bins = 1, range_low = 0.000001, range_high=1. - 0.00001,  xlabel ="", ylabel="",):
+    def fill_tprofile_histograms(self, histogram_name, data, variable_x, variable_y, selections = [], bins = 1, range_low = 0.000001, range_high=1. - 0.00001,  xlabel ="", ylabel="", option=""):
         '''Get a TProfile histogram with variable_y profiled against variable_x, after selections selections have been applied'''
 
         name_to_fill_x = variable_x.name
@@ -321,9 +320,9 @@ class HistogramFiller:
         for channel in self.channels:
             if (type(bins) == list):
                 bins_array = array('d',bins)
-                histogram_dictionary[channel] = ROOT.TProfile(histogram_name + channel, histogram_name + channel, len(bins_array)-1, bins_array)
+                histogram_dictionary[channel] = ROOT.TProfile(histogram_name + channel, histogram_name + channel, len(bins_array)-1, bins_array, option)
             else:
-                histogram_dictionary[channel] = ROOT.TProfile(histogram_name + channel, histogram_name + channel, bins, range_low + 0.0000001, range_high - 0.000001)
+                histogram_dictionary[channel] = ROOT.TProfile(histogram_name + channel, histogram_name + channel, bins, range_low + 0.0000001, range_high - 0.000001, option)
             histogram_dictionary[channel].Sumw2()
 
         for channel in self.channels:
@@ -470,6 +469,11 @@ def get_x_section_weight(filename):
     '''
     return 1.0
 
+def get_data_length(data):
+    keys = list(data.keys())
+    if len(keys) == 0: return 0
+    else: return len(data[keys[0]])
+
 def getIsData(filename):
     '''
     Return true if the file is a data file. Otherwise, return false because the file is simulation.
@@ -508,20 +512,22 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, t
         else:
             break
 
+    data = {key : data[key] for key in data.dtype.names} #convert to a dictionary so that new columns can be easily addded
 
     if data is None:
         raise ValueError("Could not retrieve the data.")
 
 
     #only apply the calibrations with the corresponding selections
+
     for c, c_sels in zip(calibrations, calibration_selections):
         print("Applying calibration")
         data_calib = c.calibrate(data)
-        passes = np.ones(len(data))>0
+        passes = np.ones(get_data_length(data))>0
         for c_sel in c_sels:
             print("Applying {} for calibration".format(c_sel.name))
             passes &= c_sel.eval(data)
-        for name in data.dtype.names:
+        for name in data:
             data[name][passes] = data_calib[name][passes]
 
     if verbose: print("Got the data for parition " + str(partition))

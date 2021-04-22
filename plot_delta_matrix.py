@@ -123,13 +123,12 @@ if __name__ == "__main__":
         #methods = ["delta_qm", "matrix"]
         methods = ["matrix"]
 
-        base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec17_inject_{inject}_region_{detector_location}_{end_string}_round_{round}"
+        base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec17_inject_{inject}_region_{detector_location}_{end_string}_round_{round}/OutputFiles"
 
         for region in ["ID", "ME"]:
-            continue
             for end_string in ["loose_preselection_tight_select_after_correction"]:#"tight_preselection", "loose_preselection_tight_select_before_correction", "loose_preselection_tight_select_after_correction"]:
                 for method in methods:
-                   for bias in ["Random", "Global" , "Local", "None", "GlobalPlusLocal"]: #, "Data"]:#, "Null"]:A
+                   for bias in ["Global" , "Global", "Local", "None", "GlobalPlusLocal"]: #, "Data"]:#, "Null"]:A
                        extrema_uncorr = -10000000
                        extrema_corr = -10000000
                        extrema_effect = -10000000

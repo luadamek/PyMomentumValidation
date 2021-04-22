@@ -60,6 +60,7 @@ pip install .
 cd ..
 pip install uproot
 pip install atlasify
+pip install xlrd
 ```
 If you are working on ComputeCanada, creating the venv with lcg doesn't work for some reason if you're on a worker node. Make sure you're on the login node. 
 

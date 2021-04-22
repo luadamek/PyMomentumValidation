@@ -14,6 +14,8 @@ from BiasCorrection import SagittaBiasCorrection
 import pickle as pkl
 from selections import sel_nom_delta_preselection_id, sel_nom_delta_preselection_me, sel_nom_delta_preselection_cb
 from WeightedCBCorrectionCov import WeightedCBCorrectionCov
+import pandas as pd
+from RecalculateMass import RecalculateMasses
 
 def apply_calibrations(kind, hist_fillers):
     if kind is None or len(kind) == 0: return
@@ -70,11 +72,127 @@ def apply_calibrations(kind, hist_fillers):
                 yvar_pos = calc_pos_me_phi
                 yvar_neg = calc_neg_me_phi
             else: raise ValueError()
-            calib = SagittaBiasCorrection([deltas], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = region)
+            calib = SagittaBiasCorrection([deltas], xvar_pos, xvar_neg, yvar_pos, yvar_neg, flavour = region, store_uncorr=True)
             for hist_filler in hist_fillers:
                 apply_to = data
                 if "mconly" in kind: apply_to = mc
                 hist_filler.apply_calibration_for_channel(apply_to, calib, selections=selections)
+
+from selections import define_eta_selection
+
+def apply_standard_mc_calibrations(hist_fillers):
+    import pandas
+    import openpyxl
+    from openpyxl import load_workbook
+    wb = load_workbook(os.path.join(os.getenv("MomentumValidationDir"), "MCCorrection", "RegionOrdering.xlsx"))
+    df = pandas.DataFrame(wb["Sheet1"].values)
+    new_df = {}
+    for i, (region_name, eta_low, eta_high, sector) in enumerate(zip(df[0].values, df[1].values, df[2].values, df[3].values)):
+        if i == 0:
+           new_df[region_name] = []
+           new_df[eta_low] = []
+           new_df[eta_high] = []
+           new_df[sector] = []
+           region_name_header = region_name
+           eta_low_header = eta_low
+           eta_high_header = eta_high
+           sector_header = sector
+        else:
+           new_df[region_name_header].append(region_name)
+           new_df[eta_low_header].append(eta_low)
+           new_df[eta_high_header].append(eta_high)
+           new_df[sector_header].append(sector)
+    df = pandas.DataFrame.from_dict(new_df)
+
+    from selections import \
+    sel_large_sector_ID_Pos,\
+    sel_large_sector_ME_Pos,\
+    sel_large_sector_ID_Neg,\
+    sel_large_sector_ME_Neg,\
+    sel_small_sector_ID_Pos,\
+    sel_small_sector_ME_Pos,\
+    sel_small_sector_ID_Neg,\
+    sel_small_sector_ME_Neg
+
+    from calculation import Calculation
+    from MCCorrection import MCCorrection
+
+    for period in ["1516", "17", "18"]:
+        #get the parameters for the correction
+        if period == "1516": descr = "15" #the params for 15 are the same as the params for 16
+        else: descr = period
+
+        basedir_params = os.path.join(os.getenv("MomentumValidationDir"), "MCCorrection", "Recs2021_03_31_Prelim")
+        scale_params = os.path.join(basedir_params, "Scale_muons_Data{descr}_Recs2021_03_31_Prelim.dat".format(descr=descr))
+        smearing_params = os.path.join(basedir_params, "Smearing_muons_Data{descr}_Recs2021_03_31_Prelim.dat".format(descr=descr))
+        scale_params = pd.read_csv(scale_params, sep=r'\s{1,}', engine='python')
+        smearing_params = pd.read_csv(smearing_params, sep=r'\s{1,}', engine='python')
+        print(scale_params)
+
+        for detector_location in ["ID", "ME"]:
+            for region_int, (region_name, eta_low, eta_high, sector) in enumerate(zip(df["RegionName"].values, df["Eta low"].values, df["Eta High"].values, df["Phi Sector"].values)):
+
+                sel_pos = []
+                sel_neg = []
+
+                if sector == "Large":
+                    if detector_location == "ID":
+                        sel_pos.append(sel_large_sector_ID_Pos)
+                        sel_neg.append(sel_large_sector_ID_Neg)
+                    if detector_location == "ME":
+                        sel_pos.append(sel_large_sector_ME_Pos)
+                        sel_neg.append(sel_large_sector_ME_Neg)
+
+                if sector == "Small":
+                    if detector_location == "ID":
+                        sel_pos.append(sel_small_sector_ID_Pos)
+                        sel_neg.append(sel_small_sector_ID_Neg)
+                    if detector_location == "ME":
+                        sel_pos.append(sel_small_sector_ME_Pos)
+                        sel_neg.append(sel_small_sector_ME_Neg)
+
+                sel_pos.append({"func":define_eta_selection, "args":[eta_low, eta_high, detector_location, "Pos"]})
+                sel_neg.append({"func":define_eta_selection, "args":[eta_low, eta_high, detector_location, "Neg"]})
+
+                these_scale_params = scale_params.loc[region_int]
+                these_smearing_params = smearing_params.loc[region_int]
+
+                print(these_scale_params)
+                print(these_smearing_params)
+
+
+                s0_ID = 0.0
+                s1_ID = these_scale_params["Scale_ID"]
+                r0_ID = 0.0
+                r1_ID = these_smearing_params["r1_ID"]
+                r2_ID = these_smearing_params["r2_ID"]
+
+                s0_ME = these_scale_params["s0_MS"]
+                s1_ME = these_scale_params["Scale_MS"]
+                r0_ME = these_smearing_params["r0_MS"]
+                r1_ME = these_smearing_params["r1_MS"]
+                r2_ME = these_smearing_params["r2_MS"]
+
+                if detector_location == "ID":
+                    s0 = s0_ID
+                    s1 = s1_ID
+                    r0 = r0_ID
+                    r1 = r1_ID
+                    r2 = r2_ID
+
+                if detector_location == "ME":
+                    s0 = s0_ME
+                    s1 = s1_ME
+                    r0 = r0_ME
+                    r1 = r1_ME
+                    r2 = r2_ME
+
+                mccorr = MCCorrection(s0=s0, s1=s1, r0=r0, r1=r1, r2=r2, pos_selections = sel_pos, neg_selections = sel_neg, flavour = detector_location, store_uncorr=True)
+
+                for hist_filler in hist_fillers:
+                    for channel in hist_filler.channels:
+                        if "MC" in channel and period in channel: hist_filler.apply_calibration_for_channel(channel, mccorr)
+
 
 def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = False):
     syst_var_file = "/project/def-psavard/ladamek/stat_variations/stat_syst_vars.root"
@@ -121,8 +239,6 @@ def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = 
                 hist.Clone()
                 hist.SetDirectory(0)
                 rf.Close()
-                hist.Print()
-                print("retrieved the stathist {}".format(histname))
 
             if resbias_syst:
                 #get the resbias systematic histogram
@@ -148,9 +264,10 @@ def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = 
                     if resbias_syst:
                         channel = "MC{}_resbias_{}".format(period, var)
                     hist_filler.apply_calibration_for_channel(channel, calib, selections=selections)
+                    hist_filler.apply_calibration_for_channel(channel + "_{}".format(detector_location), calib, selections=selections)
 
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False, memory="6000M", latest_mc_correction = False, simple_combination = False, skip_mass_recalc=False):
         from DefaultCalibration import DefaultCorrection
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
@@ -235,16 +352,29 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
             hist_filler = HistogramFiller(trees, tree_name, calc_weight, selection_string = "", partitions = partition)
             filler_list.append(hist_filler)
 
+        if not skip_mass_recalc:
+            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", RecalculateMasses())
+
+        '''
+        apply the default calibration to the calib channels, if they exist
+        '''
+
         for hist_filler in filler_list:
             if default_correction: continue
             for channel in ["MCCalib", "MC1516Calib", "MC17Calib", "MC18Calib", "MCSherpaCalib", "MCSherpa1516Calib", "MCSherpa17Calib", "MCSherpa18Calib"]:
                 hist_filler.apply_calibration_for_channel(channel, DefaultCorrection())
 
+        '''
+        apply the default calibration to all channels
+        '''
         if default_correction:
             for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", DefaultCorrection())
 
-        if cov_combination:
-            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", WeightedCBCorrectionCov())
+        '''
+        apply the latest mc calibration to the channels
+        '''
+        if latest_mc_correction:
+            apply_standard_mc_calibrations(filler_list)
 
         if inject is not None:
            injections = []
@@ -280,9 +410,21 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         if load_calibrations is not None:
             apply_calibrations(load_calibrations, filler_list)
 
+        '''
+        apply the sagitta bias systematic uncertainty
+        '''
         apply_systematic_variations(filler_list, stat_syst=True)
         apply_systematic_variations(filler_list, resbias_syst=True)
 
+        '''
+        Redefine the CB track using the covariance matrix combination for all channels
+        '''
+        if cov_combination:
+            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", WeightedCBCorrectionCov())
+
+        from DefaultSimpleCombination import DefaultCombination
+        if simple_combination:
+            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", DefaultCombination())
 
         #create a pickle file for each submission
         pickle.dump(filler_list, open(filler_file, "wb" ) )
@@ -295,7 +437,7 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
             commands.append("export USER=ladamek")
             commands.append("source ./setup.sh")
             commands.append("python {py_exec} --num={num} --picklefile={picklefile} --jobName={jobName}".format(py_exec=python_executable, num=i, jobName = job_name + "_" + str(i), picklefile=filler_file))
-            job = Job(job_name + "_" + str(i), os.path.join(slurm_directory, "job_{}".format(i)), commands, time = queue_flavour, memory="12000M")
+            job = Job(job_name + "_" + str(i), os.path.join(slurm_directory, "job_{}".format(i)), commands, time = queue_flavour, memory=memory)
             jobset.add_job(job)
 
         jobset_file = os.path.join(slurm_directory, "jobset.pkl")
@@ -309,14 +451,18 @@ if __name__ == "__main__":
         parser.add_argument('--n_jobs', '-np', dest="n_jobs", type=int, default='0', help='the number of plotting jobs to submit')
         parser.add_argument('--job_name', '-job_name', dest="job_name", type=str, default='""', help='the name of the job to be submitted')
         parser.add_argument('--queue_flavour', '-queue_flavour', dest="queue_flavour", type=str, default='tomorrow', help='What slurm queue should the jobs run on?')
-        parser.add_argument('--file_flavour', '-ff', dest="file_flavour", type=str, default='inclusive', help='What is the flavour of the jobs that you want to submit?')
+        parser.add_argument('--file_flavour', '-file_flavour', dest="file_flavour", type=str, default='tomorrow', help='What kind of files should I run on?')
         parser.add_argument('--filling_script', '-fs', dest="filling_script", type=str, default='inclusive', help='What is the name of the script that takes the input root file and makes histograms?')
         parser.add_argument('--load_calibrations', '-lmc', dest="load_calibrations", type=str, default='', help='the name of the calibrations to be applied. They are defined in the apply_calibration function in prepare_submission.py')
         parser.add_argument('--testjob', '-tj', dest="test_job", action="store_true", help="Submit a test job")
         parser.add_argument('--inject', "-inj", dest="inject", type=str, default="")
         parser.add_argument('--inject_channels', "-inj_ch", dest="inject_channels", type=str, default="MC,MC1516,MC17,MC18")
         parser.add_argument('--default_correction', "-def_calib", dest="default_correction", action="store_true")
+        parser.add_argument('--latest_mc_correction', "-def_mc_calib", dest="latest_mc_correction", action="store_true")
         parser.add_argument('--cov_combination', '-cov_comb', dest="cov_combination", action="store_true")
+        parser.add_argument('--simple_combination', '-simple_comb', dest="simple_combination", action="store_true")
+        parser.add_argument('--skip_mass_recalc', '-smrecalc', dest="skip_mass_recalc", action="store_true")
+        parser.add_argument('--memory', '-mem', dest="memory", type=str, required=True)
         args = parser.parse_args()
 
         #Create a pickle file and list for each submission
@@ -332,7 +478,7 @@ if __name__ == "__main__":
             inject = None
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination, memory=args.memory, latest_mc_correction = args.latest_mc_correction, simple_combination=args.simple_combination, skip_mass_recalc=args.skip_mass_recalc)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

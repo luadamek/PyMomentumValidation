@@ -29,7 +29,6 @@ def extract_binning_from_axis(axis):
 
 def extract_binning_from_histogram(hist):
     edges = {}
-    hist.Print()
     if isinstance(hist, ROOT.TH1):
         nedges = 1
         axes = {"x": hist.GetXaxis()}
@@ -44,10 +43,55 @@ def extract_binning_from_histogram(hist):
         edges[axisname] = these_edges
     return edges
 
+#write a function that takes the positive and negative mass histograms, and calculates the sagitta bias
+def calculate_sagitta_bias(pos_hist, neg_hist, newname = None):
+    #check that both histograms are tprofile 2ds
+    assert isinstance(pos_hist, ROOT.TProfile2D)
+    assert isinstance(neg_hist, ROOT.TProfile2D)
+
+    edges_pos = extract_binning_from_histogram(pos_hist)
+    edges_neg = extract_binning_from_histogram(neg_hist)
+
+    #ok make sure that 
+    for key in edges_pos:
+        assert key in edges_neg
+        for el in edges_pos[key]:
+            assert el in edges_neg[key]
+        for el in edges_neg[key]:
+            assert el in edges_pos[key]
+
+    bins_array_x = array('d',edges_pos["x"])
+    bins_array_y = array('d',edges_neg["y"])
+
+    if newname is None: newname = pos_hist.GetName().replace("Pos_", "Pos_Neg_Sagitta")
+    new_hist = ROOT.TH2D(newname, newname, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y)
+    new_hist.GetXaxis().SetTitle(pos_hist.GetXaxis().GetTitle())
+    new_hist.GetYaxis().SetTitle(pos_hist.GetYaxis().GetTitle())
+    new_hist.GetZaxis().SetTitle("<qM_{#mu#mu}>/<M_{#mu#mu}>")
+    max_content = 0.0
+    for i in range(1, len(edges_pos["x"]) + 1):
+        for j in range(1, len(edges_pos["y"]) + 1):
+            pos_bindex = pos_hist.GetBin(i,j)
+            pos_mean = pos_hist.GetBinContent(pos_bindex)
+            pos_entries = pos_hist.GetBinEntries(pos_bindex)
+            neg_bindex = neg_hist.GetBin(i,j)
+            neg_mean = neg_hist.GetBinContent(neg_bindex)
+            neg_entries = neg_hist.GetBinEntries(neg_bindex)
+            if (pos_entries + neg_entries) > 0.0 and (pos_entries > 0.0) and (neg_entries > 0.0):
+                qm_average = ((pos_mean * pos_entries) - (neg_mean * neg_entries))/(pos_entries + neg_entries)
+                m_average = ((pos_mean * pos_entries) + (neg_mean * neg_entries))/(pos_entries + neg_entries)
+                new_entry = (qm_average)/m_average
+            else: new_entry = 0.0
+            if abs(new_entry) > max_content: max_content=abs(new_entry)
+            new_hist.SetBinContent(i, j, new_entry)
+    new_hist.SetMaximum(max_content)
+    new_hist.SetMinimum(-1.0 * max_content)
+    return new_hist
+
 class SagittaBiasCorrection:
 
     #the histogram is a segitta bias correction map for delta s
-    def __init__(self, histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "", apply_randomly = False, store_uncorr=False):
+    def __init__(self, histograms,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = "",):
         assert flavour in ["ID", "MS", "CB", "ME"]
         self.flavour = flavour
         if flavour == "ID":
@@ -108,18 +152,10 @@ class SagittaBiasCorrection:
             for j in range(1, len(self.edges_y)):
                 corrections[i-1, j-1] = sum([el.GetBinContent(i, j) for el in self.histograms])
         self.corrections = corrections
-        self.apply_randomly = apply_randomly
-
-        self.store_uncorr = store_uncorr
+        print(self.corrections)
 
     def calibrate(self, data):
         print("CALIBRATING VARIABLES")
-
-        if  "Pos_{}_Pt_UNCORR".format(self.flavour) not in data and self.store_uncorr:
-            data["Pos_{}_Pt_UNCORR".format(self.flavour)] = data["Pos_{}_Pt".format(self.flavour)]
-        if  "Neg_{}_Pt_UNCORR".format(self.flavour) not in data and self.store_uncorr:
-            data["Neg_{}_Pt_UNCORR".format(self.flavour)] = data["Neg_{}_Pt".format(self.flavour)]
-
         nbins_x = len(self.edges_x) -1
         bindex_x_pos = np.digitize(self.pos_varx.eval(data), self.edges_x) - 1
         underflow_x_pos = bindex_x_pos == -1
@@ -160,9 +196,6 @@ class SagittaBiasCorrection:
 
         correction_for_data_pos = self.corrections[bindex_x_pos, bindex_y_pos]
         correction_for_data_neg = self.corrections[bindex_x_neg, bindex_y_neg]
-        if self.apply_randomly:
-            correction_for_data_pos = np.random.normal(loc=0.0, scale=correction_for_data_pos)
-            correction_for_data_neg = np.random.normal(loc=0.0, scale=correction_for_data_neg)
 
         #ok, now correct the pT
         pos_pt_name = "Pos_{}_Pt".format(self.flavour)
@@ -181,6 +214,7 @@ class SagittaBiasCorrection:
         #input(data[pos_pt_name][pos_selection])
         #input(data[neg_pt_name][neg_selection])
 
+        #apply the calibration to the ntuple
         data[pos_pt_name][pos_selection] = data[pos_pt_name][pos_selection] / (1.0 + ((1.0) * data[pos_pt_name][pos_selection] * correction_for_data_pos[pos_selection]))
 
         data[neg_pt_name][neg_selection] = data[neg_pt_name][neg_selection] / (1.0 + ((-1.0) * data[neg_pt_name][neg_selection] * correction_for_data_neg[neg_selection]))
@@ -202,9 +236,6 @@ class SagittaBiasCorrection:
                 to_correct_data[key] = data[key]
             safe =  check_safe_event(to_correct_data,"Pos", self.flavour) & check_safe_event(to_correct_data,"Neg", self.flavour)
             to_correct_selection = np.logical_or(pos_selection, neg_selection) & safe
-            print("Correcting variables")
-            print(to_correct_selection, self.flavour)
-            print(np.sum(1*to_correct_selection), self.flavour)
             for key in keys:
                 to_correct_data[key] = to_correct_data[key][to_correct_selection]
             pos_pt = self.pos_pt_var.eval(to_correct_data)

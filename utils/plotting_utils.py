@@ -152,7 +152,6 @@ def draw_data_vs_mc(histograms, ratio_min = 0.9, ratio_max = 1.1, colours = None
     stack.SetMaximum(maximum)
     stack.SetMinimum(min(0.001,minimum))
 
-
     legend = ROOT.TLegend(*legend_coordinates)
     if not legend_labels is None:
         for key in ordered_keys[::-1]:
@@ -311,12 +310,16 @@ def get_extrema(histogram, minimum=True, bounds=None):
                  extreme = histogram.GetBinContent(i)
      return extreme
 
-def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".png", plot_dir = "plots", x_range = None, mins_maxes = None):
+def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".png", plot_dir = "plots", x_range = None, mins_maxes = None, savename=None):
 
     from atlasplots import set_atlas_style
     set_atlas_style()
     ROOT.gStyle.SetLineWidth(1)
     ROOT.gStyle.SetFrameLineWidth(1)
+
+    key = list(histograms.keys())[0]
+    if x_axis_label is None:  x_axis_label= histograms[key].GetXaxis().GetTitle()
+    if y_axis_label is None: y_axis_label= histograms[key].GetYaxis().GetTitle()
 
     to_plot = {key:hist_to_tgrapherrors(histograms[key]) for key in histograms}
     if colours is not None: [to_plot[key].SetMarkerColor(colours[key]) for key in to_plot]
@@ -364,8 +367,10 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
         bin_width = histograms[key].GetBinLowEdge(3) - histograms[key].GetBinLowEdge(2)
         if y_axis_label is not None:
             stack.GetYaxis().SetTitle(y_axis_label)
+        else: y_axis_label = stack.GetXaxis().GetTitle()
         if x_axis_label is not None:
             stack.GetXaxis().SetTitle(x_axis_label)
+        else: x_axis_label = stack.GetYaxis().GetTitle()
 
         if x_range is not None: stack.GetXaxis().SetRangeUser(*x_range)
         stack.SetMaximum(maximum + (0.6 * (maximum-minimum)))
@@ -391,4 +396,176 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
     else:
          if not os.path.exists(plot_dir):
              os.makedirs(plot_dir)
-         canvas.Print(os.path.join(plot_dir, identifier + ftype))
+         if savename is None: canvas.Print(os.path.join(plot_dir, identifier + ftype))
+         else: canvas.Print(os.path.join(plot_dir, savename + ftype))
+
+
+def get_systematically_varied_histograms(to_plot_hists, data_channel, mc_channel, mc_stat_up, mc_stat_down):
+    #ok make a ratio plot
+    data_hist = to_plot_hists[data_channel]
+    mc_hist = to_plot_hists[mc_channel]
+    sagitta_stat_syst_content = to_plot_hists[mc_stat_up].Clone()
+    sagitta_stat_syst_content.Add(to_plot_hists[mc_stat_down], -1.0)
+    #for i in range(1, afb_hist[mc_stat_up].GetNbinsX()):
+    #    print(afb_hist[mc_stat_up],afb_hist[mc_channel] ,  afb_hist[mc_stat_down])
+    #    print(afb_hist[mc_stat_up].GetBinContent(i), afb_hist[mc_channel].GetBinContent(i), afb_hist[mc_stat_down].GetBinContent(i))
+    sagitta_stat_syst_content.Scale(0.5)
+    [sagitta_stat_syst_content.SetBinContent(i, abs(sagitta_stat_syst_content.GetBinContent(i))) for i in range(1, sagitta_stat_syst_content.GetNbinsX() + 1)]
+
+    mc_hist_divisor = mc_hist.Clone()
+    [mc_hist_divisor.SetBinError(i, 0.0) for i in range(0, mc_hist_divisor.GetNbinsX() + 1)]
+
+    data_hist.Add(mc_hist_divisor, -1.0)
+    mc_hist.Add(mc_hist_divisor, -1.0)
+    sagitta_stat_syst_content.Add(mc_hist, -1.0)
+
+    sagitta_stat_syst = mc_hist.Clone()
+    [sagitta_stat_syst.SetBinError(i,  sagitta_stat_syst_content.GetBinContent(i)) for i in range(1, sagitta_stat_syst_content.GetNbinsX() + 1)]
+
+    total_syst = mc_hist.Clone()
+    [total_syst.SetBinError(i, ( sagitta_stat_syst.GetBinError(i)**2 + mc_hist.GetBinError(i)**2) ** 0.5)  for i in range(1, mc_hist.GetNbinsX() + 1)]
+
+    #ok we are ready to draw the histogams to show the systematics
+    histograms = {}
+    mc_hist_up = mc_hist.Clone()
+    mc_hist_down = mc_hist.Clone()
+
+    total_syst_up = total_syst.Clone()
+    total_syst_down = total_syst.Clone()
+
+    sagitta_stat_syst_up = sagitta_stat_syst.Clone()
+    sagitta_stat_syst_down = sagitta_stat_syst.Clone()
+
+    for i in range(1, mc_hist.GetNbinsX() + 1):
+        mc_hist_up.SetBinContent(i, mc_hist.GetBinContent(i) + mc_hist.GetBinError(i))
+        mc_hist_down.SetBinContent(i, mc_hist.GetBinContent(i) - mc_hist.GetBinError(i))
+        mc_hist_up.SetBinError(i, 0.0)
+        mc_hist_down.SetBinError(i, 0.0)
+
+        total_syst_up.SetBinContent(i, total_syst.GetBinContent(i) + total_syst.GetBinError(i))
+        total_syst_down.SetBinContent(i, total_syst.GetBinContent(i) - total_syst.GetBinError(i))
+        total_syst_up.SetBinError(i, 0.0)
+        total_syst_down.SetBinError(i, 0.0)
+
+        sagitta_stat_syst_up.SetBinContent(i, sagitta_stat_syst.GetBinContent(i) + sagitta_stat_syst.GetBinError(i))
+        sagitta_stat_syst_down.SetBinContent(i, sagitta_stat_syst.GetBinContent(i) - sagitta_stat_syst.GetBinError(i))
+        sagitta_stat_syst_up.SetBinError(i, 0.0)
+        sagitta_stat_syst_down.SetBinError(i, 0.0)
+
+    histograms = {}
+
+    histograms[data_channel] = data_hist
+    histograms[mc_channel + "_total_up"] = total_syst_up
+    histograms[mc_channel + "_total_down"] = total_syst_down
+    histograms[mc_channel + "_total_up"].SetLineColor(ROOT.kBlue)
+    histograms[mc_channel + "_total_down"].SetLineColor(ROOT.kBlue)
+
+    histograms[mc_channel + "_sagitta_stat_up"] = sagitta_stat_syst_up
+    histograms[mc_channel + "_sagitta_stat_down"] = sagitta_stat_syst_down
+    histograms[mc_channel + "_sagitta_stat_up"].SetLineColor(ROOT.kRed)
+    histograms[mc_channel + "_sagitta_stat_down"].SetLineColor(ROOT.kRed)
+
+    histograms[mc_channel + "_stat_up"] = mc_hist_up
+    histograms[mc_channel + "_stat_down"] = mc_hist_down
+    histograms[mc_channel + "_stat_up"].SetLineColor(ROOT.kGreen + 2)
+    histograms[mc_channel + "_stat_down"].SetLineColor(ROOT.kGreen + 2)
+
+    return histograms
+
+def draw_syst(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".png", plot_dir = "plots", x_range = None, mins_maxes = None, savename=None, data_key = ""):
+
+    from atlasplots import set_atlas_style
+    set_atlas_style()
+    ROOT.gStyle.SetLineWidth(1)
+    ROOT.gStyle.SetFrameLineWidth(1)
+
+    key = list(histograms.keys())[0]
+    if x_axis_label is None:  x_axis_label= histograms[key].GetXaxis().GetTitle()
+    if y_axis_label is None: y_axis_label= histograms[key].GetYaxis().GetTitle()
+
+    to_plot = {key:histograms[key] for key in histograms if key != data_key}
+    data = hist_to_tgrapherrors(histograms[data_key])
+    if colours is not None: [to_plot[key].SetMarkerColor(colours[key]) for key in to_plot]
+    if styles is not None: [to_plot[key].SetMarkerStyle(styles[key]) for key in to_plot]
+    for key in to_plot: to_plot[key].SetMarkerSize(to_plot[key].GetMarkerSize()*1.5)
+    for key in to_plot: to_plot[key].GetXaxis().SetTitleSize(22)
+    for key in to_plot: to_plot[key].GetYaxis().SetTitleSize(22)
+
+    legend = ROOT.TLegend(*legend_coordinates)
+    if not legend_labels is None:
+        for key in histograms:
+            if key in legend_labels and key in to_plot:
+               label = legend_labels[key]
+               legend.AddEntry(to_plot[key], label, "F")
+    if data_key in legend_labels:
+        legend.AddEntry(histograms[data_key], legend_labels[data_key], "P")
+    legend.SetBorderSize(0)
+
+    identifier = " ".join([to_plot[key].GetName() for key in to_plot])
+    canvas = ROOT.TCanvas("canv" + identifier, "canv " + identifier, 2 * 800 , 2 * 600)
+    canvas.Draw()
+    canvas.cd()
+
+    canvas.SetTopMargin(canvas.GetTopMargin()*1.1)
+    canvas.SetBottomMargin(canvas.GetBottomMargin()*1.1)
+    canvas.SetRightMargin(canvas.GetRightMargin()*1.1)
+    canvas.SetLeftMargin(canvas.GetLeftMargin()*1.1)
+
+    if mins_maxes is None:
+        mins = []
+        maxs = []
+        for i, key in enumerate(to_plot):
+            stack = histograms[key]
+            mins.append(get_extrema(stack, minimum=True, bounds=x_range))
+            maxs.append(get_extrema(stack, minimum=False, bounds=x_range))
+
+        mins.append(get_extrema(histograms[data_key], minimum=True, bounds=x_range))
+        maxs.append(get_extrema(histograms[data_key], minimum=False, bounds=x_range))
+
+        minimum = min(mins)
+        maximum = max(maxs)
+    else:
+        minimum = mins_maxes[0]
+        maximum = mins_maxes[1]
+
+    text_size = 70
+    label_size = 60
+
+    for i, key in enumerate(to_plot):
+        stack = to_plot[key]
+        bin_width = histograms[key].GetBinLowEdge(3) - histograms[key].GetBinLowEdge(2)
+        if y_axis_label is not None:
+            stack.GetYaxis().SetTitle(y_axis_label)
+        else: y_axis_label = stack.GetXaxis().GetTitle()
+        if x_axis_label is not None:
+            stack.GetXaxis().SetTitle(x_axis_label)
+        else: x_axis_label = stack.GetYaxis().GetTitle()
+
+        if x_range is not None: stack.GetXaxis().SetRangeUser(*x_range)
+        stack.SetMaximum(maximum + (0.6 * (maximum-minimum)))
+        stack.SetMinimum(minimum)
+
+        stack.GetYaxis().SetTitleSize(text_size)
+        stack.GetXaxis().SetTitleSize(text_size)
+        stack.GetYaxis().SetLabelSize(label_size)
+        stack.GetXaxis().SetLabelSize(label_size)
+        #stack.GetXaxis().SetTitleOffset(1.05)
+        if i == 0: stack.Draw("L HIST")
+        else: stack.Draw("L HIST SAME")
+
+    data.Draw("P SAME")
+
+    ATLASLabel(0.20, 0.8, "Internal", size = 50, extra_descr = extra_descr)
+    legend.SetTextSize(40)
+    legend.Draw("SAME")
+
+    if logy: canvas.SetLogy()
+
+    global alive
+    alive.append(locals())
+    if to_return: return canvas, keep_alive
+    else:
+         if not os.path.exists(plot_dir):
+             os.makedirs(plot_dir)
+         if savename is None: canvas.Print(os.path.join(plot_dir, identifier + ftype))
+         else: canvas.Print(os.path.join(plot_dir, savename + ftype))

@@ -46,7 +46,7 @@ def extract_binning_from_histogram(hist):
 class MCCorrection:
 
     #the histogram is a segitta bias correction map for delta s
-    def __init__(self, so=None, s1=None, r0=None, r1=None, r2=None,  pos_varx, neg_varx, pos_vary, neg_vary, pos_selections = [], neg_selections = [],flavour = ""):
+    def __init__(self, s0=None, s1=None, r0=None, r1=None, r2=None, pos_selections = [], neg_selections = [],flavour = "", store_uncorr = False):
         assert flavour in ["ID", "MS", "CB", "ME"]
         self.flavour = flavour
         if flavour == "ID":
@@ -81,16 +81,6 @@ class MCCorrection:
         self.pos_selections = pos_selections
         self.neg_selections = neg_selections
 
-        all_extra_vars = [calc_pos_cb_pt, calc_neg_cb_pt, \
-                          calc_pos_cb_eta, calc_neg_cb_eta,\
-                          calc_pos_cb_phi, calc_neg_cb_phi]
-
-        self.pos_varx = pos_varx
-        self.pos_vary = pos_vary
-
-        self.neg_varx = neg_varx
-        self.neg_vary = neg_vary
-
         self.s0 = s0
         self.s1 = s1
         self.r0 = r0
@@ -98,101 +88,117 @@ class MCCorrection:
         self.r2 = r2
         self.edges_x = {}
         self.edges_y = {}
-        self.corrections = {}
-        self.inject = False
+
+        self.store_uncorr = store_uncorr
 
         self.branches = []
-        for v in [self.pos_varx, self.pos_vary, self.neg_varx, self.neg_vary] + all_extra_vars + self.pos_selections + self.neg_selections:
-            self.branches = list(set(self.branches + v.branches))
-
-        for attr in ["s0", "s1", "r0", "r1", "r2"]:
-           histogram = self.getattr(attr)
-           if histogram is not None:
-               edges = extract_binning_from_histogram(histogram)
-               #load some information about the histogram, such as the bin edges
-               self.edges_x[attr] = np.array(edges["x"], np.float32)
-               self.edges_y[attr] = np.array(edges["y"], np.float32)
-
-               self.corrections[attr] = np.zeros((len(self.edges_x)-1, len(self.edges_y)-1))
-               for i in range(1, len(self.edges_x )):
-                   for j in range(1, len(self.edges_y)):
-                       self.corrections[attr][i-1, j-1] = sum([el.GetBinContent(i, j) for el in self.histograms])
-           else:
-               self.edges_x[attr] = None
-               self.edges_y[attr] = None
-               self.corrections[attr] = None
+        for key in self.__dict__:
+            if hasattr(self.__dict__[key], "branches"):
+                self.branches = list(set(self.branches + self.__dict__[key].branches))
 
     def calibrate(self, data):
-
-        #ok, now correct the pT
-        pos_pt_name = "Pos_{}_Pt".format(self.flavour)
-        neg_pt_name = "Neg_{}_Pt".format(self.flavour)
-        corrections_pos = {key:None for key in ["s0", "s1", "r0", "r1", "r2"]}
-        corrections_neg = {key:None for key in ["s0", "s1", "r0", "r1", "r2"]}
-        for variable in corrections:
-           if getattr(self, variable) is  None:
-               corrections_pos[variables] = np.zeros(len(data))
-               corrections_neg[variables] = np.zeros(len(data))
-               continue
-           print("CALIBRATING VARIABLES")
-           nbins_x = len(self.edges_x[variable]) -1
-           bindex_x_pos = np.digitize(self.pos_varx.eval(data), self.edges_x[variable]) - 1
-           underflow_x_pos = bindex_x_pos == -1
-           overflow_x_pos = bindex_x_pos == nbins_x
-           bindex_x_pos[underflow_x_pos] = 0
-           bindex_x_pos[overflow_x_pos] = nbins_x - 1
-
-           bindex_x_neg = np.digitize(self.neg_varx.eval(data), self.edges_x[variable]) - 1
-           underflow_x_neg = bindex_x_neg == -1
-           overflow_x_neg = bindex_x_neg == nbins_x
-           bindex_x_neg[underflow_x_neg] = 0
-           bindex_x_neg[overflow_x_neg] = nbins_x - 1
-
-           nbins_y = len(self.edges_y[variable]) -1
-           underflow_y_pos = bindex_y_pos == -1
-           overflow_y_pos = bindex_y_pos == nbins_y
-           bindex_y_pos[underflow_y_pos] = 0
-           bindex_y_pos[overflow_y_pos] = nbins_y - 1
-
-           bindex_y_neg = np.digitize(self.neg_vary.eval(data), self.edges_y[variable]) - 1
-           underflow_y_neg = bindex_y_neg == -1
-           overflow_y_neg = bindex_y_neg == nbins_y
-           bindex_y_neg[underflow_y_neg] = 0
-           bindex_y_neg[overflow_y_neg] = nbins_y - 1
-
-           #don't correct overflow!
-           not_overflow_pos = np.logical_and.reduce([np.logical_not(el) for el in [underflow_x_pos, underflow_y_pos,  overflow_x_pos, overflow_y_pos]])
-           not_overflow_neg = np.logical_and.reduce([np.logical_not(el) for el in [underflow_x_neg, underflow_y_neg, overflow_x_neg, overflow_y_neg]])
-           not_overflow = np.logical_and(not_overflow_pos, not_overflow_neg)
-
-           print("The amount of overflow, positive:")
-           print(min(self.edges_x[variable]), max(self.edges_x[variable]))
-           print(np.sum(1 * np.logical_not(not_overflow_pos)))
-           print("The amount of overflow, negative:")
-           print(min(self.edges_y[variable]), max(self.edges_y[variable]))
-           print(np.sum(1 * np.logical_not(not_overflow_neg)))
-
-           correction_for_data_pos = self.corrections[variable][bindex_x_pos, bindex_y_pos]
-           correction_for_data_neg = self.corrections[variable][bindex_x_neg, bindex_y_neg]
-
-           pos_selection = np.logical_and.reduce([el.eval(data) for el in self.pos_selections] + [not_overflow_pos])
-           neg_selection = np.logical_and.reduce([el.eval(data) for el in self.neg_selections] + [not_overflow_neg])
-
-           corrections_pos[variable]= np.zeros(len(data))
-           corrections_neg[variable] = np.zeros(len(data))
-
-           corrections_pos[variable][pos_selection] = correction_for_data_pos[pos_selection]
-           corrections_neg[variable][neg_selection] = correction_for_data_neg[neg_selection]
-
         extra_corrections = ["Pair_{}_Mass", "Pair_{}_Pt", "Pair_{}_Eta", "Pair_{}_Phi"]
 
-        #apply the calibration
-        if not self.injection:
-            df[pos_pt_name] = corrections_pos["s0"] + (1.0 + corrections_pos["s1"]) * df["pos_pt_name"].values
-            df[neg_pt_name] = corrections_neg["s0"] + (1.0 + corrections_neg["s1"]) * df["neg_pt_name"].values
-        else:
-            df[pos_pt_name] = (df[pos_pt_name].values - corrections_pos["s0"])/(1.0 + corrections_pos[s1])
-            df[neg_pt_name] = (df[neg_pt_name].values - corrections_neg["s0"])/(1.0 + corrections_neg[s1])
+        passes_pos_selection = []
+        passes_neg_selection = []
+        for el in self.pos_selections:
+            if type(el) == dict:
+                args = [data] + el["args"]
+                passes_pos_selection.append( el["func"](*args) )
+            else:
+                passes_pos_selection.append(el.eval(data))
+
+        for el in self.neg_selections:
+            if type(el) == dict:
+                args = [data] + el["args"]
+                passes_neg_selection.append(el["func"](*args))
+            else:
+                passes_neg_selection.append(el.eval(data))
+
+        passes_pos_selection = np.logical_and.reduce(passes_pos_selection)
+        passes_neg_selection = np.logical_and.reduce(passes_neg_selection)
+
+
+        npass_pos = np.sum(1 * passes_pos_selection)
+        npass_neg = np.sum(1 * passes_neg_selection)
+
+        random_pos = np.random.normal(npass_pos)
+        random_neg = np.random.normal(npass_neg)
+
+        pos_pt = data["Pos_{}_Pt".format(self.flavour)][passes_pos_selection]
+        neg_pt = data["Neg_{}_Pt".format(self.flavour)][passes_neg_selection]
+
+        third_term_pos = self.r2*pos_pt
+        third_term_neg = self.r2*neg_pt
+
+        if self.flavour == "ID":
+            pos_etas = self.pos_eta_var.eval(data)[passes_pos_selection]
+            neg_etas = self.neg_eta_var.eval(data)[passes_neg_selection]
+
+            pos_abs_etas = np.abs(pos_etas)
+            neg_abs_etas = np.abs(neg_etas)
+
+            forward_pos = (pos_abs_etas > 2.0) & (pos_abs_etas < 2.8)
+            forward_neg = (neg_abs_etas > 2.0) & (neg_abs_etas < 2.8)
+
+            tan_theta_pos = np.tan(2.0 * np.arctan(np.exp(-1.0 * pos_abs_etas)))
+            tan_theta_neg = np.tan(2.0 * np.arctan(np.exp(-1.0 * neg_abs_etas)))
+
+            third_term_pos[forward_pos] = third_term_pos[forward_pos]/(tan_theta_pos[forward_pos]**2)
+            third_term_neg[forward_neg] = third_term_neg[forward_neg]/(tan_theta_neg[forward_neg]**2)
+
+
+        #print("s0", self.s0)
+        #print("s1", self.s1)
+        #print("r0", self.r0)
+        #print("r1", self.r1)
+        #print("r2", self.r2)
+
+        quad_sum_one_pos = (self.r0/(pos_pt)) ** 2
+        quad_sum_one_neg = (self.r0/(neg_pt)) ** 2
+
+        quad_sum_two_pos = self.r1 ** 2
+        quad_sum_two_neg = self.r1 ** 2
+
+        quad_sum_three_pos = (self.r2 * (third_term_pos )) ** 2
+        quad_sum_three_neg = (self.r2 * (third_term_neg )) ** 2
+
+        n_pos = np.sum(1*passes_pos_selection)
+        n_neg = np.sum(1*passes_neg_selection)
+
+        smear_pos = ((quad_sum_one_pos + quad_sum_two_pos + quad_sum_three_pos )**0.5)
+        smear_neg = ((quad_sum_one_neg + quad_sum_two_neg + quad_sum_three_neg )**0.5)
+
+        den_pos = 1.0 + (np.random.normal(size=n_pos)*smear_pos)
+        den_neg = 1.0 + (np.random.normal(size=n_neg)*smear_neg)
+
+        print("Correcting {} of {}".format(n_pos, len(data)))
+        print("Correcting {} of {}".format(n_neg, len(data)))
+
+        print("Smeared by")
+        print(smear_pos)
+        print(smear_neg)
+
+        print("pos change")
+        print(den_pos)
+
+        print("neg change")
+        print(den_neg)
+
+        if "Pos_{}_Pt_UNCORR".format(self.flavour) not in data and self.store_uncorr:
+            data["Pos_{}_Pt_UNCORR".format(self.flavour)] = data["Pos_{}_Pt".format(self.flavour)]
+        if "Neg_{}_Pt_UNCORR".format(self.flavour) not in data and self.store_uncorr:
+            data["Neg_{}_Pt_UNCORR".format(self.flavour)] = data["Neg_{}_Pt".format(self.flavour)]
+
+        print("Before MC Correction {}".format(data["Pos_{}_Pt".format(self.flavour)][passes_pos_selection]))
+        data["Pos_{}_Pt".format(self.flavour)][passes_pos_selection] = \
+        (self.s0 + (( 1.0 + self.s1 ) * pos_pt)) / den_pos
+        print("After MC Correction {}".format(data["Pos_{}_Pt".format(self.flavour)][passes_pos_selection]))
+
+        print("Before MC Correction {}".format(data["Neg_{}_Pt".format(self.flavour)][passes_neg_selection]))
+        data["Neg_{}_Pt".format(self.flavour)][passes_neg_selection] = \
+        (self.s0 + ((1.0 + self.s1) * neg_pt)) / den_neg
+        print("After MC Correction {}".format(data["Neg_{}_Pt".format(self.flavour)][passes_neg_selection]))
 
         if hasattr(data, "dtype"): keys =  data.dtype.names
         else: keys = list(data.keys())
@@ -200,12 +206,14 @@ class MCCorrection:
         print("CALIBRATED PTS")
 
         if do_extra_corrections:
+            correction_keys = self.pos_pt_var.branches + self.neg_pt_var.branches + self.pos_phi_var.branches + self.neg_phi_var.branches + self.pos_eta_var.branches + self.neg_eta_var.branches
             to_correct_data = {}
-            for key in keys:
+            for key in correction_keys:
                 to_correct_data[key] = data[key]
             safe =  check_safe_event(to_correct_data,"Pos", self.flavour) & check_safe_event(to_correct_data,"Neg", self.flavour)
-            to_correct_selection = safe
-            for key in keys:
+            to_correct_selection = np.logical_or(passes_pos_selection, passes_neg_selection) & safe
+
+            for key in correction_keys:
                 to_correct_data[key] = to_correct_data[key][to_correct_selection]
             pos_pt = self.pos_pt_var.eval(to_correct_data)
             neg_pt = self.neg_pt_var.eval(to_correct_data)
@@ -218,9 +226,6 @@ class MCCorrection:
 
             pos_pz = pos_pt * np.sinh(self.pos_eta_var.eval(to_correct_data))
             neg_pz = neg_pt * np.sinh(self.neg_eta_var.eval(to_correct_data))
-            #copy the code from tlorentz vector
-            #pos_pz = pos_pt/np.tan(2.0*np.arctan(np.exp(-1.0 * self.pos_eta_var.eval(to_correct_data))))
-            #neg_pz = neg_pt/np.tan(2.0*np.arctan(np.exp(-1.0 * self.neg_eta_var.eval(to_correct_data))))
 
             dimuon_pt_str = "sqrt( (pos_px**2) + (neg_px**2))"
             muon_mass = 105.658/1000.0
@@ -239,5 +244,6 @@ class MCCorrection:
 
             if "Pair_{}_Eta".format(self.flavour) in keys:
                 data["Pair_{}_Eta".format(self.flavour)][to_correct_selection] = ne.evaluate("arcsinh((pos_pz + neg_pz)/({dimuon_pt_str}))".format(dimuon_pt_str))
+
         return data
 
