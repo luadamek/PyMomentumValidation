@@ -163,7 +163,7 @@ for root_file in all_startstops:
                 time="00:02:00"
             if args.bootstraps > 0:
                 memory = "15000M"
-                time="01:30:00"
+                time="02:30:00"
         elif args.method == "delta_qm":
             if args.fold == "None":
                 time = "00:02:00"

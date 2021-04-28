@@ -72,7 +72,6 @@ def get_effect_histogram(target, meas=None, scale=0.045, name=None, template = N
     new_hist.SetMinimum(0.0)
     return new_hist
 
-
 def get_sagitta_bias_histogram(directory, subtraction_directory = None, is_data = False, region=""):
     sagitta_hist, _, __ = get_deltas_from_job(directory)
     sagitta_hist = sagitta_hist.Clone()
@@ -121,11 +120,12 @@ if __name__ == "__main__":
         delta_qm_round = 21
         matrix_round = 5
         #methods = ["delta_qm", "matrix"]
-        methods = ["matrix"]
+        #methods = ["matrix"]
 
         base_directory = "/project/def-psavard/ladamek/sagitta_bias_matrices/Injection_Dec17_inject_{inject}_region_{detector_location}_{end_string}_round_{round}/OutputFiles"
 
         for region in ["ID", "ME"]:
+            continue
             for end_string in ["loose_preselection_tight_select_after_correction"]:#"tight_preselection", "loose_preselection_tight_select_before_correction", "loose_preselection_tight_select_after_correction"]:
                 for method in methods:
                    for bias in ["Global" , "Global", "Local", "None", "GlobalPlusLocal"]: #, "Data"]:#, "Null"]:A
@@ -239,7 +239,8 @@ if __name__ == "__main__":
              return mean/float(nbins)
 
         matrix_round = 5
-        #delta_qm_round = 
+        delta_qm_round = 21
+        methods = ["matrix", "delta_qm"]
         end_string = "loose_preselection_tight_select_after_correction"
         dict_histograms = {}
         for variation in ["nom"]:#, "up", "down"]:
@@ -373,15 +374,14 @@ if __name__ == "__main__":
                         difference.SetName(difference.GetName() + "Difference_{mc_filetype}_{data_filetype}".format(data_filetype=data_filetype, mc_filetype=mc_filetype))
                         draw_2d_histogram(difference, description, normalize = False, output_location=os.getenv("MomentumValidationDir"))
 
-                        #one_d_diff_hist = get_difference_histogram(corr_hists[0], corr_hists[1], difference.GetName()+"1DDiffHist")[0]
-                        #one_d_diff_hist.GetXaxis().SetTitle(difference.GetZaxis().GetTitle())
-                        #c = ROOT.TCanvas()
-                        #c.SetBottomMargin(0.2)
-                        #one_d_diff_hist.GetYaxis().SetTitle("Number of Estimates")
-                        #one_d_diff_hist.Draw()
-                        #c.Draw()
-                        #c.Print(os.path.join(output_location, one_d_diff_hist.GetName() + ".png"))
-                        
+                        one_d_diff_hist = get_difference_histogram(corr_hists[0], corr_hists[1], difference.GetName()+"1DDiffHist")[0]
+                        one_d_diff_hist.GetXaxis().SetTitle(difference.GetZaxis().GetTitle())
+                        c = ROOT.TCanvas()
+                        c.SetBottomMargin(0.2)
+                        one_d_diff_hist.GetYaxis().SetTitle("Number of Estimates")
+                        one_d_diff_hist.Draw()
+                        c.Draw()
+                        c.Print(os.path.join(output_location, one_d_diff_hist.GetName() + ".png"))
 
                         extrema_difference_uncorr = abs(difference_uncorr.GetMinimum())
                         extrema_difference_uncorr = max(abs(difference_uncorr.GetMaximum()), extrema_difference_uncorr)

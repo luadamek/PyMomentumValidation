@@ -15,8 +15,11 @@ from plotting_utils import draw_syst, get_systematically_varied_histograms
 input_files = [\
 #"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_v05_nocalib/Output.root",\
 #"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_v05_matrix/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_defaultcorr_v05_standardvars_nocalib/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_defaultcorr_v05_standardvars_matrix/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_defaultcorr_v05_standardvars_nocalib/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_defaultcorr_v05_standardvars_matrix/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Apr18_defaultcorr_latest_mc_v05_standardvars_matrix/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Apr18_defaultcorr_simplecbcomb_latest_mc_v05_standardvars_matrix/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/Apr18_defaultcorr_cbcomb_latest_mc_v05_standardvars_matrix/Output.root",\
 ]
 
 #Mar7_nocalib_inject_${inject}_correct
@@ -33,8 +36,8 @@ histnames = \
 ]
 
 #OK Study the agreement between data and mc
-systematics =      {"Sagitta_Stat": {"Up": "_stat_up", "Down":"_stat_down"}, "Sagitta_ResBias" : {"Up" : "_resbias_up", "Down" : "_resbias_down"}}
-systematic_names = {"Sagitta_Stat": {"Up": " stat up", "Down":" stat down"}, "Sagitta_ResBias" : {"Up" : " resbias up", "Down" : " resbias down"}}
+systematics =      {"Sagitta_Stat": {"Up": "_stat_up", "Down":"_stat_down"}}
+systematic_names = {"Sagitta_Stat": {"Up": " stat up", "Down":" stat down"}}
 
 CB_color_cycle = [r'#377eb8', r'#ff7f00',r'#dede00', r'#4daf4a',\
                   r'#f781bf', r'#a65628', r'#e41a1c', r'#984ea3']
@@ -52,8 +55,6 @@ for input_file, output_location in zip(input_files, output_locations):
     hist_manager.merge_channels("MC", ["MC1516", "MC17", "MC18"])
     hist_manager.merge_channels("MC_stat_up", ["MC1516_stat_up", "MC17_stat_up", "MC18_stat_up"])
     hist_manager.merge_channels("MC_stat_down", ["MC1516_stat_down", "MC17_stat_down", "MC18_stat_down"])
-    hist_manager.merge_channels("MC_resbias_up", ["MC1516_resbias_up", "MC17_resbias_up", "MC18_resbias_up"])
-    hist_manager.merge_channels("MC_resbias_down", ["MC1516_resbias_down", "MC17_resbias_down", "MC18_resbias_down"])
    # hist_manager.merge_channels("MCCalib", ["MC1516Calib", "MC17Calib", "MC18Calib"])
     hist_manager.merge_channels("Data", ["Data1516", "Data17", "Data18"])
 

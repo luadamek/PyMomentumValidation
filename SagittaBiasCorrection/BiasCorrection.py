@@ -116,9 +116,11 @@ class SagittaBiasCorrection:
         print("CALIBRATING VARIABLES")
 
         if  "Pos_{}_Pt_UNCORR".format(self.flavour) not in data and self.store_uncorr:
-            data["Pos_{}_Pt_UNCORR".format(self.flavour)] = data["Pos_{}_Pt".format(self.flavour)]
+            data["Pos_{}_Pt_UNCORR".format(self.flavour)] = np.zeros(len(data["Pos_{}_Pt".format(self.flavour)]))
+            data["Pos_{}_Pt_UNCORR".format(self.flavour)][:] = data["Pos_{}_Pt".format(self.flavour)]
         if  "Neg_{}_Pt_UNCORR".format(self.flavour) not in data and self.store_uncorr:
-            data["Neg_{}_Pt_UNCORR".format(self.flavour)] = data["Neg_{}_Pt".format(self.flavour)]
+            data["Neg_{}_Pt_UNCORR".format(self.flavour)] = np.zeros(len(data["Neg_{}_Pt".format(self.flavour)]))
+            data["Neg_{}_Pt_UNCORR".format(self.flavour)][:] = data["Neg_{}_Pt".format(self.flavour)]
 
         nbins_x = len(self.edges_x) -1
         bindex_x_pos = np.digitize(self.pos_varx.eval(data), self.edges_x) - 1

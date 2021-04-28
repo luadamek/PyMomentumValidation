@@ -99,7 +99,6 @@ class HistogramFiller:
         self.trees = trees
         self.channels = list(trees.keys())
         self.calibrations = {}
-        self.all_calibrations = []
         self.subchannels = {} #dictionary of new_channel to dictionary of old_channel and selections
 
     def apply_calibration_for_channel(self, channel, calibration, selections = []):
@@ -109,7 +108,6 @@ class HistogramFiller:
         else:
             if channel not in self.calibrations: self.calibrations[channel] = []
             self.calibrations[channel].append((calibration, selections))
-            self.all_calibrations.append(calibration)
         for s in selections:
             if s.name not in [sel.name for sel in self.all_selections]:
                self.all_selections.append(s)
@@ -519,9 +517,11 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, t
 
 
     #only apply the calibrations with the corresponding selections
+    print(calibrations)
 
     for c, c_sels in zip(calibrations, calibration_selections):
         print("Applying calibration")
+        print(c)
         data_calib = c.calibrate(data)
         passes = np.ones(get_data_length(data))>0
         for c_sel in c_sels:

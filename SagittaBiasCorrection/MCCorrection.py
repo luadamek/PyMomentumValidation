@@ -185,10 +185,13 @@ class MCCorrection:
         print("neg change")
         print(den_neg)
 
-        if "Pos_{}_Pt_UNCORR".format(self.flavour) not in data and self.store_uncorr:
-            data["Pos_{}_Pt_UNCORR".format(self.flavour)] = data["Pos_{}_Pt".format(self.flavour)]
-        if "Neg_{}_Pt_UNCORR".format(self.flavour) not in data and self.store_uncorr:
-            data["Neg_{}_Pt_UNCORR".format(self.flavour)] = data["Neg_{}_Pt".format(self.flavour)]
+
+        if  "Pos_{}_Pt_UNCORR".format(self.flavour) not in data and self.store_uncorr:
+            data["Pos_{}_Pt_UNCORR".format(self.flavour)] = np.zeros(len(data["Pos_{}_Pt".format(self.flavour)]))
+            data["Pos_{}_Pt_UNCORR".format(self.flavour)][:] = data["Pos_{}_Pt".format(self.flavour)]
+        if  "Neg_{}_Pt_UNCORR".format(self.flavour) not in data and self.store_uncorr:
+            data["Neg_{}_Pt_UNCORR".format(self.flavour)] = np.zeros(len(data["Neg_{}_Pt".format(self.flavour)]))
+            data["Neg_{}_Pt_UNCORR".format(self.flavour)][:] = data["Neg_{}_Pt".format(self.flavour)]
 
         print("Before MC Correction {}".format(data["Pos_{}_Pt".format(self.flavour)][passes_pos_selection]))
         data["Pos_{}_Pt".format(self.flavour)][passes_pos_selection] = \

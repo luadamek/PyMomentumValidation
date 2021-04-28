@@ -420,7 +420,6 @@ def fill_histograms(hist_filler, output_filename):
     hist_filler.apply_selection_for_channel("MCSherpa17", [sel_small_weight])
     hist_filler.apply_selection_for_channel("MCSherpa18", [sel_small_weight])
     hist_filler.apply_selection_for_channel("__ALL__", [sel_unprescaled_trigger, sel_opp_charge])
-    hist_filler.apply_selection_for_channel("__ALL__", [sel_z_selection_cb])
 
     for varname, var in zip(["ID", "CB", "ME"], [calc_id_mass, calc_cb_mass, calc_me_mass]):
         histogram_name = "{}_mass".format(varname)

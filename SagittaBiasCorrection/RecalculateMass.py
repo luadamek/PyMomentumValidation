@@ -15,8 +15,6 @@ class RecalculateMasses:
         return branches
 
     def calibrate(self, data):
-        print("Applying the default combination")
-
         for region, calc in zip(["ID", "CB", "ME"], [calc_recalc_id_mass, calc_recalc_cb_mass, calc_recalc_me_mass]):
             variable_name = "Pair_{}_Mass".format(region)
             if variable_name in data: data[variable_name] = calc.eval(data)

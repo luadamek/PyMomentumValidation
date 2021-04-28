@@ -23,20 +23,29 @@ class DefaultCombination:
         region = "CB"
         variable_name = "Pair_{}_Mass".format(region)
 
+        print("Correcting Pos")
+        print(data["Pos_CB_Pt"])
         if "Pos_ID_Pt_UNCORR" in data and "Pos_ME_Pt_UNCORR" in data:
             print("Found uncorrected branches. Running combination")
-            frac_pos = (data["Pos_CB_Pt"] - data["Pos_ME_Pt_UNCORR"])/(data["Pos_ID_Pt_UNCORR"] + data["Pos_ME_Pt_UNCORR"])
-            data["Pos_CB_Pt"] = frac_pos * data["Pos_ID_Pt_UNCORR"] + (1.0 - frac_pos) * data["Pos_ME_Pt_UNCORR"]
+            print(data["Pos_ID_Pt_UNCORR"])
+            print(data["Pos_ID_Pt"])
+            frac_pos = (data["Pos_CB_Pt"] - data["Pos_ME_Pt_UNCORR"])/(data["Pos_ID_Pt_UNCORR"] - data["Pos_ME_Pt_UNCORR"])
+            print(frac_pos)
+            data["Pos_CB_Pt"] = frac_pos * data["Pos_ID_Pt"] + (1.0 - frac_pos) * data["Pos_ME_Pt"]
             data[variable_name] = recalc_cb_mass(data)
             print("Done pos")
+        print(data["Pos_CB_Pt"])
 
 
+        print("Correcting Neg")
         if  "Neg_ID_Pt_UNCORR" in data and "Neg_ME_Pt_UNCORR" in data:
             print("Found uncorrected branches. Running combination")
-            frac_neg = (data["Neg_CB_Pt"] - data["Neg_ME_Pt_UNCORR"])/(data["Neg_ID_Pt_UNCORR"] + data["Neg_ME_Pt_UNCORR"])
-            data["Neg_CB_Pt"] = frac_neg * data["Neg_ID_Pt_UNCORR"] + (1.0 - frac_neg) * data["Neg_ME_Pt_UNCORR"]
+            frac_neg = (data["Neg_CB_Pt"] - data["Neg_ME_Pt_UNCORR"])/(data["Neg_ID_Pt_UNCORR"] - data["Neg_ME_Pt_UNCORR"])
+            print(frac_neg)
+            data["Neg_CB_Pt"] = frac_neg * data["Neg_ID_Pt"] + (1.0 - frac_neg) * data["Neg_ME_Pt"]
             data[variable_name] = recalc_cb_mass(data)
             print("Done neg")
+        print(data["Pos_CB_Pt"])
 
         return data
 
