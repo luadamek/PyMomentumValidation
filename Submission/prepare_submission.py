@@ -1,4 +1,5 @@
 import utils
+from BDTCombination import BDTCombination
 import os
 from histogram_filler import HistogramFiller
 from variables import calc_weight, calc_pos_id_eta, calc_pos_id_phi, calc_neg_id_eta, calc_neg_id_phi,\
@@ -127,7 +128,6 @@ def apply_standard_mc_calibrations(hist_fillers):
         smearing_params = os.path.join(basedir_params, "Smearing_muons_Data{descr}_Recs2021_03_31_Prelim.dat".format(descr=descr))
         scale_params = pd.read_csv(scale_params, sep=r'\s{1,}', engine='python')
         smearing_params = pd.read_csv(smearing_params, sep=r'\s{1,}', engine='python')
-        print(scale_params)
 
         for detector_location in ["ID", "ME"]:
             for region_int, (region_name, eta_low, eta_high, sector) in enumerate(zip(df["RegionName"].values, df["Eta low"].values, df["Eta High"].values, df["Phi Sector"].values)):
@@ -157,10 +157,6 @@ def apply_standard_mc_calibrations(hist_fillers):
                 these_scale_params = scale_params.loc[region_int]
                 these_smearing_params = smearing_params.loc[region_int]
 
-                print(these_scale_params)
-                print(these_smearing_params)
-
-
                 s0_ID = 0.0
                 s1_ID = these_scale_params["Scale_ID"]
                 r0_ID = 0.0
@@ -189,10 +185,11 @@ def apply_standard_mc_calibrations(hist_fillers):
 
                 mccorr = MCCorrection(s0=s0, s1=s1, r0=r0, r1=r1, r2=r2, pos_selections = sel_pos, neg_selections = sel_neg, flavour = detector_location, store_uncorr=True)
 
-                for hist_filler in hist_fillers:
+                for i, hist_filler in enumerate(hist_fillers):
                     for channel in hist_filler.channels:
-                        if "MC" in channel and period in channel: hist_filler.apply_calibration_for_channel(channel, mccorr)
-
+                        if "MC" in channel and period in channel:
+                            hist_filler.apply_calibration_for_channel(channel, mccorr)
+                            if i == 0: print("Applying to {}".format(channel))
 
 def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = False):
     syst_var_file = "/project/def-psavard/ladamek/stat_variations/stat_syst_vars.root"
@@ -267,7 +264,7 @@ def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = 
                     hist_filler.apply_calibration_for_channel(channel + "_{}".format(detector_location), calib, selections=selections)
 
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False, memory="6000M", latest_mc_correction = False, simple_combination = False, skip_mass_recalc=False, skip_baseline_selection = False):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False, memory="6000M", latest_mc_correction = False, simple_combination = False, skip_mass_recalc=False, skip_baseline_selection = False, add_BDT_combination=False):
         from DefaultCalibration import DefaultCorrection
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
@@ -430,6 +427,9 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         if simple_combination:
             for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", DefaultCombination())
 
+        if add_BDT_combination:
+            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", BDTCombination(os.path.join(os.getenv("MomentumValidationDir"), "BDTs/FirstBDTs/", "TestModel.pkl")))
+
         #create a pickle file for each submission
         pickle.dump(filler_list, open(filler_file, "wb" ) )
         print("Created the submission file. Ready to go!")
@@ -468,6 +468,7 @@ if __name__ == "__main__":
         parser.add_argument('--skip_mass_recalc', '-smrecalc', dest="skip_mass_recalc", action="store_true")
         parser.add_argument('--skip_baseline_selection', '-skbase', dest="skip_baseline_selection", action="store_true")
         parser.add_argument('--memory', '-mem', dest="memory", type=str, required=True)
+        parser.add_argument("--add_BDT_combination", '-aBDTc', dest="add_BDT_combination", action="store_true")
         args = parser.parse_args()
 
         #Create a pickle file and list for each submission
@@ -483,7 +484,7 @@ if __name__ == "__main__":
             inject = None
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination, memory=args.memory, latest_mc_correction = args.latest_mc_correction, simple_combination=args.simple_combination, skip_mass_recalc=args.skip_mass_recalc, skip_baseline_selection=args.skip_baseline_selection)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination, memory=args.memory, latest_mc_correction = args.latest_mc_correction, simple_combination=args.simple_combination, skip_mass_recalc=args.skip_mass_recalc, skip_baseline_selection=args.skip_baseline_selection, add_BDT_combination = args.add_BDT_combination)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

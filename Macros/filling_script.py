@@ -617,6 +617,87 @@ def fill_histograms(hist_filler, output_filename):
                                      range_high = 2.5,\
                                      xlabel = "|#eta^{CB}|")
 
+    #make mean mass histograms for ID, ME and CB Tracks
+    histogram_name = "MeanMassProfile_ID"
+    hist_filler.book_tprofile_fill(histogram_name,\
+                                         calc_leading_id_eta,\
+                                         calc_id_mass,\
+                                         selections = [mass_selZ_func_ID],\
+                                         bins = 25,\
+                                         range_low = -2.5,\
+                                         range_high = 2.5,\
+                                         xlabel ='#eta^{ID} [GeV]',\
+                                         ylabel = '<M_{\mu\mu}> [GeV]')
+
+    #make mean mass histograms for ME, ME and CB Tracks
+    histogram_name = "MeanMassProfile_ME"
+    hist_filler.book_tprofile_fill(histogram_name,\
+                                         calc_leading_me_eta,\
+                                         calc_me_mass,\
+                                         selections = [mass_selZ_func_ME],\
+                                         bins = 27,\
+                                         range_low = -2.7,\
+                                         range_high = 2.7,\
+                                         xlabel ='#eta^{ME} [GeV]',\
+                                         ylabel = '<M_{\mu\mu}> [GeV]')
+
+    #make mean mass histograms for CB, CB and CB Tracks
+    histogram_name = "MeanMassProfile_CB"
+    hist_filler.book_tprofile_fill(histogram_name,\
+                                         calc_leading_cb_eta,\
+                                         calc_cb_mass,\
+                                         selections = [mass_selZ_func_CB],\
+                                         bins = 27,\
+                                         range_low = -2.7,\
+                                         range_high = 2.7,\
+                                         xlabel ='#eta^{CB} [GeV]',\
+                                         ylabel = '<M_{\mu\mu}> [GeV]')
+
+    #make mean mass histograms for ID, ME and CB Tracks
+    histogram_name = "MassVsEta2D_ID_{identified}"
+    hist_filler.book_2dhistogram_fill(histogram_name,\
+                                         calc_leading_id_eta,\
+                                         calc_id_mass,\
+                                         selections = [mass_selZ_func_ID],\
+                                         bins_x = 25,\
+                                         range_low_x = -2.5,\
+                                         range_high_x = 2.5,\
+                                         bins_y = 200,\
+                                         range_low_y = 91.2 - 12.0,\
+                                         range_high_y = 91.2 + 12.0,\
+                                         xlabel ='#eta^{ID} [GeV]',\
+                                         ylabel = 'M_{\mu\mu} [GeV]')
+
+    #make mean mass histograms for ME, ME and CB Tracks
+    histogram_name = "MassVsEta2D_ME"
+    hist_filler.book_2dhistogram_fill(histogram_name,\
+                                         calc_leading_me_eta,\
+                                         calc_me_mass,\
+                                         selections = [mass_selZ_func_ME],\
+                                         bins_x = 27,\
+                                         range_low_x = -2.7,\
+                                         range_high_x = 2.7,\
+                                         bins_y = 200,\
+                                         range_low_y = 91.2 - 12.0,\
+                                         range_high_y = 91.2 + 12.0,\
+                                         xlabel ='#eta^{ME} [GeV]',\
+                                         ylabel = 'M_{\mu\mu} [GeV]')
+
+    #make mean mass histograms for CB, CB and CB Tracks
+    histogram_name = "MassVsEta2D_CB"
+    hist_filler.book_2dhistogram_fill(histogram_name,\
+                                         calc_leading_cb_eta,\
+                                         calc_cb_mass,\
+                                         selections = [mass_selZ_func_CB],\
+                                         bins_x = 27,\
+                                         range_low_x = -2.7,\
+                                         range_high_x = 2.7,\
+                                         bins_y = 200,\
+                                         range_low_y = 91.2 - 12.0,\
+                                         range_high_y = 91.2 + 12.0,\
+                                         xlabel ='#eta^{CB} [GeV]',\
+                                         ylabel = 'M_{\mu\mu} [GeV]')
+
 
     for sel_id, sel_me, sel_cb, name in zip([[sel_forward_id, sel_min_fifteen_id_pts], [sel_backward_id, sel_min_fifteen_id_pts]],\
                                     [[sel_forward_me, sel_min_fifteen_me_pts], [sel_backward_me, sel_min_fifteen_me_pts]],\
@@ -747,6 +828,7 @@ def fill_histograms(hist_filler, output_filename):
                                              range_high = x_range[1],\
                                              xlabel = x_label,\
                                              ylabel = 'Number Events')
+
 
 
         #make invariant mass histograms for ID tracks

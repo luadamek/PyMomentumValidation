@@ -40,8 +40,27 @@ class WeightedCBCorrectionCov:
         over_p_cb_pos = (w_pos * over_p_id_pos) + ( (1.0 - w_pos) * over_p_me_pos)
         over_p_cb_neg = (w_neg * over_p_id_neg) + ( (1.0 - w_neg) * over_p_me_neg)
 
-        data["Pos_CB_Pt"] = (1.0 / over_p_cb_pos) / np.cosh(data["Pos_ID_Eta"])
-        data["Neg_CB_Pt"] = (1.0 / over_p_cb_neg) / np.cosh(data["Neg_ID_Eta"])
+        safe_pos = (data["Pos_ME_Pt"] > 0) & ( data["Pos_ID_Pt"] > 0)
+        safe_neg = (data["Neg_ME_Pt"] > 0) & ( data["Neg_ID_Pt"] > 0)
+
+        data["Pos_CB_Pt"][safe_pos] = ((1.0 / over_p_cb_pos) / np.cosh(data["Pos_ID_Eta"]))[safe_pos]
+        data["Neg_CB_Pt"][safe_neg] = ((1.0 / over_p_cb_neg) / np.cosh(data["Neg_ID_Eta"]))[safe_neg]
+
+        # if not safe, take ID pt
+        id_safe_pos = np.logical_not(safe_pos) & (data["Pos_ID_Pt"] > 0)
+        data["Pos_CB_Pt"][id_safe_pos] = data["Pos_ID_Pt"][id_safe_pos]
+
+        #otherwise take the ME pt
+        id_unsafe_pos = np.logical_not(id_safe_pos)
+        data["Pos_CB_Pt"][id_unsafe_pos] = data["Pos_ME_Pt"][id_unsafe_pos]
+
+        # if not safe, take ID pt
+        id_safe_neg = np.logical_not(safe_neg) & (data["Neg_ID_Pt"] > 0)
+        data["Neg_CB_Pt"][id_safe_neg] = data["Neg_ID_Pt"][id_safe_neg]
+
+        #otherwise take the ME pt
+        id_unsafe_neg = np.logical_not(id_safe_neg)
+        data["Neg_CB_Pt"][id_unsafe_neg] = data["Neg_ME_Pt"][id_unsafe_neg]
 
         #print("ID weight {}".format(w_pos))
         #print("ME weight {}".format(1.0 - w_pos))
@@ -49,9 +68,9 @@ class WeightedCBCorrectionCov:
         #print("min ID weight sorted {}".format(np.sort(w_pos[res_me_pos>0.0])))
         #for el in np.sort(w_pos[res_me_pos>0.0])[0:1000]:
         #    print(el)
-        print("CB", data["Pos_CB_Pt"])
-        print("ID", data["Pos_ID_Pt"])
-        print("ME", data["Pos_ME_Pt"])
+        #print("CB", data["Pos_CB_Pt"])
+        #print("ID", data["Pos_ID_Pt"])
+        #print("ME", data["Pos_ME_Pt"])
 
         if hasattr(data, "dtype"): keys =  data.dtype.names
         else: keys = list(data.keys())

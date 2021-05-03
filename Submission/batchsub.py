@@ -5,6 +5,7 @@ import glob
 def finished_token_in(filename):
     if not os.path.exists(filename): return False
     with open(filename, "r") as f:
+        print("reading {}".format(filename))
         lines = f.readlines()
         for l in lines[max(-10, -1 * len(lines)):]:
             if "__Finished__" in l or "__FINISHED__" in l  or "__FINSIHED__" in l:
