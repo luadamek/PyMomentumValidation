@@ -51,7 +51,7 @@ class WeightedCBCorrectionCov:
         data["Pos_CB_Pt"][id_safe_pos] = data["Pos_ID_Pt"][id_safe_pos]
 
         #otherwise take the ME pt
-        id_unsafe_pos = np.logical_not(id_safe_pos)
+        id_unsafe_pos = np.logical_not(safe_pos) & (data["Pos_ME_Pt"] > 0)
         data["Pos_CB_Pt"][id_unsafe_pos] = data["Pos_ME_Pt"][id_unsafe_pos]
 
         # if not safe, take ID pt
@@ -59,7 +59,7 @@ class WeightedCBCorrectionCov:
         data["Neg_CB_Pt"][id_safe_neg] = data["Neg_ID_Pt"][id_safe_neg]
 
         #otherwise take the ME pt
-        id_unsafe_neg = np.logical_not(id_safe_neg)
+        id_unsafe_neg = np.logical_not(safe_neg) & (data["Neg_ME_Pt"] > 0)
         data["Neg_CB_Pt"][id_unsafe_neg] = data["Neg_ME_Pt"][id_unsafe_neg]
 
         #print("ID weight {}".format(w_pos))

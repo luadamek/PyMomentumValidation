@@ -34,16 +34,12 @@ class DefaultCombination:
 
             safe_pos = (data["Pos_ME_Pt"] > 0) & ( data["Pos_ID_Pt"] > 0)
             data["Pos_CB_Pt"][safe_pos] = (frac_pos * data["Pos_ID_Pt"] + (1.0 - frac_pos) * data["Pos_ME_Pt"])[safe_pos]
-            print(data["Pos_CB_Pt"])
-            print(data["Pos_ME_Pt"])
-            print(data["Pos_ID_Pt"])
-            input()
 
             # if not safe, take ID pt
             id_safe_pos = np.logical_not(safe_pos) & (data["Pos_ID_Pt"] > 0)
             data["Pos_CB_Pt"][id_safe_pos] = data["Pos_ID_Pt"][id_safe_pos]
             #otherwise take the ME pt
-            id_unsafe_pos = np.logical_not(id_safe_pos)
+            id_unsafe_pos =  np.logical_not(safe_pos) & (data["Pos_ME_Pt"] > 0) 
             data["Pos_CB_Pt"][id_unsafe_pos] = data["Pos_ME_Pt"][id_unsafe_pos]
 
             data[variable_name] = recalc_cb_mass(data)
@@ -64,11 +60,11 @@ class DefaultCombination:
             data["Neg_CB_Pt"][id_safe_neg] = data["Neg_ID_Pt"][id_safe_neg]
 
             #otherwise take the ME pt
-            id_unsafe_neg = np.logical_not(id_safe_neg)
+            id_unsafe_neg =  np.logical_not(safe_neg) & (data["Neg_ME_Pt"] > 0) 
             data["Neg_CB_Pt"][id_unsafe_neg] = data["Neg_ME_Pt"][id_unsafe_neg]
             data[variable_name] = recalc_cb_mass(data)
             print("Done neg")
-        print(data["Pos_CB_Pt"])
+        print(data["Neg_CB_Pt"])
 
         return data
 
