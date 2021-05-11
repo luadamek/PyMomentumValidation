@@ -163,11 +163,35 @@ def apply_standard_mc_calibrations(hist_fillers):
                 r1_ID = these_smearing_params["r1_ID"]
                 r2_ID = these_smearing_params["r2_ID"]
 
+                s0_ID_up = 0.0
+                s1_ID_up = these_scale_params["Scale_ID_SUp"]
+                r0_ID_up = 0.0
+                r1_ID_up = these_smearing_params["SUp_r1_ID"]
+                r2_ID_up = these_smearing_params["SUp_r2_ID"]
+
+                s0_ID_down = 0.0
+                s1_ID_down = these_scale_params["Scale_ID_SDw"]
+                r0_ID_down = 0.0
+                r1_ID_down = these_smearing_params["SDw_r1_ID"]
+                r2_ID_down = these_smearing_params["SDw_r2_ID"]
+
                 s0_ME = these_scale_params["s0_MS"]
                 s1_ME = these_scale_params["Scale_MS"]
                 r0_ME = these_smearing_params["r0_MS"]
                 r1_ME = these_smearing_params["r1_MS"]
                 r2_ME = these_smearing_params["r2_MS"]
+
+                s0_ME_up = these_scale_params["s0_MS_SUp"]
+                s1_ME_up = these_scale_params["Scale_MS_SUp"]
+                r0_ME_up = these_smearing_params["SUp_r0_MS"]
+                r1_ME_up = these_smearing_params["SUp_r1_MS"]
+                r2_ME_up = these_smearing_params["SUp_r2_MS"]
+
+                s0_ME_down = these_scale_params["s0_MS_SDw"]
+                s1_ME_down = these_scale_params["Scale_MS_SDw"]
+                r0_ME_down = these_smearing_params["SDw_r0_MS"]
+                r1_ME_down = these_smearing_params["SDw_r1_MS"]
+                r2_ME_down = these_smearing_params["SDw_r2_MS"]
 
                 if detector_location == "ID":
                     s0 = s0_ID
@@ -176,6 +200,18 @@ def apply_standard_mc_calibrations(hist_fillers):
                     r1 = r1_ID
                     r2 = r2_ID
 
+                    s0_up = s0_ID_up
+                    s1_up = s1_ID_up
+                    r0_up = r0_ID_up
+                    r1_up = r1_ID_up
+                    r2_up = r2_ID_up
+
+                    s0_down = s0_ID_down
+                    s1_down = s1_ID_down
+                    r0_down = r0_ID_down
+                    r1_down = r1_ID_down
+                    r2_down = r2_ID_down
+
                 if detector_location == "ME":
                     s0 = s0_ME
                     s1 = s1_ME
@@ -183,13 +219,37 @@ def apply_standard_mc_calibrations(hist_fillers):
                     r1 = r1_ME
                     r2 = r2_ME
 
+                    s0_up = s0_ME_up
+                    s1_up = s1_ME_up
+                    r0_up = r0_ME_up
+                    r1_up = r1_ME_up
+                    r2_up = r2_ME_up
+
+                    s0_down = s0_ME_down
+                    s1_down = s1_ME_down
+                    r0_down = r0_ME_down
+                    r1_down = r1_ME_down
+                    r2_down = r2_ME_down
+
                 mccorr = MCCorrection(s0=s0, s1=s1, r0=r0, r1=r1, r2=r2, pos_selections = sel_pos, neg_selections = sel_neg, flavour = detector_location, store_uncorr=True)
+                mccorr_scale_up = MCCorrection(s0=s0_up, s1=s1_up, r0=r0, r1=r1, r2=r2, pos_selections = sel_pos, neg_selections = sel_neg, flavour = detector_location, store_uncorr=True)
+                mccorr_scale_down = MCCorrection(s0=s0_down, s1=s1_down, r0=r0, r1=r1, r2=r2, pos_selections = sel_pos, neg_selections = sel_neg, flavour = detector_location, store_uncorr=True)
+                mccorr_res_up = MCCorrection(s0=s0, s1=s1, r0=r0_up, r1=r1_up, r2=r2_up, pos_selections = sel_pos, neg_selections = sel_neg, flavour = detector_location, store_uncorr=True)
+                mccorr_res_down = MCCorrection(s0=s0, s1=s1, r0=r0_down, r1=r1_down, r2=r2_down, pos_selections = sel_pos, neg_selections = sel_neg, flavour = detector_location, store_uncorr=True)
 
                 for i, hist_filler in enumerate(hist_fillers):
                     for channel in hist_filler.channels:
                         if "MC" in channel and period in channel:
-                            hist_filler.apply_calibration_for_channel(channel, mccorr)
                             if i == 0: print("Applying to {}".format(channel))
+                            if "_scale_" in channel:
+                               if "_up" in channel: hist_filler.apply_calibration_for_channel(channel, mccorr_scale_up)
+                               elif "_down" in channel: hist_filler.apply_calibration_for_channel(channel, mccorr_scale_down)
+                               else: assert False
+                            elif "_res_" in channel:
+                               if "_up" in channel: hist_filler.apply_calibration_for_channel(channel, mccorr_res_up)
+                               elif "_down" in channel: hist_filler.apply_calibration_for_channel(channel, mccorr_res_down)
+                               else: assert False
+                            else: hist_filler.apply_calibration_for_channel(channel, mccorr)
 
 def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = False):
     syst_var_file = "/project/def-psavard/ladamek/stat_variations/stat_syst_vars.root"
@@ -264,7 +324,7 @@ def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = 
                     hist_filler.apply_calibration_for_channel(channel + "_{}".format(detector_location), calib, selections=selections)
 
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False, memory="6000M", latest_mc_correction = False, simple_combination = False, skip_mass_recalc=False, skip_baseline_selection = False, add_BDT_combination=False):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False, memory="6000M", latest_mc_correction = False, simple_combination = False, skip_mass_recalc=False, skip_baseline_selection = False, add_BDT_combination=False, cov_combination_percent=False):
         from DefaultCalibration import DefaultCorrection
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
@@ -423,6 +483,9 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         if cov_combination:
             for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", WeightedCBCorrectionCov())
 
+        if cov_combination_percent:
+            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", WeightedCBCorrectionCov(do_percent_corr=True))
+
         from DefaultSimpleCombination import DefaultCombination
         if simple_combination:
             for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", DefaultCombination())
@@ -464,6 +527,7 @@ if __name__ == "__main__":
         parser.add_argument('--default_correction', "-def_calib", dest="default_correction", action="store_true")
         parser.add_argument('--latest_mc_correction', "-def_mc_calib", dest="latest_mc_correction", action="store_true")
         parser.add_argument('--cov_combination', '-cov_comb', dest="cov_combination", action="store_true")
+        parser.add_argument('--cov_combination_percent', '-cov_comb_per', dest="cov_combination_percent", action="store_true")
         parser.add_argument('--simple_combination', '-simple_comb', dest="simple_combination", action="store_true")
         parser.add_argument('--skip_mass_recalc', '-smrecalc', dest="skip_mass_recalc", action="store_true")
         parser.add_argument('--skip_baseline_selection', '-skbase', dest="skip_baseline_selection", action="store_true")
@@ -484,7 +548,7 @@ if __name__ == "__main__":
             inject = None
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination, memory=args.memory, latest_mc_correction = args.latest_mc_correction, simple_combination=args.simple_combination, skip_mass_recalc=args.skip_mass_recalc, skip_baseline_selection=args.skip_baseline_selection, add_BDT_combination = args.add_BDT_combination)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination, memory=args.memory, latest_mc_correction = args.latest_mc_correction, simple_combination=args.simple_combination, skip_mass_recalc=args.skip_mass_recalc, skip_baseline_selection=args.skip_baseline_selection, add_BDT_combination = args.add_BDT_combination, cov_combination_percent=args.cov_combination_percent)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion

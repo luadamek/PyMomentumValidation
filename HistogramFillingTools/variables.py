@@ -390,7 +390,7 @@ calc_cb_mass = Calculation(cb_mass, branches)
 
 def recalc_cb_mass(event):
     return arbitrary_mass(event, "CB")
-calc_recalc_cb_mass = Calculation(cb_mass, ["Pos_CB_Pt", "Neg_CB_Pt", "Pos_CB_Eta", "Neg_CB_Eta", "Pos_CB_Phi", "Neg_CB_Phi"])
+calc_recalc_cb_mass = Calculation(recalc_cb_mass, ["Pos_CB_Pt", "Neg_CB_Pt", "Pos_CB_Eta", "Neg_CB_Eta", "Pos_CB_Phi", "Neg_CB_Phi"])
 
 def id_mass(event):
     return event["Pair_ID_Mass"]
@@ -399,7 +399,7 @@ calc_id_mass = Calculation(id_mass, branches)
 
 def recalc_id_mass(event):
     return arbitrary_mass(event, "ID")
-calc_recalc_id_mass = Calculation(id_mass, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"])
+calc_recalc_id_mass = Calculation(recalc_cb_mass, ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"])
 
 def recalc_me_mass(event):
     return arbitrary_mass(event, "ME")

@@ -2,11 +2,56 @@ from variables import recalc_id_mass, recalc_me_mass, calc_recalc_id_mass, calc_
 import numpy as np
 
 
+def get_calib_pt(data, charge="", uncorr=False):
+    id_pt_string = "{}_ID_Pt".format(charge)
+    id_eta_string = "{}_ID_Eta".format(charge)
+    id_phi_string = "{}_ID_Phi".format(charge)
+
+    me_pt_string = "{}_ME_Pt".format(charge)
+    me_eta_string = "{}_ME_Eta".format(charge)
+    me_phi_string = "{}_ME_Phi".format(charge)
+
+    if uncorr:
+        id_pt_string += "_UNCORR"
+
+        me_pt_string += "_UNCORR"
+
+    id_cov_string = "{}_ID_TrackCovMatrix".format(charge)
+    me_cov_string = "{}_ME_TrackCovMatrix".format(charge)
+
+    over_p_id = 1.0/(data[id_pt_string] * np.cosh(data[id_eta_string]))
+    res_id = data[id_cov_string][:,-1] * 1000.0 * 1000.0
+
+    over_p_me = 1.0/(data[me_pt_string] * np.cosh(data[me_eta_string]))
+    res_me = data[me_cov_string][:,-1] * 1000.0 * 1000.0
+
+    w = (res_me ** 2)/( (res_me**2) + (res_id**2) )
+
+    over_p_cb = (w * over_p_id) + ( (1.0 - w) * over_p_me)
+
+    safe = (data[me_pt_string] > 0) & ( data[id_pt_string] > 0)
+
+    pts = np.ones(len(data["Pos_CB_Pt"]))
+
+    pts[safe] = ((1.0 / over_p_cb[safe]) / np.cosh(data[id_eta_string][safe]))
+
+    # if not safe, take ID pt
+    id_safe = np.logical_not(safe) & (data[id_pt_string] > 0)
+    pts[id_safe] = data[id_pt_string][id_safe]
+
+    #otherwise take the ME pt
+    id_unsafe = np.logical_not(safe) & (data[me_pt_string] > 0)
+    pts[id_unsafe] = data[me_pt_string][id_unsafe]
+
+    return pts
+
+
 class WeightedCBCorrectionCov:
 
     #the histogram is a segitta bias correction map for delta s
-    def __init__(self):
+    def __init__(self, do_percent_corr=False):
         self.branches = self.get_branches()
+        self.do_percent_corr=do_percent_corr
 
     def get_branches(self):
         branches = []
@@ -21,56 +66,21 @@ class WeightedCBCorrectionCov:
 
     def calibrate(self, data):
         print("Track Combination")
-        over_p_id_pos = 1.0/(data["Pos_ID_Pt"] * np.cosh(data["Pos_ID_Eta"]))
-        over_p_id_neg = 1.0/(data["Neg_ID_Pt"] * np.cosh(data["Neg_ID_Eta"]))
-        res_id_pos = data["Pos_ID_TrackCovMatrix"][:,-1] * 1000.0 * 1000.0
-        res_id_neg = data["Neg_ID_TrackCovMatrix"][:,-1] * 1000.0 * 1000.0
 
-        over_p_me_pos = 1.0/(data["Pos_ME_Pt"] * np.cosh(data["Pos_ME_Eta"]))
-        over_p_me_neg = 1.0/(data["Neg_ME_Pt"] * np.cosh(data["Neg_ME_Eta"]))
-        res_me_pos = data["Pos_ME_TrackCovMatrix"][:,-1] * 1000.0 * 1000.0
-        res_me_neg = data["Neg_ME_TrackCovMatrix"][:,-1] * 1000.0 * 1000.0
+        pos_pts_corr = get_calib_pt(data, charge="Pos", uncorr=False)
+        neg_pts_corr = get_calib_pt(data, charge="Neg", uncorr=False)
 
-        #print("ID Res {}, 1/p id {}".format(res_id_pos, over_p_id_pos))
-        #print("ME Res {}, 1/p me {}".format(res_me_pos, over_p_me_pos))
+        if self.do_percent_corr and "Pos_ID_Pt_UNCORR" in data:
+            print("Doing percent change correction")
+            pos_pts_uncorr = get_calib_pt(data, charge="Pos", uncorr=True)
+            neg_pts_uncorr = get_calib_pt(data, charge="Neg", uncorr=True)
 
-        w_pos = (res_me_pos ** 2)/( (res_me_pos**2) + (res_id_pos**2) )
-        w_neg = (res_me_neg ** 2)/( (res_me_neg**2) + (res_id_neg**2) )
+            data["Pos_CB_Pt"] = (1.0 + ((pos_pts_corr - pos_pts_uncorr)/pos_pts_uncorr)) * data["Pos_CB_Pt"]
+            data["Neg_CB_Pt"] = (1.0 + ((neg_pts_corr - neg_pts_uncorr)/neg_pts_uncorr)) * data["Neg_CB_Pt"]
 
-        over_p_cb_pos = (w_pos * over_p_id_pos) + ( (1.0 - w_pos) * over_p_me_pos)
-        over_p_cb_neg = (w_neg * over_p_id_neg) + ( (1.0 - w_neg) * over_p_me_neg)
-
-        safe_pos = (data["Pos_ME_Pt"] > 0) & ( data["Pos_ID_Pt"] > 0)
-        safe_neg = (data["Neg_ME_Pt"] > 0) & ( data["Neg_ID_Pt"] > 0)
-
-        data["Pos_CB_Pt"][safe_pos] = ((1.0 / over_p_cb_pos) / np.cosh(data["Pos_ID_Eta"]))[safe_pos]
-        data["Neg_CB_Pt"][safe_neg] = ((1.0 / over_p_cb_neg) / np.cosh(data["Neg_ID_Eta"]))[safe_neg]
-
-        # if not safe, take ID pt
-        id_safe_pos = np.logical_not(safe_pos) & (data["Pos_ID_Pt"] > 0)
-        data["Pos_CB_Pt"][id_safe_pos] = data["Pos_ID_Pt"][id_safe_pos]
-
-        #otherwise take the ME pt
-        id_unsafe_pos = np.logical_not(safe_pos) & (data["Pos_ME_Pt"] > 0)
-        data["Pos_CB_Pt"][id_unsafe_pos] = data["Pos_ME_Pt"][id_unsafe_pos]
-
-        # if not safe, take ID pt
-        id_safe_neg = np.logical_not(safe_neg) & (data["Neg_ID_Pt"] > 0)
-        data["Neg_CB_Pt"][id_safe_neg] = data["Neg_ID_Pt"][id_safe_neg]
-
-        #otherwise take the ME pt
-        id_unsafe_neg = np.logical_not(safe_neg) & (data["Neg_ME_Pt"] > 0)
-        data["Neg_CB_Pt"][id_unsafe_neg] = data["Neg_ME_Pt"][id_unsafe_neg]
-
-        #print("ID weight {}".format(w_pos))
-        #print("ME weight {}".format(1.0 - w_pos))
-        #print("min ID weight {}".format(min(w_pos)))
-        #print("min ID weight sorted {}".format(np.sort(w_pos[res_me_pos>0.0])))
-        #for el in np.sort(w_pos[res_me_pos>0.0])[0:1000]:
-        #    print(el)
-        #print("CB", data["Pos_CB_Pt"])
-        #print("ID", data["Pos_ID_Pt"])
-        #print("ME", data["Pos_ME_Pt"])
+        elif not self.do_percent_corr:
+            data["Pos_CB_Pt"] = pos_pts_corr
+            data["Neg_CB_Pt"] = neg_pts_corr
 
         if hasattr(data, "dtype"): keys =  data.dtype.names
         else: keys = list(data.keys())
