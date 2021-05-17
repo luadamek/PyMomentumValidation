@@ -4,9 +4,9 @@ import numpy as np
 def stat_comb(vec1, mat1, vec2, mat2):
     # vec1, vec2: shape = (N events, 5, )
     # mat1, mat2: shape = (N events, 5, 5)
-    inv_mat1 = np.linalg.pinv(mat1)
-    inv_mat2 = np.linalg.pinv(mat2)
-    res_mat = np.linalg.pinv(inv_mat1 + inv_mat2)
+    inv_mat1 = np.linalg.inv(mat1)
+    inv_mat2 = np.linalg.inv(mat2)
+    res_mat = np.linalg.inv(inv_mat1 + inv_mat2)
     first_dot = np.einsum("...i,...ij", vec1, inv_mat1)#np.dot(vec1,inv_mat1)
     second_dot = np.einsum("...i,...ij", vec2, inv_mat2)#np.dot(vec2,inv_mat2)
     res_vec = np.einsum("...i,...ij", first_dot + second_dot, res_mat)#np.dot(first_dot + second_dot, res_mat)
@@ -34,6 +34,8 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
     id_track_pars = "{}_ID_TrackPars".format(charge)
     me_track_pars = "{}_ME_TrackPars".format(charge)
 
+    safe = (data[me_pt_string] > 0) & ( data[id_pt_string] > 0)
+
     if not do_full_matrix:
 
         over_p_id = 1.0/(data[id_pt_string] * np.cosh(data[id_eta_string]))
@@ -46,7 +48,6 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
 
         over_p_cb = (w * over_p_id) + ( (1.0 - w) * over_p_me)
 
-        safe = (data[me_pt_string] > 0) & ( data[id_pt_string] > 0)
 
         pts = np.ones(len(data["Pos_CB_Pt"]))
 
@@ -57,22 +58,21 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
 
     else:
 
-        track_pars_id = data[id_track_pars] # N x 5 array (N events x 5 track pars)
-        track_pars_me = data[me_track_pars]
+        nevents = len(data["{}_CB_Charge".format(charge)])
+
+        original_charge = np.sign(data["{}_CB_Charge".format(charge)])
+        track_pars_id = data[id_track_pars][safe] # N x 5 array (N events x 5 track pars)
+        track_pars_me = data[me_track_pars][safe]
 
         #put the corrected pt params into the track pars matrix
-        id_qop = data[id_charge_string] / (data[id_pt_string] * np.cosh(data[id_eta_string])  * 1000.0) #convert to 1/MeV
-        me_qop = data[me_charge_string] / (data[me_pt_string] * np.cosh(data[me_eta_string])  * 1000.0)
-
-        print(id_qop)
-        print(track_pars_id[:,-1])
-
+        id_qop = data[id_charge_string][safe] / (data[id_pt_string][safe] * np.cosh(data[id_eta_string][safe])  * 1000.0) #convert to 1/MeV
+        me_qop = data[me_charge_string][safe] / (data[me_pt_string][safe] * np.cosh(data[me_eta_string][safe])  * 1000.0)
         #insert the corrected variables into the track params vector
         track_pars_id[:,-1] = id_qop
         track_pars_me[:,-1] = me_qop
 
-        cov_mat_id = data[id_cov_string] # N x 5 x 5 array (N events x 5 track pars x 5 track pars)
-        cov_mat_me = data[me_cov_string]
+        cov_mat_id = data[id_cov_string][safe] # N x 5 x 5 array (N events x 5 track pars x 5 track pars)
+        cov_mat_me = data[me_cov_string][safe]
 
         stacco_pars = stat_comb(track_pars_id, cov_mat_id, track_pars_me, cov_mat_me)
         track_pars = stacco_pars[0]
@@ -83,17 +83,38 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
         z0 = track_pars[:, 1]
         d0 = track_pars[:, 0]
 
-        data["{}_CB_Charge".format(charge)] = np.sign(qop)
-
         p = np.abs((1.0/qop))
         eta = -1.0 * np.log(np.tan(theta/2.0))
         pt = (p/np.cosh(eta)) / 1000.0 #convert to GeV
-        print(pt)
-        input()
+        this_charge = np.sign(qop)
 
-        return pt, eta, phi
+        if np.any(np.isnan(eta)): print("Nan etas! {} of {}".format(np.sum(1.0 * np.isnan(eta)), nevents))
+        if np.any(pt < 0.0): print("Negative pt!")
+        if np.any(original_charge[safe] != this_charge): print("Some have flipped charge w.r.t. CB")
 
+        print("The max eta after combination was ", np.max(eta[np.logical_not(np.isnan(eta))]))
 
+        new_safe = (original_charge[safe] == this_charge) & (pt > 0.0) & (np.logical_not(np.isnan(eta)))
+
+        safe[safe] = safe[safe] & new_safe # do not allow charge flipping and nan etas
+
+        to_return_pt = np.zeros(nevents)
+        to_return_eta = np.zeros(nevents)
+        to_return_phi = np.zeros(nevents)
+        to_return_charge = np.zeros(nevents)
+
+        to_return_pt[:] = data["{}_CB_Pt".format(charge)]
+        to_return_eta[:] = data["{}_CB_Eta".format(charge)]
+        to_return_phi[:] = data["{}_CB_Phi".format(charge)]
+        to_return_charge[:] = data["{}_CB_Charge".format(charge)]
+
+        #0.02 % of tracks have their charges flipped. Keep the original charge
+
+        to_return_pt[safe] = pt[new_safe]
+        to_return_eta[safe] = eta[new_safe]
+        to_return_phi[safe] = phi[new_safe]
+
+        return to_return_pt, to_return_eta, to_return_phi
 
 class WeightedCBCorrectionCov:
 
@@ -123,8 +144,8 @@ class WeightedCBCorrectionCov:
 
         if self.do_percent_corr and "Pos_ID_Pt_UNCORR" in data:
             print("Doing percent change correction")
-            pos_pts_uncorr, pos_etas_uncorr, pos_phis_uncorr = get_calib_pt(data, charge="Pos", uncorr=True, do_full_matrix = self.do_full_matrix)
-            neg_pts_uncorr, neg_etas_uncorr, neg_phis_uncorr = get_calib_pt(data, charge="Neg", uncorr=True, do_full_matrix = self.do_full_matrix)
+            pos_pts_uncorr, pos_etas_uncorr = get_calib_pt(data, charge="Pos", uncorr=True, do_full_matrix = self.do_full_matrix)
+            neg_pts_uncorr, neg_etas_uncorr = get_calib_pt(data, charge="Neg", uncorr=True, do_full_matrix = self.do_full_matrix)
 
             cbpt_pos = "Pos_CB_Pt"
             cbpt_neg = "Neg_CB_Pt"
