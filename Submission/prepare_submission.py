@@ -324,7 +324,7 @@ def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = 
                     hist_filler.apply_calibration_for_channel(channel + "_{}".format(detector_location), calib, selections=selections)
 
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False, memory="6000M", latest_mc_correction = False, simple_combination = False, skip_mass_recalc=False, skip_baseline_selection = False, add_BDT_combination=False, cov_combination_percent=False):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False, memory="6000M", latest_mc_correction = False, simple_combination = False, skip_mass_recalc=False, skip_baseline_selection = False, add_BDT_combination=False, cov_combination_percent=False, fullcov_combination_percent=False, fullcov_combination=False):
         from DefaultCalibration import DefaultCorrection
         project_dir = os.getenv("MomentumValidationDir")
         assert project_dir is not None
@@ -486,6 +486,13 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         if cov_combination_percent:
             for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", WeightedCBCorrectionCov(do_percent_corr=True))
 
+        if fullcov_combination_percent:
+            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", WeightedCBCorrectionCov(do_percent_corr=True, do_full_matrix=True))
+
+        if fullcov_combination:
+            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", WeightedCBCorrectionCov(do_percent_corr=False, do_full_matrix=True))
+
+
         from DefaultSimpleCombination import DefaultCombination
         if simple_combination:
             for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", DefaultCombination())
@@ -528,6 +535,8 @@ if __name__ == "__main__":
         parser.add_argument('--latest_mc_correction', "-def_mc_calib", dest="latest_mc_correction", action="store_true")
         parser.add_argument('--cov_combination', '-cov_comb', dest="cov_combination", action="store_true")
         parser.add_argument('--cov_combination_percent', '-cov_comb_per', dest="cov_combination_percent", action="store_true")
+        parser.add_argument('--fullcov_combination', '-fullcov_comb', dest="fullcov_combination", action="store_true")
+        parser.add_argument('--fullcov_combination_percent', '-fullcov_comb_per', dest="fullcov_combination_percent", action="store_true")
         parser.add_argument('--simple_combination', '-simple_comb', dest="simple_combination", action="store_true")
         parser.add_argument('--skip_mass_recalc', '-smrecalc', dest="skip_mass_recalc", action="store_true")
         parser.add_argument('--skip_baseline_selection', '-skbase', dest="skip_baseline_selection", action="store_true")
@@ -548,7 +557,7 @@ if __name__ == "__main__":
             inject = None
         slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination, memory=args.memory, latest_mc_correction = args.latest_mc_correction, simple_combination=args.simple_combination, skip_mass_recalc=args.skip_mass_recalc, skip_baseline_selection=args.skip_baseline_selection, add_BDT_combination = args.add_BDT_combination, cov_combination_percent=args.cov_combination_percent)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination, memory=args.memory, latest_mc_correction = args.latest_mc_correction, simple_combination=args.simple_combination, skip_mass_recalc=args.skip_mass_recalc, skip_baseline_selection=args.skip_baseline_selection, add_BDT_combination = args.add_BDT_combination, cov_combination_percent=args.cov_combination_percent, fullcov_combination_percent=args.fullcov_combination_percent, fullcov_combination=args.fullcov_combination)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion
