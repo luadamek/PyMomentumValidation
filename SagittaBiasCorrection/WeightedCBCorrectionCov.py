@@ -10,6 +10,11 @@ def stat_comb(vec1, mat1, vec2, mat2):
     first_dot = np.einsum("...i,...ij", vec1, inv_mat1)#np.dot(vec1,inv_mat1)
     second_dot = np.einsum("...i,...ij", vec2, inv_mat2)#np.dot(vec2,inv_mat2)
     res_vec = np.einsum("...i,...ij", first_dot + second_dot, res_mat)#np.dot(first_dot + second_dot, res_mat)
+    #for i in range(0, 100):
+    #    print(i)
+    #    print(vec1[i])
+    #    print(vec2[i])
+    #    print(res_vec[i])
     return res_vec, res_mat
 
 def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
@@ -58,21 +63,29 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
 
     else:
 
+        #print("Original_CB ", data["{}_CB_Pt".format(charge)])
+        #print("Original_CB eta ", data["{}_CB_Eta".format(charge)])
+        #print("Original_CB phi ", data["{}_CB_Phi".format(charge)])
+
         nevents = len(data["{}_CB_Charge".format(charge)])
 
         original_charge = np.sign(data["{}_CB_Charge".format(charge)])
-        track_pars_id = data[id_track_pars][safe] # N x 5 array (N events x 5 track pars)
-        track_pars_me = data[me_track_pars][safe]
 
         #put the corrected pt params into the track pars matrix
-        id_qop = data[id_charge_string][safe] / (data[id_pt_string][safe] * np.cosh(data[id_eta_string][safe])  * 1000.0) #convert to 1/MeV
-        me_qop = data[me_charge_string][safe] / (data[me_pt_string][safe] * np.cosh(data[me_eta_string][safe])  * 1000.0)
+
+        safe_data = {key:data[key][safe] for key in data}
+        id_qop = safe_data[id_charge_string]/ (safe_data[id_pt_string]* np.cosh(safe_data[id_eta_string])  * 1000.0) #convert to 1/MeV
+        me_qop = safe_data[me_charge_string]/ (safe_data[me_pt_string]* np.cosh(safe_data[me_eta_string])* 1000.0)
+        track_pars_id = safe_data[id_track_pars] # N x 5 array (N events x 5 track pars)
+        track_pars_me = safe_data[me_track_pars]
+
         #insert the corrected variables into the track params vector
+        order = np.argsort(np.abs(track_pars_id[:,-1] - id_qop))[::-1]
         track_pars_id[:,-1] = id_qop
         track_pars_me[:,-1] = me_qop
 
-        cov_mat_id = data[id_cov_string][safe] # N x 5 x 5 array (N events x 5 track pars x 5 track pars)
-        cov_mat_me = data[me_cov_string][safe]
+        cov_mat_id = safe_data[id_cov_string] # N x 5 x 5 array (N events x 5 track pars x 5 track pars)
+        cov_mat_me = safe_data[me_cov_string]
 
         stacco_pars = stat_comb(track_pars_id, cov_mat_id, track_pars_me, cov_mat_me)
         track_pars = stacco_pars[0]
@@ -83,16 +96,22 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
         z0 = track_pars[:, 1]
         d0 = track_pars[:, 0]
 
+        print("qop", qop)
+        print("theta", theta)
+        print("phi", phi)
+        print("z0", z0)
+        print("d0", d0)
+
         p = np.abs((1.0/qop))
-        eta = -1.0 * np.log(np.tan(theta/2.0))
-        pt = (p/np.cosh(eta)) / 1000.0 #convert to GeV
+        eta = -1.0 * np.log(np.tan(theta/2.0)) #This is not eta w.r.t. the origin of the ATLAS coordinate system careful!
+        pt = (p/np.cosh(eta)) / 1000.0  #np.cosh(safe_data["{}_CB_Eta".format(charge)])) / (1000.0) #convert to GeV
         this_charge = np.sign(qop)
 
         if np.any(np.isnan(eta)): print("Nan etas! {} of {}".format(np.sum(1.0 * np.isnan(eta)), nevents))
         if np.any(pt < 0.0): print("Negative pt!")
         if np.any(original_charge[safe] != this_charge): print("Some have flipped charge w.r.t. CB")
 
-        print("The max eta after combination was ", np.max(eta[np.logical_not(np.isnan(eta))]))
+        #print("The max eta after combination was ", np.max(eta[np.logical_not(np.isnan(eta))]))
 
         new_safe = (original_charge[safe] == this_charge) & (pt > 0.0) & (np.logical_not(np.isnan(eta)))
 
@@ -108,11 +127,13 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
         to_return_phi[:] = data["{}_CB_Phi".format(charge)]
         to_return_charge[:] = data["{}_CB_Charge".format(charge)]
 
-        #0.02 % of tracks have their charges flipped. Keep the original charge
-
         to_return_pt[safe] = pt[new_safe]
         to_return_eta[safe] = eta[new_safe]
         to_return_phi[safe] = phi[new_safe]
+
+        #print("Final CB pt ", to_return_pt)
+        #print("Final CB eta ", to_return_eta)
+        #print("Final CB phi ", to_return_phi)
 
         return to_return_pt, to_return_eta, to_return_phi
 
@@ -144,8 +165,8 @@ class WeightedCBCorrectionCov:
 
         if self.do_percent_corr and "Pos_ID_Pt_UNCORR" in data:
             print("Doing percent change correction")
-            pos_pts_uncorr, pos_etas_uncorr = get_calib_pt(data, charge="Pos", uncorr=True, do_full_matrix = self.do_full_matrix)
-            neg_pts_uncorr, neg_etas_uncorr = get_calib_pt(data, charge="Neg", uncorr=True, do_full_matrix = self.do_full_matrix)
+            pos_pts_uncorr, pos_etas_uncorr, pos_phis_uncorr = get_calib_pt(data, charge="Pos", uncorr=True, do_full_matrix = self.do_full_matrix)
+            neg_pts_uncorr, neg_etas_uncorr, neg_phis_uncorr = get_calib_pt(data, charge="Neg", uncorr=True, do_full_matrix = self.do_full_matrix)
 
             cbpt_pos = "Pos_CB_Pt"
             cbpt_neg = "Neg_CB_Pt"
@@ -169,13 +190,18 @@ class WeightedCBCorrectionCov:
             data["Pos_CB_Pt"] = (1.0 + ((pos_pts_corr - pos_pts_uncorr)/pos_pts_uncorr)) * data[cbpt_pos]
             data["Neg_CB_Pt"] = (1.0 + ((neg_pts_corr - neg_pts_uncorr)/neg_pts_uncorr)) * data[cbpt_neg]
 
-            data["Pos_CB_Eta"] = (1.0 + ((pos_etas_corr - pos_etas_uncorr)/pos_etas_uncorr)) * data[cbeta_pos]
-            data["Neg_CB_Eta"] = (1.0 + ((neg_etas_corr - neg_etas_uncorr)/neg_etas_uncorr)) * data[cbeta_neg]
+            #data["Pos_CB_Eta"] = (1.0 + ((pos_etas_corr - pos_etas_uncorr)/pos_etas_uncorr)) * data[cbeta_pos]
+            #data["Neg_CB_Eta"] = (1.0 + ((neg_etas_corr - neg_etas_uncorr)/neg_etas_uncorr)) * data[cbeta_neg]
 
-            data["Pos_CB_Phi"] = (1.0 + ((pos_phis_corr - pos_phis_uncorr)/pos_phis_uncorr)) * data[cbphi_pos]
-            data["Neg_CB_Phi"] = (1.0 + ((neg_phis_corr - neg_phis_uncorr)/neg_phis_uncorr)) * data[cbphi_neg]
+            #data["Pos_CB_Phi"] = (1.0 + ((pos_phis_corr - pos_phis_uncorr)/pos_phis_uncorr)) * data[cbphi_pos]
+            #data["Neg_CB_Phi"] = (1.0 + ((neg_phis_corr - neg_phis_uncorr)/neg_phis_uncorr)) * data[cbphi_neg]
 
         elif not self.do_percent_corr:
+            print("HERE")
+            charge = "Pos"
+            print("Original_CB ", data["{}_CB_Pt".format(charge)])
+            #print("Original_CB eta ", data["{}_CB_Eta".format(charge)])
+            #print("Original_CB phi ", data["{}_CB_Phi".format(charge)])
             data["Pos_CB_Pt"] = pos_pts_corr
             data["Neg_CB_Pt"] = neg_pts_corr
 
@@ -184,10 +210,23 @@ class WeightedCBCorrectionCov:
 
             data["Pos_CB_Phi"] = pos_phis_corr
             data["Neg_CB_Phi"] = neg_phis_corr
+            charge = "Pos"
+            print("Final_CB ", data["{}_CB_Pt".format(charge)])
+            #print("Final_CB eta ", data["{}_CB_Eta".format(charge)])
+            #print("Final_CB phi ", data["{}_CB_Phi".format(charge)])
+            #print("OVER")
 
         if hasattr(data, "dtype"): keys =  data.dtype.names
         else: keys = list(data.keys())
 
+        print("Original masses ", data["Pair_{}_Mass".format("CB")])
+        print("CB ", np.std(data["Pair_{}_Mass".format("CB")][np.abs(data["Pair_{}_Mass".format("CB")] - 91.2) < 12]))
+        print("ID ",np.std(data["Pair_{}_Mass".format("ID")][np.abs(data["Pair_{}_Mass".format("ID")] - 91.2) < 12]))
+        print("ME ",np.std(data["Pair_{}_Mass".format("ME")][np.abs(data["Pair_{}_Mass".format("ME")] - 91.2) < 12]))
         data["Pair_{}_Mass".format("CB")] = recalc_cb_mass(data)
+        print("Final masses ", data["Pair_{}_Mass".format("CB")])
+        print("CB ", np.std(data["Pair_{}_Mass".format("CB")][np.abs(data["Pair_{}_Mass".format("CB")] - 91.2) < 12]))
+        print("ID ",np.std(data["Pair_{}_Mass".format("ID")][np.abs(data["Pair_{}_Mass".format("ID")] - 91.2) < 12]))
+        print("ME ",np.std(data["Pair_{}_Mass".format("ME")][np.abs(data["Pair_{}_Mass".format("ME")] - 91.2) < 12]))
         return data
 
