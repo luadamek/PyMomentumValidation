@@ -707,6 +707,56 @@ def subleading_me_phi(event):
     return get_variable(event, "ME", "Phi", leading=False)
 branches = ["Pos_ME_Phi", "Neg_ME_Phi"]
 calc_subleading_me_phi = Calculation(subleading_me_phi, branches)
+
+
+def pos_id_reco_over_truth_pt(event):
+    to_return = event["Pos_ID_Pt"]/event["Pos_TruthPt"]
+    unsafe = (event["Pos_ID_Pt"] < 0) | (event["Pos_TruthPt"] < 0)
+    to_return[unsafe] = -999.0
+    return to_return
+branches = ["Pos_ID_Pt", "Pos_TruthPt"]
+calc_pos_id_reco_over_truth_pt = Calculation(pos_id_reco_over_truth_pt, branches)
+
+def pos_me_reco_over_truth_pt(event):
+    to_return = event["Pos_ME_Pt"]/event["Pos_TruthPt"]
+    unsafe = (event["Pos_ME_Pt"] < 0) | (event["Pos_TruthPt"] < 0)
+    to_return[unsafe] = -999.0
+    return to_return
+branches = ["Pos_ME_Pt", "Pos_TruthPt"]
+calc_pos_me_reco_over_truth_pt = Calculation(pos_me_reco_over_truth_pt, branches)
+
+def pos_cb_reco_over_truth_pt(event):
+    to_return = event["Pos_CB_Pt"]/event["Pos_TruthPt"]
+    unsafe = (event["Pos_CB_Pt"] < 0) | (event["Pos_TruthPt"] < 0)
+    to_return[unsafe] = -999.0
+    return to_return
+branches = ["Pos_CB_Pt", "Pos_TruthPt"]
+calc_pos_cb_reco_over_truth_pt = Calculation(pos_cb_reco_over_truth_pt, branches)
+
+def neg_id_reco_over_truth_pt(event):
+    to_return = event["Neg_ID_Pt"]/event["Neg_TruthPt"]
+    unsafe = (event["Neg_ID_Pt"] < 0) | (event["Neg_TruthPt"] < 0)
+    to_return[unsafe] = -999.0
+    return to_return
+branches = ["Neg_ID_Pt", "Neg_TruthPt"]
+calc_neg_id_reco_over_truth_pt = Calculation(neg_id_reco_over_truth_pt, branches)
+
+def neg_me_reco_over_truth_pt(event):
+    to_return = event["Neg_ME_Pt"]/event["Neg_TruthPt"]
+    unsafe = (event["Neg_ME_Pt"] < 0) | (event["Neg_TruthPt"] < 0)
+    to_return[unsafe] = -999.0
+    return to_return
+branches = ["Neg_ME_Pt", "Neg_TruthPt"]
+calc_neg_me_reco_over_truth_pt = Calculation(neg_me_reco_over_truth_pt, branches)
+
+def neg_cb_reco_over_truth_pt(event):
+    to_return = event["Neg_CB_Pt"]/event["Neg_TruthPt"]
+    unsafe = (event["Neg_CB_Pt"] < 0) | (event["Neg_TruthPt"] < 0)
+    to_return[unsafe] = -999.0
+    return to_return
+branches = ["Neg_CB_Pt", "Neg_TruthPt"]
+calc_neg_cb_reco_over_truth_pt = Calculation(neg_cb_reco_over_truth_pt, branches)
+
 ###################################################################
 
 import numexpr as ne

@@ -698,6 +698,192 @@ def fill_histograms(hist_filler, output_filename):
                                          xlabel ='#eta^{CB} [GeV]',\
                                          ylabel = 'M_{\mu\mu} [GeV]')
 
+    bins_pt = list(np.logspace(5.0, 300.0, 30))
+    bins_eta_id = list(np.linspace(-2.5, 2.5, 26))
+    bins_eta_mecb = list(np.linspace(-2.7, 2.7, 28))
+    bins_truth_over_reco = list(np.linspace(0.5, 1.5, 100))
+
+    #make resolution histograms for ID, ME and CB Tracks
+
+    from variables import\
+    calc_pos_id_reco_over_truth_pt, calc_neg_id_reco_over_truth_pt,\
+    calc_pos_me_reco_over_truth_pt, calc_neg_me_reco_over_truth_pt,\
+    calc_pos_cb_reco_over_truth_pt, calc_neg_cb_reco_over_truth_pt
+
+    ##### ID PLOTS #########
+    histogram_name = "3DEtaPtVsPtOverTruth_ID_Pos"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_pos_id_pt,\
+                                         calc_pos_id_eta,\
+                                         calc_pos_id_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_ID],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_id,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{ID} [GeV]',\
+                                         ylabel ='#eta^{ID} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    histogram_name = "3DEtaPtVsPtOverTruth_ID_Neg"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_neg_id_pt,\
+                                         calc_neg_id_eta,\
+                                         calc_neg_id_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_ID],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_id,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{ID} [GeV]',\
+                                         ylabel ='#eta^{ID} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    ##### ME PLOTS #########
+    histogram_name = "3DEtaPtVsPtOverTruth_ME_Pos"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_pos_me_pt,\
+                                         calc_pos_me_eta,\
+                                         calc_pos_me_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_ME],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_mecb,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{ME} [GeV]',\
+                                         ylabel ='#eta^{ME} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    histogram_name = "3DEtaPtVsPtOverTruth_ME_Neg"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_neg_me_pt,\
+                                         calc_neg_me_eta,\
+                                         calc_neg_me_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_ME],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_mecb,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{ME} [GeV]',\
+                                         ylabel ='#eta^{ME} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    ##### CB PLOTS #########
+    histogram_name = "3DEtaPtVsPtOverTruth_CB_Pos"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_pos_cb_pt,\
+                                         calc_pos_cb_eta,\
+                                         calc_pos_cb_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_CB],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_mecb,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{CB} [GeV]',\
+                                         ylabel ='#eta^{CB} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    histogram_name = "3DEtaPtVsPtOverTruth_CB_Neg"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_neg_cb_pt,\
+                                         calc_neg_cb_eta,\
+                                         calc_neg_cb_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_CB],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_mecb,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{CB} [GeV]',\
+                                         ylabel ='#eta^{CB} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    bins_pt = list(np.logspace(5.0, 300.0, 30))
+    bins_eta_id = list(np.linspace(-2.5, 2.5, 26))
+    bins_eta_mecb = list(np.linspace(-2.7, 2.7, 28))
+    bins_truth_over_reco = list(np.linspace(0.0, 2.0, 100))
+
+    #make resolution histograms for ID, ME and CB Tracks
+
+    from variables import\
+    calc_pos_id_reco_over_truth_pt, calc_neg_id_reco_over_truth_pt,\
+    calc_pos_me_reco_over_truth_pt, calc_neg_me_reco_over_truth_pt,\
+    calc_pos_cb_reco_over_truth_pt, calc_neg_cb_reco_over_truth_pt
+
+    ##### ID PLOTS #########
+    histogram_name = "3DEtaPtVsPtOverTruth_ID_Pos_WIDER"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_pos_id_pt,\
+                                         calc_pos_id_eta,\
+                                         calc_pos_id_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_ID],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_id,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{ID} [GeV]',\
+                                         ylabel ='#eta^{ID} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    histogram_name = "3DEtaPtVsPtOverTruth_ID_Neg_WIDER"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_neg_id_pt,\
+                                         calc_neg_id_eta,\
+                                         calc_neg_id_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_ID],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_id,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{ID} [GeV]',\
+                                         ylabel ='#eta^{ID} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    ##### ME PLOTS #########
+    histogram_name = "3DEtaPtVsPtOverTruth_ME_Pos_WIDER"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_pos_me_pt,\
+                                         calc_pos_me_eta,\
+                                         calc_pos_me_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_ME],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_mecb,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{ME} [GeV]',\
+                                         ylabel ='#eta^{ME} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    histogram_name = "3DEtaPtVsPtOverTruth_ME_Neg_WIDER"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_neg_me_pt,\
+                                         calc_neg_me_eta,\
+                                         calc_neg_me_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_ME],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_mecb,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{ME} [GeV]',\
+                                         ylabel ='#eta^{ME} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    ##### CB PLOTS #########
+    histogram_name = "3DEtaPtVsPtOverTruth_CB_Pos_WIDER"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_pos_cb_pt,\
+                                         calc_pos_cb_eta,\
+                                         calc_pos_cb_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_CB],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_mecb,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{CB} [GeV]',\
+                                         ylabel ='#eta^{CB} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
+    histogram_name = "3DEtaPtVsPtOverTruth_CB_Neg_WIDER"
+    hist_filler.book_3dhistogram_fill(histogram_name,\
+                                         calc_neg_cb_pt,\
+                                         calc_neg_cb_eta,\
+                                         calc_neg_cb_reco_over_truth_pt,\
+                                         selections = [mass_selZ_func_CB],\
+                                         bins_x = bins_pt,\
+                                         bins_y = bins_eta_mecb,\
+                                         bins_z = bins_truth_over_reco,\
+                                         xlabel ='P_T^{CB} [GeV]',\
+                                         ylabel ='#eta^{CB} ',\
+                                         zlabel = 'P_T^{Reco}/P_T^{Truth}')
+
 
     for sel_id, sel_me, sel_cb, name in zip([[sel_forward_id, sel_min_fifteen_id_pts], [sel_backward_id, sel_min_fifteen_id_pts]],\
                                     [[sel_forward_me, sel_min_fifteen_me_pts], [sel_backward_me, sel_min_fifteen_me_pts]],\
@@ -736,6 +922,7 @@ def fill_histograms(hist_filler, output_filename):
                                              range_high = 91.2+12.0,\
                                              xlabel ='M_{#mu#mu}^{CB} [GeV]',\
                                              ylabel = 'Number Events')
+
 
     for sel_id, sel_me, sel_cb, name in zip([[sel_pos_leading_id, sel_min_fifteen_id_pts], [sel_neg_leading_id, sel_min_fifteen_id_pts], []],\
                                     [[sel_pos_leading_me, sel_min_fifteen_me_pts], [sel_neg_leading_me, sel_min_fifteen_me_pts], []],\

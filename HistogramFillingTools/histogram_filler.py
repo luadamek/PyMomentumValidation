@@ -267,6 +267,47 @@ class HistogramFiller:
                 fill_hist(histogram_dictionary[channel], to_fill, to_weight)
         return histogram_dictionary
 
+    def fill_3d_histograms(self, histogram_name, data, variable_x, variable_y, variable_z, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", bins_z = 1, range_low_z = 0.000001,     range_high_z=1. - 0.00001, zlabel=""):
+        '''the 3-d histgram with variable_x and variable_y on the z and y axes'''
+        name_to_fill_x = variable_x.name
+        name_to_fill_y = variable_y.name
+        name_to_fill_z = variable_z.name
+        variables = [variable_x, variable_y, variable_z]
+        histogram_dictionary = {}
+        for channel in self.channels:
+            if (type(bins_x) == list and type(bins_y) == list):
+                bins_array_x = array('d',bins_x)
+                bins_array_y = array('d',bins_y)
+                bins_array_y = array('d',bins_z)
+                histogram_dictionary[channel] = ROOT.TH3D(histogram_name + channel, histogram_name + channel, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y, len(bins_array_z)-1, bins_array_z)
+            elif (type(bins_x) != list and type(bins_y) != list):
+                histogram_dictionary[channel] = ROOT.TH2D(histogram_name + channel, histogram_name + channel, bins_x, range_low_x + 0.0000001, range_high_x - 0.000001, bins_y, range_low_y+0.0000001, range_high_y + 0.0000001, bins_z, range_low_z+0.0000001, range_high_z + 0.0000001)
+            else:
+                raise ValueError("both of the bins_x and bins_y variables need to be the same type. Both integers, or both lists")
+            histogram_dictionary[channel].GetXaxis().SetTitle(xlabel)
+            histogram_dictionary[channel].GetYaxis().SetTitle(ylabel)
+            histogram_dictionary[channel].GetZaxis().SetTitle(zlabel)
+            histogram_dictionary[channel].Sumw2()
+
+        for channel in self.channels:
+                variable_dict, selection_dict, weights = data[channel]
+                total_selection = np.ones(len(weights)) > 0.0
+                for selection in selections:
+                    total_selection &= selection_dict[selection.name]
+                to_weight = weights[total_selection]
+                n_sel = len(to_weight)
+                to_fill = np.zeros((n_sel,3))
+                to_fill[:,0] = variable_dict[name_to_fill_x][total_selection]
+                to_fill[:,1] = variable_dict[name_to_fill_y][total_selection]
+                to_fill[:,2] = variable_dict[name_to_fill_z][total_selection]
+                if self.verbose: print(to_fill)
+                if self.verbose: print(to_weight)
+                if self.verbose: print("Filling Variable " + variable.name)
+                fill_hist(histogram_dictionary[channel], to_fill, to_weight)
+        return histogram_dictionary
+
+
+
     def fill_2d_tprofile_histograms(self, histogram_name, data, variable_x, variable_y, variable_z, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", zlabel="", error_option=""):
         '''the 2-d histgram with variable_x and variable_y drawn'''
         name_to_fill_x = variable_x.name
@@ -372,6 +413,25 @@ class HistogramFiller:
         if variable_y.name not in [var.name for var in self.all_variables]:
             self.all_variables.append(variable_y)
 
+    def book_3dhistogram_fill(self, histogram_name, variable_x, variable_y,variable_z, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", bins_z=1, range_low_z=0.000001, range_high_z=1. - 0.00001, zlabel=""):
+        if histogram_name not in self.histogram_filling_functions:
+            self.histogram_filling_functions[histogram_name] = lambda data : self.fill_3d_histograms(histogram_name, data, variable_x, variable_y,variable_z, selections = selections, bins_x = bins_x, range_low_x =range_low_x, range_high_x=range_high_x,  xlabel =xlabel, bins_y=bins_y, range_low_y=range_low_y, range_high_y=range_high_y, ylabel = ylabel, bins_z=bins_z, range_low_z=range_low_z, range_high_z=range_high_z, zlabel=zlabel)
+        else:
+            raise ValueError("histogram name already exists")
+
+        for selection in selections:
+            if selection.name not in [sel.name for sel in self.all_selections]:
+                self.all_selections.append(selection)
+
+        if variable_x.name not in [var.name for var in self.all_variables]:
+            self.all_variables.append(variable_x)
+
+        if variable_y.name not in [var.name for var in self.all_variables]:
+            self.all_variables.append(variable_y)
+
+        if variable_z.name not in [var.name for var in self.all_variables]:
+            self.all_variables.append(variable_z)
+
     def book_tprofile_fill(self, histogram_name,  variable_x, variable_y, selections = [], bins = 1, range_low = 0.000001, range_high=1. - 0.00001,  xlabel ="", ylabel = ""):
         if histogram_name not in self.histogram_filling_functions:
             self.histogram_filling_functions[histogram_name] = lambda data : self.fill_tprofile_histograms(histogram_name, data, variable_x, variable_y, selections = selections, bins = bins, range_low = range_low, range_high=range_high,  xlabel =xlabel, ylabel=ylabel)
@@ -458,7 +518,14 @@ def branchDresser(branches):
                 if b == this_branchname:
                     clean_branches.append(("{}_{}_TrackCovMatrix".format(charge, location), -1.0, 15))
                     found = True
+        for charge in ["Pos", "Neg"]:
+            for location in ["ID", "ME", "CB"]:
+                this_branchname = "{}_{}_TrackPars".format(charge, location)
+                if b == this_branchname:
+                    clean_branches.append(("{}_{}_TrackPars".format(charge, location), -1.0, 5))
+                    found = True
         if not found: clean_branches.append(b)
+
     return clean_branches
 
 def get_x_section_weight(filename):
@@ -502,6 +569,8 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, t
     data = None
     for i in range(1, 50):
         try:
+            print(branches)
+            assert len(branches) == len(list(set(branches)))
             data = tree2array(tree, branches, selection_string, start = partition[0], stop = partition[1])
         except Exception as e:
             print("Catching a failed attempt to retrieve data error. Trying agagin in 5 seconds")
@@ -511,6 +580,50 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, t
             break
 
     data = {key : data[key] for key in data.dtype.names} #convert to a dictionary so that new columns can be easily addded
+
+    #handle the covariance matrix branches
+    for key in data:
+        if "TrackCovMatrix" in key:
+            new_matrix = np.zeros((len(data[key]), 5, 5))
+            index_to_index =\
+            {\
+            0:[0,0],\
+            1:[1,0],\
+            2:[1,1],\
+            3:[2,0],\
+            4:[2,1],\
+            5:[2,2],\
+            6:[3,0],\
+            7:[3,1],\
+            8:[3,2],\
+            9:[3,3],\
+            10:[4,0],\
+            11:[4,1],\
+            12:[4,2],\
+            13:[4,3],\
+            14:[4,4],\
+            }
+            for ind in index_to_index:
+                new_matrix[:,index_to_index[ind][0], index_to_index[ind][1]] = data[key][:,ind]
+                new_matrix[:,index_to_index[ind][1], index_to_index[ind][0]] = data[key][:,ind]
+            data[key] = new_matrix
+
+            #cov matrix seems to have units of MeV
+
+            # new need to check the units of the cov matrix
+            if "ID" in key and "Pos" in key:
+               p = data["Pos_ID_Pt"]*np.cosh(data["Pos_ID_Eta"])
+               p_GeV = p
+               p_MeV = p_GeV * 1000.0
+               p_KeV = p_MeV * 1000.0
+
+               cov_el = new_matrix[:, 4, 4] ** 0.5
+
+               print(data["Pos_ID_Pt"])
+               print(data["Pos_ID_Eta"])
+               print("GeV? ", 100.0 * cov_el/(1/p_GeV))
+               print("MeV? ", 100.0 * cov_el/(1/p_MeV))
+               print("KeV? ", 100.0 * cov_el/(1/p_KeV))
 
     if data is None:
         raise ValueError("Could not retrieve the data.")
