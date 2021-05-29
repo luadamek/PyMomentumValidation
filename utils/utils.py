@@ -256,7 +256,7 @@ def get_files(flavour):
 
     to_return = {}
     for key in all_files:
-        to_return[key] =  glob_all_files([os.path.join(directory, f) for f in all_files[key]])
+        to_return[key] =  glob_all_files([directory +  f for f in all_files[key]])
 
     return to_return
 
@@ -373,6 +373,7 @@ def get_entry_steps(root_file, step_size = 10000, tree_name = "tree_incl_all"):
     ttree = tfile.Get(tree_name)
     all_entries = ttree.GetEntries()
     last_entry = 0
+    if all_entries == 0: return [(0,0)]
     steps = []
     while last_entry < all_entries:
         steps.append((last_entry, last_entry + step_size))

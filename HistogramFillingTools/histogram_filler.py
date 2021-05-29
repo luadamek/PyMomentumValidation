@@ -278,9 +278,9 @@ class HistogramFiller:
             if (type(bins_x) == list and type(bins_y) == list):
                 bins_array_x = array('d',bins_x)
                 bins_array_y = array('d',bins_y)
-                bins_array_y = array('d',bins_z)
+                bins_array_z = array('d',bins_z)
                 histogram_dictionary[channel] = ROOT.TH3D(histogram_name + channel, histogram_name + channel, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y, len(bins_array_z)-1, bins_array_z)
-            elif (type(bins_x) != list and type(bins_y) != list):
+            elif (type(bins_x) != list and type(bins_y) != list) and type(bins_z) != list:
                 histogram_dictionary[channel] = ROOT.TH2D(histogram_name + channel, histogram_name + channel, bins_x, range_low_x + 0.0000001, range_high_x - 0.000001, bins_y, range_low_y+0.0000001, range_high_y + 0.0000001, bins_z, range_low_z+0.0000001, range_high_z + 0.0000001)
             else:
                 raise ValueError("both of the bins_x and bins_y variables need to be the same type. Both integers, or both lists")

@@ -498,7 +498,7 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
             for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", DefaultCombination())
 
         if add_BDT_combination:
-            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", BDTCombination(os.path.join(os.getenv("MomentumValidationDir"), "BDTs/FirstBDTs/", "TestModel.pkl")))
+            for hist_filler in filler_list: hist_filler.apply_calibration_for_channel("__ALL__", BDTCombination(os.path.join(os.getenv("MomentumValidationDir"), "BDTs/SecondBDTs/15_qop_False.pkl")))
 
         #create a pickle file for each submission
         pickle.dump(filler_list, open(filler_file, "wb" ) )
@@ -549,6 +549,7 @@ if __name__ == "__main__":
         job_name = args.job_name
         n_jobs = args.n_jobs
         queue_flavour = args.queue_flavour
+        if args.test_job: args.file_flavour = "TEST"
         file_flavour = args.file_flavour
         filling_script = args.filling_script
         inject = args.inject

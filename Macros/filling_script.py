@@ -698,10 +698,10 @@ def fill_histograms(hist_filler, output_filename):
                                          xlabel ='#eta^{CB} [GeV]',\
                                          ylabel = 'M_{\mu\mu} [GeV]')
 
-    bins_pt = list(np.logspace(5.0, 300.0, 30))
+    bins_pt = list(np.logspace(np.log10(5.0), np.log10(300.0), 30))
     bins_eta_id = list(np.linspace(-2.5, 2.5, 26))
     bins_eta_mecb = list(np.linspace(-2.7, 2.7, 28))
-    bins_truth_over_reco = list(np.linspace(0.5, 1.5, 100))
+    bins_truth_over_reco = list(np.linspace(0.5, 1.5, 1000))
 
     #make resolution histograms for ID, ME and CB Tracks
 
@@ -791,10 +791,10 @@ def fill_histograms(hist_filler, output_filename):
                                          ylabel ='#eta^{CB} ',\
                                          zlabel = 'P_T^{Reco}/P_T^{Truth}')
 
-    bins_pt = list(np.logspace(5.0, 300.0, 30))
+    bins_pt = list(np.logspace(np.log10(5.0), np.log10(300.0), 30))
     bins_eta_id = list(np.linspace(-2.5, 2.5, 26))
     bins_eta_mecb = list(np.linspace(-2.7, 2.7, 28))
-    bins_truth_over_reco = list(np.linspace(0.0, 2.0, 100))
+    bins_truth_over_reco = list(np.linspace(0.0, 2.0, 1000))
 
     #make resolution histograms for ID, ME and CB Tracks
 
