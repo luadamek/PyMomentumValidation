@@ -451,6 +451,16 @@ def pos_id_pt(event):
 branches = ["Pos_ID_Pt"]
 calc_pos_id_pt = Calculation(pos_id_pt, branches)
 
+def pos_truth_pt(event):
+    return event["Pos_TruthPt"]
+branches = ["Pos_TruthPt"]
+calc_pos_truth_pt = Calculation(pos_truth_pt, branches)
+
+def neg_truth_pt(event):
+    return event["Neg_TruthPt"]
+branches = ["Neg_TruthPt"]
+calc_neg_truth_pt = Calculation(neg_truth_pt, branches)
+
 def pos_ms_pt(event):
     return event["Pos_MS_Pt"]
 branches = ["Pos_MS_Pt"]

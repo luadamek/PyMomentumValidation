@@ -91,6 +91,8 @@ class MCCorrection:
 
         self.store_uncorr = store_uncorr
 
+        self.selection_cache = {}
+
         self.branches = []
         for key in self.__dict__:
             if hasattr(self.__dict__[key], "branches"):
@@ -101,19 +103,32 @@ class MCCorrection:
 
         passes_pos_selection = []
         passes_neg_selection = []
+        #add temporary branches to the data to speed up evaluation
         for el in self.pos_selections:
             if type(el) == dict:
                 args = [data] + el["args"]
-                passes_pos_selection.append( el["func"](*args) )
+                descr = el["func"].__name__ + "_".join([str(e) for e in el["args"]])
+                if descr not in data:
+                    data[descr] = el["func"](*args)
+                passes_pos_selection.append( data[descr] )
             else:
-                passes_pos_selection.append(el.eval(data))
+                descr = el.name + "__EVAL__"
+                if descr not in data:
+                    data[descr] = el.eval(data)
+                passes_pos_selection.append(data[descr])
 
         for el in self.neg_selections:
             if type(el) == dict:
                 args = [data] + el["args"]
-                passes_neg_selection.append(el["func"](*args))
+                descr = el["func"].__name__ + "_".join([str(e) for e in el["args"]])
+                if descr not in data:
+                    data[descr] = el["func"](*args)
+                passes_neg_selection.append( data[descr] )
             else:
-                passes_neg_selection.append(el.eval(data))
+                descr = el.name + "__EVAL__"
+                if descr not in data:
+                    data[descr] = el.eval(data)
+                passes_neg_selection.append(data[descr])
 
         passes_pos_selection = np.logical_and.reduce(passes_pos_selection)
         passes_neg_selection = np.logical_and.reduce(passes_neg_selection)
@@ -144,8 +159,8 @@ class MCCorrection:
             tan_theta_pos = np.tan(2.0 * np.arctan(np.exp(-1.0 * pos_abs_etas)))
             tan_theta_neg = np.tan(2.0 * np.arctan(np.exp(-1.0 * neg_abs_etas)))
 
-            third_term_pos[forward_pos] = third_term_pos[forward_pos]/(tan_theta_pos[forward_pos]**2)
-            third_term_neg[forward_neg] = third_term_neg[forward_neg]/(tan_theta_neg[forward_neg]**2)
+            third_term_pos[forward_pos] = third_term_pos[forward_pos]/(tan_theta_pos[forward_pos])
+            third_term_neg[forward_neg] = third_term_neg[forward_neg]/(tan_theta_neg[forward_neg])
 
 
         #print("s0", self.s0)
