@@ -19,4 +19,8 @@ class RecalculateMasses:
             variable_name = "Pair_{}_Mass".format(region)
             if variable_name in data: data[variable_name] = calc.eval(data)
 
+        print("masses after recalculation")
+        for region in ["ID", "CB", "ME"]:
+            print(data["Pair_{}_Mass".format(region)])
+
         return data

@@ -171,53 +171,55 @@ if __name__ == "__main__":
     args.method = "matrix"
 
     df, eta_edges, phi_edges = get_df_for_job(args)
-    #create a phi binning:
-    phi_binning_pos = Binning("Pos_{}_Phi".format(args.detector_location), phi_edges, None, repr_override=None)
-    phi_binning_neg = Binning("Neg_{}_Phi".format(args.detector_location), phi_edges, None, repr_override=None)
 
-    pos_eta_subbins = []
-    neg_eta_subbins = []
-    for i in range(0, len(eta_edges) - 1):
-        pos_eta_subbins.append(phi_binning_pos)
-        neg_eta_subbins.append(phi_binning_neg)
+    if len(df) != 0: 
+       #create a phi binning:
+       phi_binning_pos = Binning("Pos_{}_Phi".format(args.detector_location), phi_edges, None, repr_override=None)
+       phi_binning_neg = Binning("Neg_{}_Phi".format(args.detector_location), phi_edges, None, repr_override=None)
 
-    #create a global binning scheme
-    global_binning_pos = Binning("Pos_{}_Eta".format(args.detector_location), eta_edges, pos_eta_subbins)
-    global_binning_pos.recursively_include_overflow(False)
-    global_binning_neg = Binning("Neg_{}_Eta".format(args.detector_location), eta_edges, neg_eta_subbins)
-    global_binning_neg.recursively_include_overflow(False)
-    df["pos_bindex"] = global_binning_pos.get_global_bindex(df)
-    df["neg_bindex"] = global_binning_neg.get_global_bindex(df)
+       pos_eta_subbins = []
+       neg_eta_subbins = []
+       for i in range(0, len(eta_edges) - 1):
+           pos_eta_subbins.append(phi_binning_pos)
+           neg_eta_subbins.append(phi_binning_neg)
 
-    if not args.bootstraps:
-        cov, equal_to, nentries = get_cov_matrices(df, args.detector_location)
-    else:
-        cov = []
-        equal_to = []
-        nentries = []
-        for bootstrap_fname in args.bootstraps.split(","):
-            with open(bootstrap_fname, "rb") as f:
-                import pickle as pkl
-                bootstraps = pkl.load(f)
-                #print(bootstraps)
-            keep = bootstraps[np.in1d(bootstraps,df.index.values)] #only keep those values  that passed the selection for the dataframe
-            #print(bootstraps)
-            #print(df["read_index"].values)
-            #print(df)
-            #print(keep)
-            this_df = df.loc[keep]
-            #print(this_df)
-            #print(len(this_df))
-            this_cov, this_equal_to, this_nentries = get_cov_matrices(this_df, args.detector_location)
-            cov.append(this_cov)
-            equal_to.append(this_equal_to)
-            nentries.append(this_nentries)
+       #create a global binning scheme
+       global_binning_pos = Binning("Pos_{}_Eta".format(args.detector_location), eta_edges, pos_eta_subbins)
+       global_binning_pos.recursively_include_overflow(False)
+       global_binning_neg = Binning("Neg_{}_Eta".format(args.detector_location), eta_edges, neg_eta_subbins)
+       global_binning_neg.recursively_include_overflow(False)
+       df["pos_bindex"] = global_binning_pos.get_global_bindex(df)
+       df["neg_bindex"] = global_binning_neg.get_global_bindex(df)
 
-    if not os.path.exists(os.path.split(args.output_filename)[0]):
-        os.makedirs(os.path.split(args.output_filename)[0])
+       if not args.bootstraps:
+           cov, equal_to, nentries = get_cov_matrices(df, args.detector_location)
+       else:
+           cov = []
+           equal_to = []
+           nentries = []
+           for bootstrap_fname in args.bootstraps.split(","):
+               with open(bootstrap_fname, "rb") as f:
+                   import pickle as pkl
+                   bootstraps = pkl.load(f)
+                   #print(bootstraps)
+               keep = bootstraps[np.in1d(bootstraps,df.index.values)] #only keep those values  that passed the selection for the dataframe
+               #print(bootstraps)
+               #print(df["read_index"].values)
+               #print(df)
+               #print(keep)
+               this_df = df.loc[keep]
+               #print(this_df)
+               #print(len(this_df))
+               this_cov, this_equal_to, this_nentries = get_cov_matrices(this_df, args.detector_location)
+               cov.append(this_cov)
+               equal_to.append(this_equal_to)
+               nentries.append(this_nentries)
 
-    with open(args.output_filename, "wb") as f:
-        import pickle as pkl
-        pkl.dump({"cov":cov, "b":equal_to, "nentries":nentries, "pos_binning": global_binning_pos, "neg_binning": global_binning_neg, "detector_location":args.detector_location, "corrections":args.corrections}, f)
+       if not os.path.exists(os.path.split(args.output_filename)[0]):
+           os.makedirs(os.path.split(args.output_filename)[0])
+
+       with open(args.output_filename, "wb") as f:
+           import pickle as pkl
+           pkl.dump({"cov":cov, "b":equal_to, "nentries":nentries, "pos_binning": global_binning_pos, "neg_binning": global_binning_neg, "detector_location":args.detector_location, "corrections":args.corrections}, f)
     print("__FINISHED__")
 

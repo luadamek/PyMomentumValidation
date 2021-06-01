@@ -123,9 +123,9 @@ def apply_standard_mc_calibrations(hist_fillers):
         if period == "1516": descr = "15" #the params for 15 are the same as the params for 16
         else: descr = period
 
-        basedir_params = os.path.join(os.getenv("MomentumValidationDir"), "MCCorrection", "Recs2021_03_31_Prelim")
-        scale_params = os.path.join(basedir_params, "Scale_muons_Data{descr}_Recs2021_03_31_Prelim.dat".format(descr=descr))
-        smearing_params = os.path.join(basedir_params, "Smearing_muons_Data{descr}_Recs2021_03_31_Prelim.dat".format(descr=descr))
+        basedir_params = os.path.join(os.getenv("MomentumValidationDir"), "MCCorrection", "Recs2021_04_18_Prelim")
+        scale_params = os.path.join(basedir_params, "Scale_muons_Data{descr}_Recs2021_04_18_Prelim.dat".format(descr=descr))
+        smearing_params = os.path.join(basedir_params, "Smearing_muons_Data{descr}_Recs2021_04_18_Prelim.dat".format(descr=descr))
         scale_params = pd.read_csv(scale_params, sep=r'\s{1,}', engine='python')
         smearing_params = pd.read_csv(smearing_params, sep=r'\s{1,}', engine='python')
 
@@ -574,7 +574,7 @@ if __name__ == "__main__":
                 time.sleep(100)
             import glob
             to_merge = glob.glob(os.path.join(slurm_directory, "{}*.root".format(job_name)))
-            os.system("hadd -f {final_file} ".format(final_file = os.path.join(slurm_directory, "Output.root")) + " ".join(to_merge))
+            os.system("hadd -f -j 10 {final_file} ".format(final_file = os.path.join(slurm_directory, "Output.root")) + " ".join(to_merge))
             print("SUCCESS!")
 
 

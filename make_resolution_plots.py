@@ -5,13 +5,13 @@ input_files = [\
 #"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_v05_matrix/Output.root",\
 #Apr2_defaultcorr_v05_standardvars_nocalib
 #"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_defaultcorr_v05_standardvars_nocalib/Output.root",\
-("/project/def-psavard/ladamek/momentumvalidationoutput/May24_defaultcorr_simplecbcomb_latest_mc_v05_standardvars_matrix/Output.root", "SimpleComb"),\
-("/project/def-psavard/ladamek/momentumvalidationoutput/May24_defaultcorr_covcbcomb_latest_mc_v05_standardvars_matrix/Output.root", "QOPComb"),\
-("/project/def-psavard/ladamek/momentumvalidationoutput/May24_defaultcorr_fullcovcbcomb_latest_mc_v05_standardvars_matrix/Output.root", "Stacco"),\
-("/project/def-psavard/ladamek/momentumvalidationoutput/May24_defaultcorr_covcbcombpercent_latest_mc_v05_standardvars_matrix/Output.root", "QOPCombPercentCorr"),\
-("/project/def-psavard/ladamek/momentumvalidationoutput/May24_defaultcorr_nocbcomb_latest_mc_v05_standardvars_matrix/Output.root", "Default_SagittaCorr"),\
-#("/project/def-psavard/ladamek/momentumvalidationoutput/May16_nocbcomb_latest_mc_v05_standardvars_matrix/Output.root", "Default"),\
-("/project/def-psavard/ladamek/momentumvalidationoutput/May24_defaultcorr_bdtcbcomb_latest_mc_v05_standardvars_matrix/Output.root", "BDTComb"),\
+#("/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_simplecbcomb_latest_mc_v05_standardvars_matrix/Output.root", "SimpleComb"),\
+("/project/def-psavard/ladamek/momentumvalidationoutput/May16_nocbcomb_latest_mc_v05_standardvars_matrix/Output.root", "CB"),\
+("/project/def-psavard/ladamek/momentumvalidationoutput/May16_defaultcorr_nocbcomb_latest_mc_v05_standardvars_matrix/Output.root", "CB_SagittaCorr"),\
+("/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_covcbcomb_latest_mc_v05_standardvars_trimmed_matrix/Output.root", "QOPComb"),\
+("/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_fullcovcbcomb_latest_mc_v05_standardvars_trimmed_matrix/Output.root", "Staco"),\
+#("/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_covcbcombpercent_latest_mc_v05_standardvars_matrix/Output.root", "QOPCombPercentCorr"),\
+#("/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_bdtcbcomb_latest_mc_v05_standardvars_matrix/Output.root", "BDTComb"),\
 ]
 
 
@@ -27,19 +27,32 @@ def convert_to_rms_profile_histogram(histogram_2d):
     return hist
 
 
-def convert_3d_to_rms_profile_histogram(histogram_3d):
+def convert_3d_to_rms_profile_histogram(histogram_3d, example_hist):
     axes = extract_binning_from_histogram(histogram_3d)
     from array import array
     hist = ROOT.TH2D(histogram_3d.GetName() + "RMS", histogram_3d.GetName() + "RMS", len(axes["x"]) -1, array("d", axes["x"]), len(axes["y"]) -1, array("d", axes["y"]))
+    #hist.GetXaxis().SetTitleOffset(example_hist.GetXaxis().GetTitleOffset())
+    #hist.GetXaxis().SetTitleSize(example_hist.GetXaxis().GetTitleSize())
+
+    #hist.GetYaxis().SetTitleOffset(example_hist.GetXaxis().GetTitleOffset())
+    #hist.GetYaxis().SetTitleSize(example_hist.GetXaxis().GetTitleSize())
+
+    #hist.GetZaxis().SetTitleOffset(example_hist.GetXaxis().GetTitleOffset())
+    #hist.GetZaxis().SetTitleSize(example_hist.GetXaxis().GetTitleSize())
+
+    hist.GetXaxis().SetTitleSize(0.03500000014901161)
+    hist.GetYaxis().SetTitleSize(0.03500000014901161)
+    hist.GetZaxis().SetTitleSize(0.03500000014901161)
+    hist.GetXaxis().SetTitleOffset(1.0)
+    hist.GetYaxis().SetTitleOffset(0.0)
+    hist.GetZaxis().SetTitleOffset(1.0)
+
     hist.Sumw2()
     for i in range(1, hist.GetNbinsX() + 1):
         for j in range(1, hist.GetNbinsY() + 1):
-            hist.SetBinContent(i, histogram_3d.ProjectionZ(histogram_3d.GetName() + "projection_{}_{}".format(i,j), i, i, j, j).GetRMS())
-            hist.SetBinError(i, histogram_3d.ProjectionZ(histogram_3d.GetName() + "projection_{}_{}".format(i,j), i, i, j, j).GetRMSError())
-            if "MC" in histogram_3d.GetName():
-                for k in range(1, histogram_3d.GetNbinsZ()):
-                    print(histogram_3d.GetBinContent(i, j, k))
-                input()
+            hist.SetBinContent(i, j, histogram_3d.ProjectionZ(histogram_3d.GetName() + "projection_{}_{}".format(i,j), i, i, j, j).GetRMS())
+            hist.SetBinError(i, j, histogram_3d.ProjectionZ(histogram_3d.GetName() + "projection_{}_{}".format(i,j), i, i, j, j).GetRMSError())
+            print(hist.GetBinContent(i, j))
     return hist
 
 from histogram_manager import HistogramManager
@@ -57,7 +70,8 @@ for input_file, combination in input_files:
      if not os.path.exists(output_folder): os.makedirs(output_folder)
      histograms[combination] = {}
 
-     for detector_location in ["CB"]:#["ID", "ME", "CB"]:
+     #for detector_location in ["CB"]:#["ID", "ME", "CB"]:
+     for detector_location in ["ID", "ME", "CB"]:
           histogram_name = "MeanMassProfile_{}".format(detector_location)
           histograms[combination][detector_location] = {}
           for histogram_name in ["MeanMassProfile_{}".format(detector_location), "MassVsEta2D_{}".format(detector_location)]:
@@ -101,9 +115,11 @@ for input_file, combination in input_files:
                       systematic_histograms["MC{}".format(period)]["res"] = {"up": hists["MC{}_res_up".format(period)], "down": hists["MC{}_res_down".format(period)]}
 
                   draw_histograms(these_hists,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), logy=False, to_return = False, ftype = ".pdf", plot_dir = output_folder, x_axis_label = "#eta_{Lead}^{"+detector_location+"}", y_axis_label = y_axis_label,         extra_descr="#splitline:#sqrt{s} = 13 TeV, " + integrated_lumi + " fb^{-1}", savename="{}_{}_{}_{}".format(data_channel, mc_channel, histogram_name, detector_location), systematic_histograms=systematic_histograms)
+                  example_hist = these_hists[data_channel]
 
           #start here for the second loop to make the RMS maps
-          for histogram_name in ["3DEtaPtVsPtOverTruth_{detloc}_{charge}".format(detloc=detector_location, charge="{}"), "3DEtaPtVsPtOverTruth_{detloc}_{charge}_WIDER".format(detloc=detector_location, charge="{}")]:
+          for histogram_name in ["3DEtaPtVsPtOverTruth_{detloc}_{charge}".format(detloc=detector_location, charge="{}"), "3DEtaPtVsPtOverTruth_{detloc}_{charge}_WIDER".format(detloc=detector_location, charge="{}"), "3DEtaTruthPtVsPtOverTruth_{detloc}_{charge}".format(detloc=detector_location, charge="{}"), "3DEtaTruthPtVsPtOverTruth_{detloc}_{charge}_WIDER".format(detloc=detector_location, charge="{}")]:
+              continue
               ROOT.gStyle.SetErrorX(1.0)
               hists_pos = hm.get_histograms(histogram_name.format("Pos"))
               hists_neg = hm.get_histograms(histogram_name.format("Neg"))
@@ -113,7 +129,7 @@ for input_file, combination in input_files:
                   hists[key] = hists_pos[key]
                   hists[key].Add(hists_neg[key])
 
-              hists = {key:convert_3d_to_rms_profile_histogram(hists[key]) for key in hists}
+              hists = {key:convert_3d_to_rms_profile_histogram(hists[key], example_hist) for key in hists}
 
               for period in ["1516", "17", "18"]:
                   mc_channel = "MC{}".format(period)
@@ -129,9 +145,14 @@ for input_file, combination in input_files:
                   legend_labels = {data_channel: data_channel, mc_channel: "PP8 Z#rightarrow#mu#mu"}#, mc_channel_sherpa: "Sherpa Z#rightarrow#mu#mu"}
                   styles = {data_channel: 24, mc_channel:26}
                   colors = {data_channel: ROOT.kBlack, mc_channel: ROOT.kBlue}
-                  z_axis_label = "RMS(P_T^{Truth}/P_T^{Reco}) [GeV]"
+                  z_axis_label = "RMS(P_T^{Truth}/P_T^{Reco})"
+                  hists[mc_channel].GetZaxis().SetTitle(z_axis_label)
+                  if "TruthPt" not in histogram_name: hists[mc_channel].GetXaxis().SetTitle("P_T^{Reco}")
+                  else: hists[mc_channel].GetXaxis().SetTitle("P_T^{Truth}")
+                  hists[mc_channel].GetYaxis().SetTitle("#eta")
+                  hists[mc_channel].SetMinimum(0.0)
 
-                  draw_2d_histogram(hists[mc_channel], description = integrated_lumi + ", " + combination, normalize = True, output_location=output_folder, palette_override = None, ftype = "png", fix_axes = True)
+                  draw_2d_histogram(hists[mc_channel], description = integrated_lumi + ", " + combination, normalize = False, output_location=output_folder, palette_override = ROOT.kInvertedDarkBodyRadiator, ftype = "png", fix_axes = True)
 
 
 allcolors = [ROOT.kBlack, ROOT.kGreen + 2, ROOT.kBlue, ROOT.kRed, ROOT.kMagenta, ROOT.kOrange, ROOT.kGray]
@@ -163,13 +184,13 @@ for gen in ["Data", "MC"]:
         draw_histograms(to_plot,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), logy=False, to_return = False, ftype = ".pdf", plot_dir = output_folder, x_axis_label = "#eta_{Lead}^{"+detector_location+"}", y_axis_label = y_axis_label,         extra_descr=extra_descr, savename="{}_{}_{}_{}".format(gen, period, "all_combinations", "CB"))
 
         #make the ratio plot w.r.t. the default
-        divisor = "Default"
+        divisor = "CB"
         new_histograms = {}
         for el in to_plot:
             if el == divisor: continue
             new_histograms[el] = to_plot[el].Clone(to_plot[el].GetName() + "Ratio")
             new_histograms[el].Divide(to_plot[divisor])
 
-        draw_histograms(new_histograms,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), logy=False, to_return = False, ftype = ".pdf", plot_dir = output_folder, x_axis_label = "#eta_{Lead}^{"+detector_location+"}", y_axis_label = "X/Default", extra_descr=extra_descr, savename="{}_{}_{}_{}".format(gen, period, "all_combinations_ratio", "CB"))
+        draw_histograms(new_histograms,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), logy=False, to_return = False, ftype = ".pdf", plot_dir = output_folder, x_axis_label = "#eta_{Lead}^{"+detector_location+"}", y_axis_label = "X/CB", extra_descr=extra_descr, savename="{}_{}_{}_{}".format(gen, period, "all_combinations_ratio", "CB"))
 
 

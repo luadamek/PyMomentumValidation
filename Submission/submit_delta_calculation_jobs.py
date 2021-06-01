@@ -23,6 +23,7 @@ parser.add_argument('--fold', '-f', type=str, default="None", dest="fold")
 parser.add_argument('--bootstraps', '-bs', type=int, default=-1, dest="bootstraps")
 parser.add_argument('--default_correction', '-dc', action="store_true", dest="default_correction")
 parser.add_argument('--coarse_binning', '-cb', action="store_true", dest="coarse_binning")
+parser.add_argument('--fine_phi_binning', '-fpb', action="store_true", dest="fine_phi_binning")
 args = parser.parse_args()
 
 file_type = args.file_type
@@ -34,6 +35,7 @@ test = args.test
 job_base = args.job_base
 version = args.version
 corrections = args.corrections
+fine_phi_binning = args.fine_phi_binning
 jobdir = args.jobdir
 preselection = args.preselection
 select_before_corrections = args.select_before_corrections
@@ -149,6 +151,7 @@ for root_file in all_startstops:
         if args.bootstraps> 0: command += " --bootstraps {}".format(",".join(bootstrap_filelist))
         if args.default_correction: command += "  --default_correction  "
         if args.coarse_binning: command += " --coarse_binning"
+        if args.fine_phi_binning: command += " --fine_phi_binning"
         these_commands = commands + [command]
 
         if args.method == "matrix":

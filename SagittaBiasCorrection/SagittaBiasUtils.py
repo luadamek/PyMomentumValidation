@@ -32,6 +32,7 @@ eta_edges_else_coarse = np.linspace(-2.7, +2.7 , 27)
 
 phi_edges = np.linspace(-1.0 * math.pi, +1.0 * math.pi, 25)
 phi_edges_coarse = np.linspace(-1.0 * math.pi, +1.0 * math.pi, 2)
+phi_edges_fine = np.linspace(-1.0 * math.pi, +1.0 * math.pi, 50)
 def convert_df_to_data(df):
     data = {}
     for c in df.columns:
@@ -180,6 +181,7 @@ def get_parser():
     parser.add_argument("--fold", "-f", type=str, default="None")
     parser.add_argument("--default_correction", "-dc", action="store_true", dest="default_correction")
     parser.add_argument("--coarse_binning", "-cb", action="store_true", dest="coarse_binning")
+    parser.add_argument("--fine_phi_binning", "-fpb", action="store_true", dest="fine_phi_binning")
     return parser
 
 
@@ -219,6 +221,9 @@ def get_df_for_job(args):
 
     if args.coarse_binning:
         phi_edges = phi_edges_coarse
+
+    if args.fine_phi_binning:
+        phi_edges = phi_edges_fine
 
     do_add_pair_mass = False
     if "v03" in args.filename and "v2" in args.filename and "Pair_MS_Mass" in variables:

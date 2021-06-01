@@ -1,20 +1,40 @@
 from variables import recalc_id_mass, recalc_me_mass, calc_recalc_id_mass, calc_recalc_me_mass, calc_recalc_cb_mass, recalc_cb_mass
 import numpy as np
 
+def vec_stat_comb(vec1, mat1, vec2, mat2):
+    # vec1, vec2: shape = (5, )
+    # mat1, mat2: shape = (5, 5)
+    inv_mat1 = np.linalg.pinv(mat1)
+    inv_mat2 = np.linalg.pinv(mat2)
+    res_mat = np.linalg.pinv(inv_mat1 + inv_mat2)
+    res_vec = res_mat.dot(inv_mat1.dot(vec1) + inv_mat2.dot(vec2))
+    return res_vec, res_mat
+
 def stat_comb(vec1, mat1, vec2, mat2):
     # vec1, vec2: shape = (N events, 5, )
     # mat1, mat2: shape = (N events, 5, 5)
+    mat1 = mat1 * (1000.0**4)
+    mat2 = mat2 * (1000.0**4)
+    vec1 = vec1 * (1000.0**2)
+    vec2 = vec2 * (1000.0**2)
     inv_mat1 = np.linalg.inv(mat1)
     inv_mat2 = np.linalg.inv(mat2)
     res_mat = np.linalg.inv(inv_mat1 + inv_mat2)
     first_dot = np.einsum("...i,...ij", vec1, inv_mat1)#np.dot(vec1,inv_mat1)
     second_dot = np.einsum("...i,...ij", vec2, inv_mat2)#np.dot(vec2,inv_mat2)
     res_vec = np.einsum("...i,...ij", first_dot + second_dot, res_mat)#np.dot(first_dot + second_dot, res_mat)
+
+    res_vec /= (1000.0**2)
+    res_mat /= (1000.0*4)
+
     #for i in range(0, 100):
-    #    print(i)
-    #    print(vec1[i])
-    #    print(vec2[i])
-    #    print(res_vec[i])
+     #   vec1_i = vec1[i]
+    #    vec2_i = vec2[i]
+    #    mat1_i = mat1[i]
+    #    mat2_i = mat2[i]
+    #    vec, _ = vec_stat_comb(vec1_i, mat1_i, vec2_i, mat2_i)
+    #    print(vec, res_vec[i])
+
     return res_vec, res_mat
 
 def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
@@ -44,19 +64,18 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
     if not do_full_matrix:
 
         over_p_id = 1.0/(data[id_pt_string] * np.cosh(data[id_eta_string]))
-        res_id = data[id_cov_string][:,-1, -1] * 1000.0 * 1000.0
+        res_id = data[id_cov_string][:,-1, -1]
 
         over_p_me = 1.0/(data[me_pt_string] * np.cosh(data[me_eta_string]))
-        res_me = data[me_cov_string][:,-1, -1] * 1000.0 * 1000.0
+        res_me = data[me_cov_string][:,-1, -1]
 
         w = (res_me)/( (res_me) + (res_id) )
 
         over_p_cb = (w * over_p_id) + ( (1.0 - w) * over_p_me)
 
-
         pts = np.ones(len(data["Pos_CB_Pt"]))
 
-        pts[safe] = ((1.0 / over_p_cb[safe]) / np.cosh(data[id_eta_string][safe]))
+        pts[safe] = ((1.0 / over_p_cb[safe]) / np.cosh(data["{}_CB_Eta".format(charge)][safe]))
 
         pts[np.logical_not(safe)] = data["{}_CB_Pt".format(charge)][np.logical_not(safe)] #if there is no ID or ME track, default to the CB track
         return pts, data["{}_CB_Eta".format(charge)], data["{}_CB_Phi".format(charge)]
@@ -74,15 +93,42 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
         #put the corrected pt params into the track pars matrix
 
         safe_data = {key:data[key][safe] for key in data}
-        id_qop = safe_data[id_charge_string]/ (safe_data[id_pt_string]* np.cosh(safe_data[id_eta_string])  * 1000.0) #convert to 1/MeV
-        me_qop = safe_data[me_charge_string]/ (safe_data[me_pt_string]* np.cosh(safe_data[me_eta_string])* 1000.0)
+        id_qop = safe_data[id_charge_string]/ (safe_data[id_pt_string]* np.cosh(safe_data[id_eta_string])) /1000.0
+        me_qop = safe_data[me_charge_string]/ (safe_data[me_pt_string]* np.cosh(safe_data[me_eta_string])) /1000.0
         track_pars_id = safe_data[id_track_pars] # N x 5 array (N events x 5 track pars)
         track_pars_me = safe_data[me_track_pars]
 
         #insert the corrected variables into the track params vector
-        order = np.argsort(np.abs(track_pars_id[:,-1] - id_qop))[::-1]
+        #order = np.argsort(np.abs(track_pars_id[:,-1] - id_qop))[::-1]
         track_pars_id[:,-1] = id_qop
         track_pars_me[:,-1] = me_qop
+
+        qop_o = track_pars_id[:, 4]
+        theta_o = track_pars_id[:, 3]
+        phi_o = track_pars_id[:, 2]
+        z0_o = track_pars_id[:, 1]
+        d0_o = track_pars_id[:, 0]
+
+        print("qop id", qop_o)
+        print("theta id", theta_o)
+        print("phi id", phi_o)
+        print("z0 id", z0_o)
+        print("d0 id", d0_o)
+
+
+        qop_o = track_pars_me[:, 4]
+        theta_o = track_pars_me[:, 3]
+        phi_o = track_pars_me[:, 2]
+        z0_o = track_pars_me[:, 1]
+        d0_o = track_pars_me[:, 0]
+
+        print("qop me", qop_o)
+        print("theta me", theta_o)
+        print("phi me", phi_o)
+        print("z0 me", z0_o)
+        print("d0 me", d0_o)
+
+        print("\n\n\n")
 
         cov_mat_id = safe_data[id_cov_string] # N x 5 x 5 array (N events x 5 track pars x 5 track pars)
         cov_mat_me = safe_data[me_cov_string]
@@ -102,9 +148,12 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
         print("z0", z0)
         print("d0", d0)
 
-        p = np.abs((1.0/qop))
-        eta = -1.0 * np.log(np.tan(theta/2.0)) #This is not eta w.r.t. the origin of the ATLAS coordinate system careful!
-        pt = (p/np.cosh(eta)) / 1000.0  #np.cosh(safe_data["{}_CB_Eta".format(charge)])) / (1000.0) #convert to GeV
+        print("\n\n\n")
+
+        p = np.abs((1.0/qop)) / 1000.0
+        eta = -1.0 * np.log(np.tan(theta/2.0))  
+
+        pt = (p/np.cosh(eta))  
         this_charge = np.sign(qop)
 
         if np.any(np.isnan(eta)): print("Nan etas! {} of {}".format(np.sum(1.0 * np.isnan(eta)), nevents))
@@ -127,6 +176,18 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
         to_return_phi[:] = data["{}_CB_Phi".format(charge)]
         to_return_charge[:] = data["{}_CB_Charge".format(charge)]
 
+        print("Printing std dev of reco/truth before and after correction")
+        has_truth = data["{}_TruthPt".format(charge)] > 0.0
+        print(to_return_pt[has_truth])
+        ratio = (to_return_pt[has_truth]/data["{}_TruthPt".format(charge)][has_truth])
+        order = np.argsort(ratio)[::-1]
+        #print("pts ordered ", to_return_pt[has_truth][order])
+        #print("determinants", np.linalg.det(data[me_cov_string] * (1000.0**4))[has_truth][order])
+        print(ratio[order])
+        print(np.std(ratio))
+
+        print("Nevents and det is zero ", nevents, np.sum(1.0 * (np.linalg.det(data[me_cov_string] * (1000.0**4)) == 0)), np.sum(1.0 * (np.linalg.det(data[id_cov_string] * (1000.0**4)) == 0)))
+
         to_return_pt[safe] = pt[new_safe]
         to_return_eta[safe] = eta[new_safe]
         to_return_phi[safe] = phi[new_safe]
@@ -134,6 +195,13 @@ def get_calib_pt(data, charge="", uncorr=False, do_full_matrix = False):
         #print("Final CB pt ", to_return_pt)
         #print("Final CB eta ", to_return_eta)
         #print("Final CB phi ", to_return_phi)
+
+        print(to_return_pt[has_truth])
+        ratio = (to_return_pt[has_truth]/data["{}_TruthPt".format(charge)][has_truth])
+        order = np.argsort(ratio)[::-1]
+        print("pts ordered ", to_return_pt[has_truth][order])
+        print(ratio[order])
+        print(np.std((ratio)))
 
         return to_return_pt, to_return_eta, to_return_phi
 
@@ -155,6 +223,7 @@ class WeightedCBCorrectionCov:
                 branches+=calc_recalc_me_mass.branches
                 branches+=calc_recalc_cb_mass.branches
                 branches = list(set(branches))
+        branches += ["Pos_TruthPt", "Neg_TruthPt"]
         return branches
 
     def calibrate(self, data):

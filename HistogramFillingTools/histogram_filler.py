@@ -585,6 +585,7 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, t
     for key in data:
         if "TrackCovMatrix" in key:
             new_matrix = np.zeros((len(data[key]), 5, 5))
+            '''
             index_to_index =\
             {\
             0:[0,0],\
@@ -600,6 +601,25 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, t
             10:[4,0],\
             11:[4,1],\
             12:[4,2],\
+            13:[4,3],\
+            14:[4,4],\
+            }
+            '''
+            index_to_index =\
+            {\
+            0:[0,0],\
+            1:[1,0],\
+            2:[2,0],\
+            3:[3,0],\
+            4:[4,0],\
+            5:[1,1],\
+            6:[2,1],\
+            7:[3,1],\
+            8:[4,1],\
+            9:[2,2],\
+            10:[3,2],\
+            11:[4,2],\
+            12:[3,3],\
             13:[4,3],\
             14:[4,4],\
             }

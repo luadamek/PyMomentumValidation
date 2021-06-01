@@ -132,19 +132,20 @@ def z_selection(event, detector_location = ""):
     pos_pt = event["Pos_{}_Pt".format(detector_location)]
     neg_pt = event["Neg_{}_Pt".format(detector_location)]
 
-    quality_cut = (event["Pos_Quality".format(detector_location)] < 1) \
-    & (event["Neg_Quality".format(detector_location)] < 1)
+    #quality_cut = (event["Pos_Quality".format(detector_location)] < 1) \
+    #& (event["Neg_Quality".format(detector_location)] < 1)
 
     leading_cut = np.maximum(pos_pt, neg_pt) > 27.0
 
     pass_opp_charge = opp_charge(event)
 
-    author_cut = (event["Pos_Author".format(detector_location)] == 1) \
-    & (event["Neg_Author".format(detector_location)] == 1)
+    #author_cut = (event["Pos_Author".format(detector_location)] == 1) \
+    #& (event["Neg_Author".format(detector_location)] == 1)
 
-    isolation_cut = (event["Pos_ptvarcone30_TightTTVA_pt1000"]/pos_pt < 0.06) & (event["Pos_ptvarcone30_TightTTVA_pt1000"]/neg_pt < 0.06)
+    #isolation_cut = (event["Pos_ptvarcone30_TightTTVA_pt1000"]/pos_pt < 0.06) & (event["Pos_ptvarcone30_TightTTVA_pt1000"]/neg_pt < 0.06)
+    return leading_cut & pass_opp_charge #& quality_cut
 
-    return leading_cut & pass_opp_charge & author_cut & quality_cut & isolation_cut
+    #return leading_cut & pass_opp_charge & author_cut & quality_cut & isolation_cut
 
 z_sel_branches = ["Pos_{}_Pt", "Neg_{}_Pt", "Pos_Quality", "Neg_Quality", "Pair_IsOppCharge", "Pos_Author", "Neg_Author", "Pos_ptvarcone30_TightTTVA_pt1000", "Pos_ptvarcone30_TightTTVA_pt1000"]
 
