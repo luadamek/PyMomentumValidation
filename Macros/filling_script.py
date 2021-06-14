@@ -470,6 +470,10 @@ def fill_histograms(hist_filler, output_filename):
     mass_selZ_func_CB = create_selection_function(range_selection_function, [mass_CB], mass_CB, 91.2 - 12.0, 91.2 + 12.0)
     mass_selZ_func_ME = create_selection_function(range_selection_function, [mass_ME], mass_ME, 91.2 - 12.0, 91.2 + 12.0)
 
+    mass_selZ_func_ID_LucasBin = create_selection_function(range_selection_function, [mass_ID], mass_ID, 91.0 - 10.0, 91.0 + 10.0)
+    mass_selZ_func_ME_LucasBin = create_selection_function(range_selection_function, [mass_ME], mass_ME, 91.0 - 10.0, 91.0 + 10.0)
+    mass_selZ_func_CB_LucasBin = create_selection_function(range_selection_function, [mass_CB], mass_CB, 91.0 - 10.0, 91.0 + 10.0)
+
     mass_selJPSI_func_ID = create_selection_function(range_selection_function, [mass_ID], mass_ID, 2.8, 3.4)
     mass_selJPSI_func_CB = create_selection_function(range_selection_function, [mass_CB], mass_CB, 2.8, 3.4)
     mass_selJPSI_func_ME = create_selection_function(range_selection_function, [mass_ME], mass_ME, 2.8, 3.4)
@@ -698,10 +702,92 @@ def fill_histograms(hist_filler, output_filename):
                                          xlabel ='#eta^{CB} [GeV]',\
                                          ylabel = 'M_{\mu\mu} [GeV]')
 
+    ### Lucas' Binning
+    #make mean mass histograms for ID, ME and CB Tracks
+    histogram_name = "MeanMassProfile_ID_LucasBin"
+    hist_filler.book_tprofile_fill(histogram_name,\
+                                         calc_leading_id_eta,\
+                                         calc_id_mass,\
+                                         selections = [mass_selZ_func_ID_LucasBin],\
+                                         bins = 48,\
+                                         range_low = -2.5,\
+                                         range_high = 2.5,\
+                                         xlabel ='#eta^{ID} [GeV]',\
+                                         ylabel = '<M_{\mu\mu}> [GeV]')
+
+    #make mean mass histograms for ME, ME and CB Tracks
+    histogram_name = "MeanMassProfile_ME_LucasBin"
+    hist_filler.book_tprofile_fill(histogram_name,\
+                                         calc_leading_me_eta,\
+                                         calc_me_mass,\
+                                         selections = [mass_selZ_func_ME_LucasBin],\
+                                         bins = 48,\
+                                         range_low = -2.5,\
+                                         range_high = 2.5,\
+                                         xlabel ='#eta^{ME} [GeV]',\
+                                         ylabel = '<M_{\mu\mu}> [GeV]')
+
+    #make mean mass histograms for CB, CB and CB Tracks
+    histogram_name = "MeanMassProfile_CB_LucasBin"
+    hist_filler.book_tprofile_fill(histogram_name,\
+                                         calc_leading_cb_eta,\
+                                         calc_cb_mass,\
+                                         selections = [mass_selZ_func_CB_LucasBin],\
+                                         bins = 48,\
+                                         range_low = -2.5,\
+                                         range_high = 2.5,\
+                                         xlabel ='#eta^{CB} [GeV]',\
+                                         ylabel = '<M_{\mu\mu}> [GeV]')
+
+    #make mean mass histograms for ID, ME and CB Tracks
+    histogram_name = "MassVsEta2D_ID_{identified}_LucasBin"
+    hist_filler.book_2dhistogram_fill(histogram_name,\
+                                         calc_leading_id_eta,\
+                                         calc_id_mass,\
+                                         selections = [],\
+                                         bins_x = 48,\
+                                         range_low_x = -2.5,\
+                                         range_high_x = 2.5,\
+                                         bins_y = 400,\
+                                         range_low_y = 75.0,\
+                                         range_high_y = 105.0,\
+                                         xlabel ='#eta^{ID} [GeV]',\
+                                         ylabel = 'M_{\mu\mu} [GeV]')
+
+    #make mean mass histograms for ME, ME and CB Tracks
+    histogram_name = "MassVsEta2D_ME_LucasBin"
+    hist_filler.book_2dhistogram_fill(histogram_name,\
+                                         calc_leading_me_eta,\
+                                         calc_me_mass,\
+                                         selections = [],\
+                                         bins_x = 48,\
+                                         range_low_x = -2.5,\
+                                         range_high_x = 2.5,\
+                                         bins_y = 400,\
+                                         range_low_y = 75.0,\
+                                         range_high_y = 105.0,\
+                                         xlabel ='#eta^{ME} [GeV]',\
+                                         ylabel = 'M_{\mu\mu} [GeV]')
+
+    #make mean mass histograms for CB, CB and CB Tracks
+    histogram_name = "MassVsEta2D_CB_LucasBin"
+    hist_filler.book_2dhistogram_fill(histogram_name,\
+                                         calc_leading_cb_eta,\
+                                         calc_cb_mass,\
+                                         selections = [],\
+                                         bins_x = 48,\
+                                         range_low_x = -2.5,\
+                                         range_high_x = 2.5,\
+                                         bins_y = 400,\
+                                         range_low_y = 75.0,\
+                                         range_high_y = 105.0,\
+                                         xlabel ='#eta^{CB} [GeV]',\
+                                         ylabel = 'M_{\mu\mu} [GeV]')
+
     bins_pt = list(np.logspace(np.log10(5.0), np.log10(300.0), 30))
-    bins_eta_id = list(np.linspace(-2.5, 2.5, 26))
-    bins_eta_mecb = list(np.linspace(-2.7, 2.7, 28))
-    bins_truth_over_reco = list(np.linspace(0.5, 1.5, 1000))
+    bins_eta_id = list(np.linspace(-2.5, 2.5, 20))
+    bins_eta_mecb = list(np.linspace(-2.7, 2.7, 20))
+    bins_truth_over_reco = list(np.linspace(0.5, 1.5, 50))
 
     #make resolution histograms for ID, ME and CB Tracks
 
@@ -795,7 +881,7 @@ def fill_histograms(hist_filler, output_filename):
     bins_pt = list(np.logspace(np.log10(5.0), np.log10(300.0), 30))
     bins_eta_id = list(np.linspace(-2.5, 2.5, 26))
     bins_eta_mecb = list(np.linspace(-2.7, 2.7, 28))
-    bins_truth_over_reco = list(np.linspace(0.0, 2.0, 1000))
+    bins_truth_over_reco = list(np.linspace(0.0, 2.0, 100))
 
     #make resolution histograms for ID, ME and CB Tracks
 
@@ -968,8 +1054,8 @@ def fill_histograms(hist_filler, output_filename):
                                          zlabel = 'P_T^{Reco}/P_T^{Truth}')
 
     bins_pt = list(np.logspace(np.log10(5.0), np.log10(300.0), 30))
-    bins_eta_id = list(np.linspace(-2.5, 2.5, 26))
-    bins_eta_mecb = list(np.linspace(-2.7, 2.7, 28))
+    bins_eta_id = list(np.linspace(-2.5, 2.5, 20))
+    bins_eta_mecb = list(np.linspace(-2.7, 2.7, 20))
     bins_truth_over_reco = list(np.linspace(0.0, 2.0, 1000))
 
     #make resolution histograms for ID, ME and CB Tracks

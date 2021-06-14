@@ -159,8 +159,8 @@ class MCCorrection:
             tan_theta_pos = np.tan(2.0 * np.arctan(np.exp(-1.0 * pos_abs_etas)))
             tan_theta_neg = np.tan(2.0 * np.arctan(np.exp(-1.0 * neg_abs_etas)))
 
-            third_term_pos[forward_pos] = third_term_pos[forward_pos]/(tan_theta_pos[forward_pos])
-            third_term_neg[forward_neg] = third_term_neg[forward_neg]/(tan_theta_neg[forward_neg])
+            third_term_pos[forward_pos] = third_term_pos[forward_pos]/tan_theta_pos[forward_pos]
+            third_term_neg[forward_neg] = third_term_neg[forward_neg]/tan_theta_neg[forward_neg]
 
 
         #print("s0", self.s0)

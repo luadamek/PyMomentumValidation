@@ -14,6 +14,7 @@ directories["v03"] = dir_v03
 directories["v03_v2"] = dir_v03_v2
 directories["v05"] = dir_v05
 directories["v05_standardvars"] = dir_v05_standardvars
+directories["v05_standardvars_trimmed"] = dir_v05_standardvars
 directories["TEST"] = dir_v05_standardvars
 
 files = {}
@@ -141,4 +142,5 @@ files["v05"]["MCTTbar17"] = ["mc16_13TeV.41047*ttbar*nonallhad*{}*.root".format(
 files["v05"]["MCTTbar18"] = ["mc16_13TeV.41047*ttbar*nonallhad*{}*.root".format(el) for el in ["r10724"]]
 
 files["v05_standardvars"] = files["v05"]
+files["v05_standardvars_trimmed"] = {key:files["v05_standardvars"][key] for key in files["v05_standardvars"] if ("1516" in key or "17" in key or "18" in key) }
 files["TEST"] = {"TEST":files["v05"]["MC1516"]}

@@ -549,7 +549,7 @@ if __name__ == "__main__":
         job_name = args.job_name
         n_jobs = args.n_jobs
         queue_flavour = args.queue_flavour
-        if args.test_job: args.file_flavour = "TEST"
+ #       if args.test_job: args.file_flavour = "TEST"
         file_flavour = args.file_flavour
         filling_script = args.filling_script
         inject = args.inject
@@ -574,7 +574,7 @@ if __name__ == "__main__":
                 time.sleep(100)
             import glob
             to_merge = glob.glob(os.path.join(slurm_directory, "{}*.root".format(job_name)))
-            os.system("hadd -f -j 10 {final_file} ".format(final_file = os.path.join(slurm_directory, "Output.root")) + " ".join(to_merge))
+            os.system("hadd -f -j 3 {final_file} ".format(final_file = os.path.join(slurm_directory, "Output.root")) + " ".join(to_merge))
             print("SUCCESS!")
 
 

@@ -310,10 +310,11 @@ def get_extrema(histogram, minimum=True, bounds=None):
                  extreme = histogram.GetBinContent(i)
      return extreme
 
-def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".png", plot_dir = "plots", x_range = None, mins_maxes = None, savename=None):
+def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".png", plot_dir = "plots", x_range = None, mins_maxes = None, savename=None, systematic_histograms={}):
 
     from atlasplots import set_atlas_style
     set_atlas_style()
+    ROOT.gStyle.SetErrorX(0.5)
     ROOT.gStyle.SetLineWidth(1)
     ROOT.gStyle.SetFrameLineWidth(1)
 
@@ -322,6 +323,21 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
     if y_axis_label is None: y_axis_label= histograms[key].GetYaxis().GetTitle()
 
     to_plot = {key:hist_to_tgrapherrors(histograms[key]) for key in histograms}
+    to_plot_errors = {}
+    for key in to_plot:
+        if key not in systematic_histograms: continue 
+        try: to_plot_errors[key] = histograms[key].ProjectionX(histograms[key].GetName() + "SystematicVariation")
+        except Exception as e: to_plot_errors[key] = histograms[key].Clone(histograms[key].GetName() + "SystematicVariation")
+        for i in range(1, to_plot_errors[key].GetNbinsX() + 1):
+            to_plot_errors[key].SetBinError(i, 0.0)
+            for systematic in systematic_histograms[key]:
+                up = systematic_histograms[key][systematic]["up"].GetBinContent(i)
+                down = systematic_histograms[key][systematic]["down"].GetBinContent(i)
+                nom = to_plot_errors[key].GetBinContent(i)
+                #take the max difference between the var and the nominal as the systematic. Sum in quadrature
+                to_plot_errors[key].SetBinError(i, ( max(abs(up-nom), abs(down-nom))**2 + (to_plot_errors[key].GetBinError(i)**2) )**0.5 )
+                print(to_plot_errors[key].GetBinError(i))
+
     if colours is not None: [to_plot[key].SetMarkerColor(colours[key]) for key in to_plot]
     if styles is not None: [to_plot[key].SetMarkerStyle(styles[key]) for key in to_plot]
     for key in to_plot: to_plot[key].SetMarkerSize(to_plot[key].GetMarkerSize()*1.5)
@@ -381,8 +397,17 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
         stack.GetYaxis().SetLabelSize(label_size)
         stack.GetXaxis().SetLabelSize(label_size)
         #stack.GetXaxis().SetTitleOffset(1.05)
+        err_drawn = False
         if i == 0: stack.Draw("AP")
         else: stack.Draw("P SAME")
+
+        if key in to_plot_errors:
+            to_plot_errors[key].SetMarkerSize(0.0)
+            to_plot_errors[key].SetFillColor(ROOT.kGray)
+            to_plot_errors[key].SetFillStyle(1001)
+            to_plot_errors[key].Draw("E2 SAME")
+
+        stack.Draw("P SAME")
 
     ATLASLabel(0.20, 0.8, "Internal", size = 50, extra_descr = extra_descr)
     legend.SetTextSize(40)
