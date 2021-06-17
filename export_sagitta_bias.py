@@ -9,7 +9,7 @@ import ROOT as r
 from BiasCorrection import extract_binning_from_histogram
 matrix_round = 5
 delta_qm_round = 21
-release = "v03_p2"
+release = "v03_p3"
 for mc_ftype, data_ftype in zip(["MC1516", "MC17", "MC18"], ["Data1516", "Data17", "Data18"]):
     for method in methods:
         if "matrix" == method:
@@ -55,6 +55,10 @@ for mc_ftype, data_ftype in zip(["MC1516", "MC17", "MC18"], ["Data1516", "Data17
                     dir = base_directory.format(file_type=data_ftype, inject="None", method=method, detector_location=detector_location, end_string="loose_preselection_tight_select_after_correction", syst_var = "nom", round = roun)
                     fname = os.path.join(basedir, "{}_data.root".format(detector_location))
                     hist = get_deltas_from_job(dir)[0]
+
+                    dir = base_directory.format(file_type=mc_ftype, inject="None", method=method, detector_location=detector_location, end_string="loose_preselection_tight_select_after_correction", syst_var = "nom", round = roun)
+                    mc_hist = get_deltas_from_job(dir)[0]
+                    hist.Add(mc_hist, -1.0)
 
                 if ftype == "mc_nocorr": 
                     dir = base_directory.format(file_type=mc_ftype, inject="None", method=method, detector_location=detector_location, end_string="loose_preselection_tight_select_after_correction", syst_var = "nom", round = roun)
