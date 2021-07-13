@@ -128,8 +128,26 @@ for input_file, combination in input_files:
                       if "MC{}".format(period) not in systematic_histograms: systematic_histograms["MC{}".format(period)] = {}
                       systematic_histograms["MC{}".format(period)]["res"] = {"up": hists["MC{}_res_up".format(period)], "down": hists["MC{}_res_down".format(period)]}
 
-                  draw_histograms(these_hists,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), logy=False, to_return = False, ftype = ".pdf", plot_dir = output_folder, x_axis_label = "#eta_{Lead}^{"+detector_location+"}", y_axis_label = y_axis_label,         extra_descr="#splitline:#sqrt{s} = 13 TeV, " + integrated_lumi + " fb^{-1}", savename="{}_{}_{}_{}".format(data_channel, mc_channel, histogram_name, detector_location), systematic_histograms=systematic_histograms)
+                  draw_histograms(these_hists,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), logy=False, to_return = False, ftype = ".pdf", plot_dir = output_folder, x_axis_label = "#eta_{Lead}^{"+detector_location+"}", y_axis_label = y_axis_label, extra_descr="#splitline:#sqrt{s} = 13 TeV, " + integrated_lumi + " fb^{-1}", savename="{}_{}_{}_{}".format(data_channel, mc_channel, histogram_name, detector_location), systematic_histograms=systematic_histograms)
                   example_hist = these_hists[data_channel]
+
+                  #data_hist = these_hists[data_channel]
+                  #mc_hist = these_hists[mc_channel]
+
+                  #ok make the ratio histograms:
+                  #from plotting_utils import get_systematic_histograms
+                  #systematic_histograms = get_systematic_histograms(these_hists, systematic_histograms)
+                  #do data over MC
+                  #mc_hist_clone = mc_hist.Clone()
+                  #for i in range(1, data_hist.GetNbinsX() + 1):
+                  #    mc_hist_clone.SetBinError(i, 0.0)
+                  #systematic_histograms[mc_channel].Divide(mc_hist_clone)
+
+                  #systematic_histograms[data_channel] = data_hist.Clone()
+                  #systematic_histograms[data_channel].Divide(mc_hist)
+
+                  #draw_histograms(systematic_histograms,  colours = colors, styles = styles, legend_labels = legend_labels, legend_coordinates = (0.5, 0.7, 0.8, 0.9), logy=False, to_return = False, ftype = ".pdf", plot_dir = output_folder, x_axis_label = "#eta_{Lead}^{"+detector_location+"}", y_axis_label = "Data/MC", extra_descr="#splitline:#sqrt{s} = 13 TeV, " + integrated_lumi + " fb^{-1}", savename="{}_{}_{}_{}".format(data_channel, mc_channel, histogram_name, detector_location), systematic_histograms=systematic_histograms)
+
 
           #start here for the second loop to make the RMS maps
           for histogram_name in ["3DEtaPtVsPtOverTruth_{detloc}_{charge}".format(detloc=detector_location, charge="{}"), "3DEtaPtVsPtOverTruth_{detloc}_{charge}_WIDER".format(detloc=detector_location, charge="{}"), "3DEtaTruthPtVsPtOverTruth_{detloc}_{charge}".format(detloc=detector_location, charge="{}"), "3DEtaTruthPtVsPtOverTruth_{detloc}_{charge}_WIDER".format(detloc=detector_location, charge="{}")]:

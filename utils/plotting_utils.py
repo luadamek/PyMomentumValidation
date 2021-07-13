@@ -310,6 +310,25 @@ def get_extrema(histogram, minimum=True, bounds=None):
                  extreme = histogram.GetBinContent(i)
      return extreme
 
+def get_systematic_histograms(histograms, systematic_histograms, add_stat = True):
+    to_plot_errors = {}
+    to_plot_errors_components = {}
+    to_plot = {key:hist_to_tgrapherrors(histograms[key]) for key in histograms}
+    for key in to_plot:
+        if key not in systematic_histograms: continue 
+        try: to_plot_errors[key] = histograms[key].ProjectionX(histograms[key].GetName() + "SystematicVariation")
+        except Exception as e: to_plot_errors[key] = histograms[key].Clone(histograms[key].GetName() + "SystematicVariation")
+        for i in range(1, to_plot_errors[key].GetNbinsX() + 1):
+            if not add_stat: to_plot_errors[key].SetBinError(i, 0.0)
+            else: to_plot_errors[key].SetBinError(i, histograms[key].GetBinError(i)) #add the stat err to the plot
+            for systematic in systematic_histograms[key]:
+                up = systematic_histograms[key][systematic]["up"].GetBinContent(i)
+                down = systematic_histograms[key][systematic]["down"].GetBinContent(i)
+                nom = to_plot_errors[key].GetBinContent(i)
+                #take the max difference between the var and the nominal as the systematic. Sum in quadrature
+                to_plot_errors[key].SetBinError(i, ( max(abs(up-nom), abs(down-nom))**2 + (to_plot_errors[key].GetBinError(i)**2) )**0.5 )
+    return to_plot_errors
+
 def draw_histograms(histograms,  colours = None, styles = None, legend_labels = None, legend_coordinates = (0.6, 0.9, 0.5, 0.9), x_axis_label = "M_{#mu#mu} [GeV]", y_axis_label="Events", logy=False, extra_descr="", to_return = False, ftype = ".png", plot_dir = "plots", x_range = None, mins_maxes = None, savename=None, systematic_histograms={}):
 
     from atlasplots import set_atlas_style
@@ -323,20 +342,7 @@ def draw_histograms(histograms,  colours = None, styles = None, legend_labels = 
     if y_axis_label is None: y_axis_label= histograms[key].GetYaxis().GetTitle()
 
     to_plot = {key:hist_to_tgrapherrors(histograms[key]) for key in histograms}
-    to_plot_errors = {}
-    for key in to_plot:
-        if key not in systematic_histograms: continue 
-        try: to_plot_errors[key] = histograms[key].ProjectionX(histograms[key].GetName() + "SystematicVariation")
-        except Exception as e: to_plot_errors[key] = histograms[key].Clone(histograms[key].GetName() + "SystematicVariation")
-        for i in range(1, to_plot_errors[key].GetNbinsX() + 1):
-            to_plot_errors[key].SetBinError(i, 0.0)
-            for systematic in systematic_histograms[key]:
-                up = systematic_histograms[key][systematic]["up"].GetBinContent(i)
-                down = systematic_histograms[key][systematic]["down"].GetBinContent(i)
-                nom = to_plot_errors[key].GetBinContent(i)
-                #take the max difference between the var and the nominal as the systematic. Sum in quadrature
-                to_plot_errors[key].SetBinError(i, ( max(abs(up-nom), abs(down-nom))**2 + (to_plot_errors[key].GetBinError(i)**2) )**0.5 )
-                print(to_plot_errors[key].GetBinError(i))
+    to_plot_errors = get_systematic_histograms(histograms, systematic_histograms)
 
     if colours is not None: [to_plot[key].SetMarkerColor(colours[key]) for key in to_plot]
     if styles is not None: [to_plot[key].SetMarkerStyle(styles[key]) for key in to_plot]

@@ -91,6 +91,16 @@ def get_sagitta_bias_histogram(directory, subtraction_directory = None, is_data 
     sagitta_hist.Add(sagitta_hist_subtraction, -1.0)
     sagitta_hist.SetName(directory.split("/")[-2] + "_delta_hist_corr")
     sagitta_hist.GetZaxis().SetTitle("#delta^{"+region+"}_{Corr} [TeV^{-1}]")
+
+    print("sagitta_hist.GetXaxis().GetTitleSize()", sagitta_hist.GetXaxis().GetTitleSize())
+    print("sagitta_hist.GetYaxis().GetTitleSize()", sagitta_hist.GetYaxis().GetTitleSize())
+    print("sagitta_hist.GetZaxis().GetTitleSize()", sagitta_hist.GetZaxis().GetTitleSize())
+
+    print("sagitta_hist.GetXaxis().GetTitleOffset()", sagitta_hist.GetXaxis().GetTitleOffset())
+    print("sagitta_hist.GetYaxis().GetTitleOffset()", sagitta_hist.GetYaxis().GetTitleOffset())
+    print("sagitta_hist.GetZaxis().GetTitleOffset()", sagitta_hist.GetZaxis().GetTitleOffset())
+    input()
+
     return sagitta_hist
 
 from MatrixInversion import get_histogram_function

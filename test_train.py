@@ -3,10 +3,19 @@ from utils import get_files
 import uproot as ur
 import numpy as np
 
+import argparse
+parser = argparse.ArgumentParser(description='Submit plotting batch jobs for the MuonMomentumAnalysis plotting')
+parser.add_argument('--treedepth', '-td', dest="tree_depth", type=str, required=True)
+parser.add_argument('--output_name', '-on', dest="output_name", type=str, required=True)
+parser.add_argument('--useqoverp', '-uqop', dest="useqoverp", action="store_true")
+parser.add_argument('--test', '-t', dest="test", action="store_true")
+args = parser.parse_args()
+
 files = get_files("v05_standardvars")
 
 training_variables = ["Pos_ID_Pt", "Neg_ID_Pt", "Pos_ID_Eta", "Neg_ID_Eta", "Pos_ID_Phi", "Neg_ID_Phi"]
 training_variables += [el.replace("ID", "ME") for el in training_variables]
+if args.useqoverp: training_variables += ["Pos_ID_TrackCovMatrix", "Neg_ID_TrackCovMatrix"]
 training_variables += ["EvtNumber"]
 
 ordered_training_variables = []
@@ -16,14 +25,18 @@ for key in training_variables:
        ordered_training_variables.append(cand)
 
 total_arrays = {}
-for f in files["Data1516"]:
-    print(f)
-    training_arrays = ur.open(f)["MuonMomentumCalibrationTree"].arrays(training_variables, entrystart=0, entrystop=1000000)
+if not args.test: files = files["Data1516"] + files["Data17"] + files["Data18"]
+else: files = [(files["Data1516"] + files["Data17"] + files["Data18"])[0]]
+for f in files:
+    training_arrays = ur.open(f)["MuonMomentumCalibrationTree"].arrays(training_variables)#, entrystart=0, entrystop=1000)
     training_arrays = {key.decode("utf-8"):training_arrays[key] for key in training_arrays}
     for key in training_arrays:
         if key not in total_arrays:
             total_arrays[key] = []
-        total_arrays[key].append(training_arrays[key])
+        if "CovMatrix" not in key:
+            total_arrays[key].append(training_arrays[key])
+        else:
+            total_arrays[key].append(training_arrays[key][:,-1] * 10 ** 12)
 training_arrays = {key:np.concatenate(total_arrays[key]) for key in total_arrays}
 del total_arrays
 n_train = len(training_arrays[training_variables[0]])
@@ -60,6 +73,8 @@ def calc_mass(arrays, weights_pos, weights_neg, isdict=False):
         pos_me_phi = arrays[training_variables[10]]
         neg_me_phi = arrays[training_variables[11]]
 
+    print(weights_pos, weights_neg)
+
     pos_pt = weights_pos * pos_id_pt + (1.0 - weights_pos) * pos_me_pt
     neg_pt = weights_neg * neg_id_pt + (1.0 - weights_neg) * neg_me_pt
 
@@ -84,13 +99,16 @@ def get_dmatrix(training_arrays, folds=None, nfolds=None):
 
     training_arrays = {key:training_arrays[key][selection] for key in  training_arrays}
 
-    training_arrays = {\
+    new_training_arrays = {\
 "ID_Pt": [training_arrays["Pos_ID_Pt"], training_arrays["Neg_ID_Pt"]],\
 "ME_Pt": [training_arrays["Pos_ME_Pt"], training_arrays["Neg_ME_Pt"]],\
 "ID_Eta": [training_arrays["Pos_ID_Eta"], training_arrays["Neg_ID_Eta"]],\
 "ME_Eta": [training_arrays["Pos_ME_Eta"], training_arrays["Neg_ME_Eta"]],\
 "ID_Phi": [training_arrays["Pos_ID_Phi"], training_arrays["Neg_ID_Phi"]],\
 "ME_Phi": [training_arrays["Pos_ME_Phi"], training_arrays["Neg_ME_Phi"]]}
+    if args.useqoverp:
+        new_training_arrays["ID_TrackCovMatrix"] = [training_arrays["Pos_ID_TrackCovMatrix"], training_arrays["Neg_ID_TrackCovMatrix"]]
+    training_arrays = new_training_arrays
 
 
     training_arrays = {key:np.concatenate(training_arrays[key]) for key in training_arrays}
@@ -133,6 +151,35 @@ def hessian(params, pred_pos, pred_neg):
     pos_grads =  common_term * ((params["Pos_ID_Pt"] - params["Pos_ME_Pt"]) * ( (pred_neg * params["Neg_ID_Pt"]) + (1.0 - pred_neg) * params["Neg_ME_Pt"] ) * A) ** 2
     neg_grads =  common_term * ((params["Neg_ID_Pt"] - params["Neg_ME_Pt"]) * ( (pred_pos * params["Pos_ID_Pt"]) + (1.0 - pred_pos) * params["Pos_ME_Pt"] ) * A) ** 2
     return pos_grads, neg_grads
+
+def rms(raw_pred, dtrain):
+    ''' Root mean squared log error metric.'''
+    if len(raw_pred) == len(training_arrays["ID_Pt"]):
+        y = training_arrays
+    if len(raw_pred) == len(validing_arrays["ID_Pt"]):
+        y = validing_arrays
+    assert len(training_arrays["ID_Pt"]) != len(validing_arrays["ID_Pt"])
+
+    halfway = int(len(y["ID_Pt"])/2)
+    params={}
+    params["Pos_ID_Pt"] = y["ID_Pt"][:halfway]
+    params["Neg_ID_Pt"] = y["ID_Pt"][halfway:]
+    params["Pos_ME_Pt"] = y["ME_Pt"][:halfway]
+    params["Neg_ME_Pt"] = y["ME_Pt"][halfway:]
+
+    params["Pos_ID_Eta"] = y["ID_Eta"][:halfway]
+    params["Neg_ID_Eta"] = y["ID_Eta"][halfway:]
+    params["Pos_ME_Eta"] = y["ME_Eta"][:halfway]
+    params["Neg_ME_Eta"] = y["ME_Eta"][halfway:]
+
+    params["Pos_ID_Phi"] = y["ID_Phi"][:halfway]
+    params["Neg_ID_Phi"] = y["ID_Phi"][halfway:]
+    params["Pos_ME_Phi"] = y["ME_Phi"][:halfway]
+    params["Neg_ME_Phi"] = y["ME_Phi"][halfway:]
+    pred = 1.0 /(1.0 + np.exp(-1.0 * raw_pred))
+    masses = calc_mass(params, pred[:halfway], pred[halfway:], isdict=True)
+
+    return "PyRMS", np.std(masses)
 
 def rms_loss(raw_pred, dtrain):
     '''
@@ -223,11 +270,17 @@ def rms_loss(raw_pred, dtrain):
     #print("Preidictions {}".format(pred))
     #print("Max prediction {}".format(max(pred)))
     #print("Min prediction {}".format(min(pred)))
-    print("Std Dev mass sq {}".format(np.std(masses ** 2)))
-    print("Std Dev mass {}".format(np.std(masses)))
     return grads_rawpred, hess_rawpred
 
-xgb.train({'eta': 0.01, 'max_depth': 5, 'subsample': 1.0, 'gamma': 0.4, 'lambda': 0.0, 'alpha': 0.0, 'nthread': 1},  # any other tree method is fine.
+m = xgb.train({'eta': 0.05, 'max_depth': args.tree_depth, 'subsample': 1.0, 'min_child_weight':1000, 'gamma': 0.4, 'lambda': 0.0, 'alpha': 0.0, 'nthread': 1, 'disable_default_eval_metric':1},  # any other tree method is fine.
            dtrain=dtrain,
            num_boost_round=1000,
-           obj=rms_loss)
+           obj=rms_loss,
+           feval=rms,
+           evals=[(dtrain, 'dtrain'), (dvalid, 'dvalid')],
+           early_stopping_rounds=30,\
+           )
+import pickle as pkl
+with open(args.output_name, "wb") as f:
+    pkl.dump(m, f)
+

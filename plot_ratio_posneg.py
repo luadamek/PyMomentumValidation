@@ -15,11 +15,18 @@ from plotting_utils import draw_syst, get_systematically_varied_histograms
 input_files = [\
 #"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_v05_nocalib/Output.root",\
 #"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_v05_matrix/Output.root",\
-#"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_defaultcorr_v05_standardvars_nocalib/Output.root",\
-#"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_defaultcorr_v05_standardvars_matrix/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Apr18_defaultcorr_latest_mc_v05_standardvars_matrix/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Apr18_defaultcorr_simplecbcomb_latest_mc_v05_standardvars_matrix/Output.root",\
-"/project/def-psavard/ladamek/momentumvalidationoutput/Apr18_defaultcorr_cbcomb_latest_mc_v05_standardvars_matrix/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_defaultcorr_v05_standardvars_trimmed_nocalib/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/Apr2_defaultcorr_v05_standardvars_trimmed_matrix/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/Apr18_defaultcorr_latest_mc_v05_standardvars_trimmed_matrix/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/Apr18_defaultcorr_simplecbcomb_latest_mc_v05_standardvars_trimmed_matrix/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/Apr18_defaultcorr_cbcomb_latest_mc_v05_standardvars_trimmed_matrix/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_simplecbcomb_latest_mc_v05_standardvars_trimmed_matrix/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_covcbcomb_latest_mc_v05_standardvars_trimmed_matrix/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_fullcovcbcomb_latest_mc_v05_standardvars_trimmed_matrix/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_covcbcombpercent_latest_mc_v05_standardvars_trimmed_matrix/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_nocbcomb_latest_mc_v05_standardvars_trimmed_matrix/Output.root",\
+#"/project/def-psavard/ladamek/momentumvalidationoutput/May28_defaultcorr_bdtcbcomb_latest_mc_v05_standardvars_trimmed_matrix/Output.root",\
+"/project/def-psavard/ladamek/momentumvalidationoutput/May28_nocbcomb_latest_mc_v05_standardvars_trimmed_matrix/Output.root",\
 ]
 
 #Mar7_nocalib_inject_${inject}_correct
