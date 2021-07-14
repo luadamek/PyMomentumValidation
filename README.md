@@ -16,7 +16,7 @@ source venv_PyMomentumValidation/bin/activate
 git clone https://github.com/joeycarter/atlas-plots.git
 cd atlas-plots
 rm -rf .git
-pip install .
+pip install . --no-dependencies
 cd ..
 pip install uproot
 pip install atlasify #making plots in matplotlob with atlas style
@@ -27,6 +27,19 @@ pip install atlasify #making plots in matplotlob with atlas style
 source ./setup.sh
 ```
 
+## Calculating the sagitta bias estimates
+The user needs to update the file paths in the utils/utils.py file. The paths point to the location of the root files needed to measure the sagitta bias.
+
+The steering script for the sagitta bias estimates is $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py 
+
+The script takes the following commands:
+--file_type : The key to the dictionary of files process, as listed in the utils.py file
+--job_base : The name of the job. 
+--detector_location : The kind of track to process -- either CB, ME or ID
+--version : The version of files, as listed in the utils.py file
+--inject : The injection to perform. Those are listed in 
+
+python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type MC18 --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}" --corrections ${jobdir}/${job_base}_round_${y}/OutputFiles
 
 ## Filling Histograms
 The class responsible for filling histograms is called a HistogramFiller.
@@ -42,7 +55,6 @@ def central(event):
     return np.abs(event["Pos_ID_Eta"]) < 2.0
 branches = ["Pos_ID_Eta"]
 sel_central = Calculation(central, branches)
-
 ```
 
 ```
