@@ -20,7 +20,7 @@ def get_dataframe(root_file, start, stop,  variables, selection):
     #global CACHE
     #key = "{}_{}_{}_{}_{}".format(root_file, start, stop, "_".join(variables), selection)
     #if root_file not in CACHE:
-    df = ur.open(root_file)["MuonMomentumCalibrationTree"].pandas.df(branches = variables, entrystart = start, entrystop = stop)
+    df = ur.open(root_file)["MuonMomentumCalibrationTree"].arrays(expressions = variables, entry_start = start, entry_stop = stop, library="pd")
     df["read_index"] = np.arange(0, len(df))
     if "TotalWeight" in variables:
         print("Skimming overweight events")

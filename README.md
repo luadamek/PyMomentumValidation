@@ -28,18 +28,57 @@ source ./setup.sh
 ```
 
 ## Calculating the sagitta bias estimates
-The user needs to update the file paths in the utils/utils.py file. The paths point to the location of the root files needed to measure the sagitta bias.
+The user needs to update the file paths in the filelists/filelists.py file. The paths point to the location of the root files needed to measure the sagitta bias.
 
 The steering script for the sagitta bias estimates is $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py 
 
 The script takes the following commands:
---file_type : The key to the dictionary of files process, as listed in the utils.py file
---job_base : The name of the job. 
---detector_location : The kind of track to process -- either CB, ME or ID
---version : The version of files, as listed in the utils.py file
---inject : The injection to perform. Those are listed in 
 
-python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type MC18 --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}" --corrections ${jobdir}/${job_base}_round_${y}/OutputFiles
+--file_type : The key to the dictionary of files process, as listed in the filelists.py file
+
+--job_base : The name of the job. 
+
+--detector_location : The kind of track to process -- either CB, ME or ID
+
+--version : The version of files, as listed in the filelists.py file
+
+--inject : The injection to perform. Those are listed in SagittaBiasCorrection/BiasInjection.py
+
+--output : Where the output file is. Will be located at output/job_base
+
+--preselection : The selection to apply before injection
+
+--select_after_corrections : The selection to apply after corrections and injections
+
+--select_before_corrections : The selection to apply before sagitta bias correction but after injection
+
+--corrections : Past corrections to load. If a past job also used a correction, all of those corrections will be loaded, too. If multiple corrections must be loaded, they will be added together. I.E. the set of deltas will be added together.
+
+--method : The method used for estimating the sagitta bias. Either delta_qm or matrix
+
+--merge : merge the single test job into a complete output. This is for testing the plotting. This step happend automatically when submitting to batch and not running a test job.
+
+here is an example job submission, running one job locally as a test
+```
+python Submission/submit_delta_calculation_jobs.py --file_type DataTEST --jobdir $PWD/Testing --job_base Just_A_Test --detector_location ID --version v05 --output $PWD/TestingOutputs --preselection "( abs(Pair_{}_Mass - 91.2) < 40) and (Pos_{}_Pt < 500) and (Neg_{}_Pt < 500)" --method matrix --select_after_corrections "( abs(Pair_{}_Mass - 91.2) < 12) and (Pos_{}_Pt < 100) and (Neg_{}_Pt < 100)" --test --merge
+```
+
+here is an example job submission, submitting jobs with a slurm batch system
+```
+python Submission/submit_delta_calculation_jobs.py --file_type DataTEST --jobdir $PWD/Testing --job_base Just_A_Test --detector_location ID --version v05 --output $PWD/TestingOutputs --preselection "( abs(Pair_{}_Mass - 91.2) < 40) and (Pos_{}_Pt < 500) and (Neg_{}_Pt < 500)" --method matrix --select_after_corrections "( abs(Pair_{}_Mass - 91.2) < 12) and (Pos_{}_Pt < 100) and (Neg_{}_Pt < 100)" 
+```
+
+An example of how to run many different injection tests for ID, ME and CB tracks is shown in the script run_injection_tests.sh. The script also derives the estimates iteratively.
+
+## Plotting the sagitta bias matrices
+Once a job has completed, functions are available to plot the sagitta bias histograms:
+```
+import os
+directory = os.path.join(os.getenv("PWD"), "TestingOutputs/Just_A_Test/OutputFiles/")
+from MatrixInversion import get_deltas_from_job
+#from DeltaQMIterativeMethod import get_deltas_from_job
+sagitta_hist, _, __ = get_deltas_from_job(directory) #this is the histogram of sagitta bias values, in 1/GeV
+```
 
 ## Filling Histograms
 The class responsible for filling histograms is called a HistogramFiller.

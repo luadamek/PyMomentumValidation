@@ -8,6 +8,7 @@ if os.getenv("USER") == "ladamek":
     if "cedar" in os.getenv("HOSTNAME") or "cdr" in os.getenv("HOSTNAME"): dir_v05="/project/def-psavard/ForLukas/muonptcalib_v05_merged_Min/"
     if "graham" in os.getenv("HOSTNAME") or "gra" in os.getenv("HOSTNAME"): dir_v05="/project/def-psavard/ladamek/ForLukas/muonptcalib_v05_merged_Min/"
     if "graham" in os.getenv("HOSTNAME") or "gra" in os.getenv("HOSTNAME"): dir_v05_standardvars="/project/def-psavard/ladamek/ForLukas/muonptcalib_v05_standardvars/"
+    if "cedar" in os.getenv("HOSTNAME") or "cdr" in os.getenv("HOSTNAME"): dir_v05_standardvars="/project/def-psavard/ladamek/ForLukas/muonptcalib_v05_standardvars/"
 
 directories = {}
 directories["v03"] = dir_v03

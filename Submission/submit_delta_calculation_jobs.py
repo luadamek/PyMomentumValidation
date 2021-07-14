@@ -24,6 +24,7 @@ parser.add_argument('--bootstraps', '-bs', type=int, default=-1, dest="bootstrap
 parser.add_argument('--default_correction', '-dc', action="store_true", dest="default_correction")
 parser.add_argument('--coarse_binning', '-cb', action="store_true", dest="coarse_binning")
 parser.add_argument('--fine_phi_binning', '-fpb', action="store_true", dest="fine_phi_binning")
+parser.add_argument('--merge', '-merge', action="store_true", dest="merge")
 args = parser.parse_args()
 
 file_type = args.file_type
@@ -178,7 +179,18 @@ for root_file in all_startstops:
         jobset.add_job(job)
         job_counter += 1
 
-if test: jobset.jobs[-1].run_local()
+if "matrix" == args.method:
+    from MatrixInversion import get_deltas_from_job
+    global get_deltas_from_job
+elif "delta_qm" == args.method:
+    from DeltaQMIterativeMethod import get_deltas_from_job
+    global get_deltas_from_job
+
+if test:
+    jobset.jobs[-1].run_local()
+    if args.merge:
+       get_deltas_from_job(output_location, update_cache=True)
+        
 else:
     jobset.submit()
     import time
@@ -186,14 +198,6 @@ else:
         print("Checking compleition")
         time.sleep(30)
     print("FINISHED")
-
-    #create the cache file for the delta file
-    if "matrix" == args.method:
-        from MatrixInversion import get_deltas_from_job
-        global get_deltas_from_job
-    elif "delta_qm" == args.method:
-        from DeltaQMIterativeMethod import get_deltas_from_job
-        global get_deltas_from_job
     get_deltas_from_job(output_location, update_cache=True)
 
 
