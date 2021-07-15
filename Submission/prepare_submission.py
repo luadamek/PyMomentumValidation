@@ -252,7 +252,8 @@ def apply_standard_mc_calibrations(hist_fillers):
                             else: hist_filler.apply_calibration_for_channel(channel, mccorr)
 
 def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = False):
-    syst_var_file = "/project/def-psavard/ladamek/stat_variations/stat_syst_vars.root"
+    syst_var_file = os.path.join(os.getenv("MomentumValidationDir"), "stat_variations/stat_syst_vars.root")
+#"/project/def-psavard/ladamek/stat_variations/stat_syst_vars.root"
     #ok go and get the histograms from this root_file and apply the systematic variations
     #histname = "{}_{}_{}".format(file_type, detector_location, "staterr")
     for period in ["17", "18", "1516"]:
@@ -324,20 +325,14 @@ def apply_systematic_variations(hist_fillers, stat_syst = False, resbias_syst = 
                     hist_filler.apply_calibration_for_channel(channel + "_{}".format(detector_location), calib, selections=selections)
 
 
-def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False, memory="6000M", latest_mc_correction = False, simple_combination = False, skip_mass_recalc=False, skip_baseline_selection = False, add_BDT_combination=False, cov_combination_percent=False, fullcov_combination_percent=False, fullcov_combination=False):
+def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directory, load_calibrations, inject = None, inject_channels="", default_correction=False, cov_combination=False, memory="6000M", latest_mc_correction = False, simple_combination = False, skip_mass_recalc=False, skip_baseline_selection = False, add_BDT_combination=False, cov_combination_percent=False, fullcov_combination_percent=False, fullcov_combination=False):
         from DefaultCalibration import DefaultCorrection
-        project_dir = os.getenv("MomentumValidationDir")
-        assert project_dir is not None
 
         files = utils.get_files(file_flavour)
         trees = utils.tchain_files_together(args.tree_name, files)
         partitions = utils.generate_partitions(trees, n_jobs)
 
-        slurm_directory = project_dir
-        for path in slurm_directories:
-            if not os.path.exists(os.path.join(slurm_directory, path)):
-                os.makedirs(os.path.join(slurm_directory, path))
-            slurm_directory = os.path.join(slurm_directory, path)
+        if not os.path.exists(slurm_directory): os.makedirs(slurm_directory)
 
         #create the executables for the slurm jobs
         executable = os.path.join(slurm_directory, "plot.sh")
@@ -475,7 +470,7 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
         apply the sagitta bias systematic uncertainty
         '''
         apply_systematic_variations(filler_list, stat_syst=True)
-        apply_systematic_variations(filler_list, resbias_syst=True)
+        #apply_systematic_variations(filler_list, resbias_syst=True)
 
         '''
         Redefine the CB track using the covariance matrix combination for all channels
@@ -542,7 +537,10 @@ if __name__ == "__main__":
         parser.add_argument('--skip_baseline_selection', '-skbase', dest="skip_baseline_selection", action="store_true")
         parser.add_argument('--memory', '-mem', dest="memory", type=str, required=True)
         parser.add_argument("--add_BDT_combination", '-aBDTc', dest="add_BDT_combination", action="store_true")
+        parser.add_argument("--merge", '-merge', dest="merge", action="store_true")
+        parser.add_argument("--slurm_directory", "-sd", dest="slurm_directory", default = os.path.join("/project/def-psavard/{}/momentumvalidationoutput/".format(os.getenv("USER"))))
         args = parser.parse_args()
+        args.slurm_directory = args.slurm_directory + "/" + args.job_name
 
         #Create a pickle file and list for each submission
         tree_name = args.tree_name
@@ -556,15 +554,22 @@ if __name__ == "__main__":
         inject_channels = args.inject_channels
         if inject == "":
             inject = None
-        slurm_directories = ["/project/def-psavard/ladamek/momentumvalidationoutput/", args.job_name]
+        slurm_directory = args.slurm_directory
+#["/project/def-psavard/{}/momentumvalidationoutput/".format(os.getenv("USER")), args.job_name]
 
-        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directories, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination, memory=args.memory, latest_mc_correction = args.latest_mc_correction, simple_combination=args.simple_combination, skip_mass_recalc=args.skip_mass_recalc, skip_baseline_selection=args.skip_baseline_selection, add_BDT_combination = args.add_BDT_combination, cov_combination_percent=args.cov_combination_percent, fullcov_combination_percent=args.fullcov_combination_percent, fullcov_combination=args.fullcov_combination)
+        jobset_file, slurm_directory = submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, filling_script, slurm_directory, args.load_calibrations, inject=inject, inject_channels=inject_channels, default_correction=args.default_correction, cov_combination=args.cov_combination, memory=args.memory, latest_mc_correction = args.latest_mc_correction, simple_combination=args.simple_combination, skip_mass_recalc=args.skip_mass_recalc, skip_baseline_selection=args.skip_baseline_selection, add_BDT_combination = args.add_BDT_combination, cov_combination_percent=args.cov_combination_percent, fullcov_combination_percent=args.fullcov_combination_percent, fullcov_combination=args.fullcov_combination)
 
         print("Job saved in {}, the jobset is {}".format(slurm_directory, jobset_file))
         #submit the jobs, and wait until completion
         import pickle as pkl
         jobset = pkl.load(open(jobset_file, "rb"))
-        if args.test_job: jobset.jobs[0].run_local()
+        if args.test_job:
+            jobset.jobs[0].run_local()
+            if args.merge:
+               import glob
+               to_merge = glob.glob(os.path.join(slurm_directory, "{}*.root".format(job_name)))
+               os.system("hadd -f -j 3 {final_file} ".format(final_file = os.path.join(slurm_directory, "Output.root")) + " ".join(to_merge))
+               print("SUCCESS!")
 
         else:
             jobset.submit()

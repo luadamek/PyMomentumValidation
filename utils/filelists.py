@@ -8,12 +8,13 @@ if os.getenv("USER") == "ladamek":
     if "cedar" in os.getenv("HOSTNAME") or "cdr" in os.getenv("HOSTNAME"): dir_v05="/project/def-psavard/ForLukas/muonptcalib_v05_merged_Min/"
     if "graham" in os.getenv("HOSTNAME") or "gra" in os.getenv("HOSTNAME"): dir_v05="/project/def-psavard/ladamek/ForLukas/muonptcalib_v05_merged_Min/"
     if "graham" in os.getenv("HOSTNAME") or "gra" in os.getenv("HOSTNAME"): dir_v05_standardvars="/project/def-psavard/ladamek/ForLukas/muonptcalib_v05_standardvars/"
-    if "cedar" in os.getenv("HOSTNAME") or "cdr" in os.getenv("HOSTNAME"): dir_v05_standardvars="/project/def-psavard/ladamek/ForLukas/muonptcalib_v05_standardvars/"
+    if "cedar" in os.getenv("HOSTNAME") or "cdr" in os.getenv("HOSTNAME"): dir_v05_standardvars="/project/def-psavard/ForLukas/muonptcalib_v05_standardvars/"
 
 directories = {}
 directories["v03"] = dir_v03
 directories["v03_v2"] = dir_v03_v2
 directories["v05"] = dir_v05
+directories["v05_trimmed"] = dir_v05
 directories["v05_standardvars"] = dir_v05_standardvars
 directories["v05_standardvars_trimmed"] = dir_v05_standardvars
 directories["TEST"] = dir_v05_standardvars
@@ -62,8 +63,8 @@ files["v05"]["Data17"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el
 files["v05"]["Data18"] = ["data{}_13TeV.*.physics_Main.PhysCont*.root".format(el) for el in ["18"]]
 files["v05"]["MC1516"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r9364"]]
 
-files["v05"]["Data18_Rel22"] = ["/../muonptcalib_rel22_v01/data18*.root"]
-files["v05"]["Data17_Rel22"] = ["/../muonptcalib_rel22_v01/data17*.root"]
+#files["v05"]["Data18_Rel22"] = ["/../muonptcalib_rel22_v01/data18*.root"]
+#files["v05"]["Data17_Rel22"] = ["/../muonptcalib_rel22_v01/data17*.root"]
 
 #files["v05"]["MC17_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10201"]]
 #files["v05"]["MC18_resbias_up"] = ["mc16_13TeV.*.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu*{}*.root".format(el) for el in ["r10724"]]
@@ -144,4 +145,5 @@ files["v05"]["MCTTbar18"] = ["mc16_13TeV.41047*ttbar*nonallhad*{}*.root".format(
 
 files["v05_standardvars"] = files["v05"]
 files["v05_standardvars_trimmed"] = {key:files["v05_standardvars"][key] for key in files["v05_standardvars"] if ("1516" in key or "17" in key or "18" in key) }
+files["v05_trimmed"] = {key:files["v05"][key] for key in files["v05"] if ("1516" in key or "17" in key or "18" in key)  and ("_up" not in key and "_down" not in key)}
 files["TEST"] = {"TEST":files["v05"]["MC1516"]}

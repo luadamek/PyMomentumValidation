@@ -360,7 +360,7 @@ def generate_partitions(trees, NPartitions):
             cuts.append((0.0, entries))
             for i in range(1, NPartitions):
                 cuts.append( (entries, entries) )
-            print("Found partitions for channel {}, and file {}, and they were {}".format(channel, f, cuts))
+            #print("Found partitions for channel {}, and file {}, and they were {}".format(channel, f, cuts))
         partitions[channel] = cuts
 
     print("Generated partitions")

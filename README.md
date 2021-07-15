@@ -19,6 +19,7 @@ rm -rf .git
 pip install . --no-dependencies
 cd ..
 pip install uproot
+pip install openpyxl
 pip install atlasify #making plots in matplotlob with atlas style
 ```
 
@@ -70,7 +71,7 @@ python Submission/submit_delta_calculation_jobs.py --file_type DataTEST --jobdir
 
 An example of how to run many different injection tests for ID, ME and CB tracks is shown in the script run_injection_tests.sh. The script also derives the estimates iteratively.
 
-## Plotting the sagitta bias matrices
+## Retrieveing the Sagitta Bias Histograms
 Once a job has completed, functions are available to plot the sagitta bias histograms:
 ```
 import os
@@ -80,56 +81,56 @@ from MatrixInversion import get_deltas_from_job
 sagitta_hist, _, __ = get_deltas_from_job(directory) #this is the histogram of sagitta bias values, in 1/GeV
 ```
 
-## Filling Histograms
-The class responsible for filling histograms is called a HistogramFiller.
+## Making Plots
+The class responsible for filling histograms is called a HistogramFiller. The submission script is Submission/prepare_submission.py. The script takes the following arguments:
 
+--filling_script: The name of the file that contains the instructions for what histogram to fill. Take a look at Macros/filling_script.py to see an example of how this is accomplished. That macro imports a set of selections and variables, and creates histograms for plotting.
+
+--tree_name: The name of the ttree in the root files to read
+
+--n_jobs: The number of batch jobs to submit for making plots
+
+--test: run one job locally, for debugging
+
+--load_calibration: The sagitta bias correction to load. This can be default_matrix or default_delataqm.  (calls the apply_calibrations function in Submission/prepare_submission.py .
+
+--memory: The amount of memory for each job.
+
+--latest_mc_correction: whether or not to load the MC corrections
+
+--cov_combination: Do the combination using a weight for the ID and ME 1/p defined from the ID and ME covariance matrices. This redefines all CB variables, i.e. the CB mass, the CB pt, eta, phi, etc. This is performed in the file SagittaBiasCorrection/WeightedCBCorrectionCov.py
+
+--cov_combination_percent: Do the combination using a weight for the ID and ME 1/p defined from the ID and ME covariance matrices. Apply the percent change in the pt from the combination with and without corrections as a correction for the CB pt. The corrections are the scale and resolution MC corrections and sagitta bias corrections for data.
+
+--fullcov_combination: Do the combination using the full ID and ME covariance matrices. This redefines all CB variables, i.e. the CB mass, the CB pt, eta, phi, etc. This is performed in the file SagittaBiasCorrection/WeightedCBCorrectionCov.py
+
+--fullcov_combination_percent: Do the combination using the full ID and ME covariance matrices. Apply the percent change in the pt from the combination with and without corrections as a correction for the CB pt. The corrections are the scale and resolution MC corrections and sagitta bias corrections for data.
+
+--simple_combination: Do the combination with a weighted sum of ID and ME pts. pT_cb = f pt_id + (1-f) pt_me, apply the corrections to id and me, and then recalculate the cb pt with the same formula and weight
+
+--skip_baseline_selection: Apply a set of baseline selections. Those are defined in HistogramFillingTools/selections.py with the class sel_z_selection_cb.
+
+--add_BDT_combination: Use a bdt for the combination, as defined in the file SagittaBiasCorrection/BDTCombination.py
+
+--merge: Merge the single test job (if test is true) into a full output file ready for plotting. For debugging.
+
+Here is an example running one job locally:
 ```
-from calculation import Calculation
-def pt_over_mass(event):
-    return event["Pos_ID_PT"]/event["Pair_ID_Mass"]
-branches = ["Pos_ID_PT", "Paid_ID_Mass"]
-calc_mass = Calculation(mass, branches)
-
-def central(event):
-    return np.abs(event["Pos_ID_Eta"]) < 2.0
-branches = ["Pos_ID_Eta"]
-sel_central = Calculation(central, branches)
-```
-
-```
-def fill_histograms(hist_filler, outputRootFileName):
-    outFile = ROOT.TFile(outputRootFileName, "RECREATE")
-
-    #count the number of tracks in each channel
-    histogram_name = "mass"
-    selections = [sel_TightIso]
-    eventCountHist = hist_filler.book_histogram_fill(histogram_name,\
-                                                         calc_pt_over_mass,\
-                                                         selections = selections,\
-                                                         bins = 100,\
-                                                         range_low = -0.5,\
-                                                         range_high = +3.5,\
-                                                         xlabel ='E/P',\
-                                                         ylabel = 'Number of Tracks')
-    histograms = hist_filler.DumpHistograms()
-    for histogram_name in histograms:
-        write_histograms(histograms[histogram_name], outFile)
-
-    outFile.Close()
-```
-
-## Test one of the jobs locally
-```
-python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 200 --job_name Nov26_nocalib --queue_flavour 00\:10:\00 --file_flavour v03_v2 --filling_script Macros\/filling_script.py --test
+python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 300 --job_name TESTING_v05 --queue_flavour 01\:30:\00 --file_flavour v05_trimmed --filling_script Macros\/filling_script_TEST.py --memory=10000M --latest_mc_correction  --skip_baseline_selection   --test --merge
 ```
 
-## Submit all of the jobs to the batch system
+Once a job has completed, you can get open the output root file and make plots
+
 ```
-python Submission/prepare_submission.py --tree_name MuonMomentumCalibrationTree --n_jobs 200 --job_name Nov26_nocalib --queue_flavour 00\:10:\00 --file_flavour v03_v2 --filling_script Macros\/filling_script.py
+from histogram_manager import HistogramManager
+import os
+hm = HistogramManager("/project/def-psavard/{}/momentumvalidationoutput/TESTING_v05/Output.root".format(os.getenv("USER")))
+histogram_name = "MeanMassProfile_ID"
+histograms = hm.get_histograms(histogram_name)
+print(histograms)
 ```
 
 ### Additional Material
-
 
 ## Common software used in data analysis:
 uproot: https://github.com/scikit-hep/uproot
