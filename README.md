@@ -130,6 +130,12 @@ histograms = hm.get_histograms(histogram_name)
 print(histograms)
 ```
 
+Here's a script for creating the sagitta bias estimates for data1516, 17 and 18, mc16a, d and e. It also creates the sagitta bias estimates for the simulation samples with different generators (sherpa, madgraph, pp8). Finally, if you set bootstraps=true at the top of the script, it will run 100 bootstraps of the measurement in data for one iteration. The preprocessing for this is a little intense, because it needs to assign an index to every event and then randomly sample the events and save the indices to a file.
+
+```
+source run_all_sagitta_bias.sh
+```
+
 ### Additional Material
 
 ## Common software used in data analysis:
