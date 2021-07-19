@@ -22,9 +22,9 @@ do
                 job_base=Injection_${date_tag}_inject_${inject}_method_${method}_region_${detector_location}_loose_preselection_tight_select_after_correction
                 if [ $i -gt 1 ]
                 then
-      	            echo python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type MC18 --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}" --corrections ${jobdir}/${job_base}_round_${y}/OutputFiles 
+      	            echo python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type MC --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}" --corrections ${jobdir}/${job_base}_round_${y}/OutputFiles 
                 else
-      	            echo python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type MC18 --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}"  
+      	            echo python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type MC --jobdir /scratch/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v03_v2 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}"  
                 fi
             done
             i=$((i+1))
