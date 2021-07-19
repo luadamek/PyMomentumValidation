@@ -8,7 +8,7 @@ tight_selection_down="( abs(Pair_{}_Mass - 91.2) < 15) and (Pos_{}_Pt < 110) and
 loose_selection="( abs(Pair_{}_Mass - 91.2) < 40) and (Pos_{}_Pt < 500) and (Neg_{}_Pt < 500)"
 inject=None
 date="July10"
-bootstrap=false
+bootstrap=0
 
 #    if selection == "": selection = "((Pos_CB_Pt > 6.25) or (Neg_CB_Pt > 6.25))"
 #    else: selection += " and ((Pos_CB_Pt > 6.25) or (Neg_CB_Pt > 6.25))"
@@ -49,14 +49,15 @@ do
                 #if it's the first iteration, do 100 bootstraps to estimate the sagitta bias uncertainty
                 if [ $i -eq 0 ] 
                 then
-                    if [ $bootstrap ]
+                    if [ $bootstrap -eq 1 ]
                     then
                        job_base=Injection_${date}_${file_type}_inject_${inject}_method_${method}_region_${detector_location}_loose_preselection_tight_select_after_correction_${selection}_boostraps
                        python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type ${file_type} --jobdir /project/def-psavard/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v05 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}" --bootstrap 100
                     fi
                 fi
 
-                #if [ ! $bootstrap ]
+                if [ $bootstrap -ne 1 ]
+                then
                    y=$((i-1))
                    #estimate the sagitta bias in data and the simulation
                    for file_type in Data1516 Data17 Data18 MC1516 MC17 MC18
@@ -80,8 +81,9 @@ do
                        else
                            python $MomentumValidationDir/Submission/submit_delta_calculation_jobs.py  --file_type ${file_type} --jobdir /project/def-psavard/ladamek/sagittabias_jobdir/ --job_base ${job_base}_round_${i} --detector_location ${detector_location} --version v05 --inject ${inject} --output ${jobdir} --preselection "${loose_selection}" --method ${method} --select_after_corrections "${tight_selection}"  --coarse_binning 
                        fi
-                   done
-                #fi
+                    done
+                fi
+
                 i=$((i+1))
 #               for file_type in MC1516 MC17 MC18 
 #               do
