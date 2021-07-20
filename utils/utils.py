@@ -12,6 +12,22 @@ import uproot as ur
 #def calc_mass(pts, etas, phis, masses=0.0):
 #    
 
+def get_stddev_histogram(histogram_list):
+    stddev_histogram = histogram_list[0].Clone()
+    for i in range(1, stddev_histogram.GetNbinsX() + 1):
+        for j in range(1, stddev_histogram.GetNbinsY() + 1):
+            stddev_histogram.SetBinContent(i, j, 0.0)
+            stddev_histogram.SetBinError(i, j, 0.0)
+            values = []
+            for h in histogram_list:
+                values.append(h.GetBinContent(i, j))
+            std_dev = np.std(values)
+    stddev_histogram.SetBinContent(i, j, std_dev)
+    #stddev_histogram.GetZaxis().SetTitle("#sigma_{#delta} [GeV^{-1}]")
+    #stddev_histogram.GetYaxis().SetTitle("#phi_{#mu}" + "^{" + detector_location + "}")
+    #stddev_histogram.GetXaxis().SetTitle("#eta_{#mu}" + "^{" + detector_location + "}")
+    return stddev_histogram
+
 #CACHE = {}
 def get_dataframe(root_file, start, stop,  variables, selection):
     print("Reading {}".format(root_file))
