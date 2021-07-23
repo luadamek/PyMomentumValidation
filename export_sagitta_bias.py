@@ -89,12 +89,16 @@ for mc_ftype, data_ftype in zip(["MC1516", "MC17", "MC18"], ["Data1516", "Data17
                 sub_hist.SetName("deltas_GeV_MCUncorrected_{}_{}_round_{}".format(descriptor, detector_location, i))
 
                 if last_hist_nom is not None:
+                    tmp_hist = nom_hist.Clone()
                     nom_hist.Add(last_hist_nom, -1.0)
+                    last_hist_nom = tmp_hist
                 else:
                     last_hist_nom = nom_hist.Clone()
 
                 if last_hist_sub is not None:
+                    tmp_hist = sub_hist.Clone()
                     sub_hist.Add(last_hist_sub, -1.0)
+                    last_hist_sub = tmp_hist
                 else:
                     last_hist_sub = sub_hist.Clone()
 
@@ -131,7 +135,7 @@ for mc_ftype, data_ftype in zip(["MC1516", "MC17", "MC18"], ["Data1516", "Data17
                        histogram.SetBinError(i, errors.GetBinContent(i))
 
                #write the histograms
-               histogram.SetName("deltas_GeV_CoarseBinning_{}_{}".format(gen, descriptor))
+               histogram.SetName("deltas_GeV_CoarseBinning_{}_{}_{}".format(gen, detector_location, descriptor))
                histogram.Write()
 
 
