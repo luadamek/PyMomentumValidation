@@ -27,13 +27,13 @@ from BiasCorrection import SagittaBiasCorrection
 
 from SagittaBiasUtils import eta_edges_ID, eta_edges_else, phi_edges, convert_df_to_data, put_data_back_in_df, inject_bias, add_pair_mass, get_histogram_function, merge_results, find_bindex
 
-def get_cov_matrices(df, detector_location, debug = False):
+def get_cov_matrices(df, detector_location, n_corr_bins, debug = False):
     #get rid of overflow
     if debug: print("Before overflow correction {}".format(len(df)))
     df = df.query("(pos_bindex >= 0) and (neg_bindex >= 0)")
     if debug: print("After overflow correction {}".format(len(df)))
 
-    n_corr_bins = global_binning_pos.get_global_nbins()#number of bins in which to apply the correction
+    #n_corr_bins = global_binning_pos.get_global_nbins()#number of bins in which to apply the correction
 
     e_vector = np.zeros((n_corr_bins, len(df)))
     weights = df.eval("TotalWeight").values
@@ -188,11 +188,13 @@ if __name__ == "__main__":
        global_binning_pos.recursively_include_overflow(False)
        global_binning_neg = Binning("Neg_{}_Eta".format(args.detector_location), eta_edges, neg_eta_subbins)
        global_binning_neg.recursively_include_overflow(False)
+
+       n_corr_bins = global_binning_pos.get_global_nbins()
        df["pos_bindex"] = global_binning_pos.get_global_bindex(df)
        df["neg_bindex"] = global_binning_neg.get_global_bindex(df)
 
        if not args.bootstraps:
-           cov, equal_to, nentries = get_cov_matrices(df, args.detector_location)
+           cov, equal_to, nentries = get_cov_matrices(df, args.detector_location, n_corr_bins)
        else:
            cov = []
            equal_to = []
@@ -210,7 +212,7 @@ if __name__ == "__main__":
                this_df = df.loc[keep]
                #print(this_df)
                #print(len(this_df))
-               this_cov, this_equal_to, this_nentries = get_cov_matrices(this_df, args.detector_location)
+               this_cov, this_equal_to, this_nentries = get_cov_matrices(this_df, args.detector_location, n_corr_bins)
                cov.append(this_cov)
                equal_to.append(this_equal_to)
                nentries.append(this_nentries)
