@@ -8,7 +8,7 @@ setupATLAS -c centos7+batch
 ## Create a python virtual environment with and setup an lcg view.
 ```
 git clone https://gitlab.cern.ch/luadamek/lcg_virtualenv.git 
-git clone https://gitlab.cern.ch/luadamek/pymomentumvaldiation.git PyMomentumValidation
+git clone https://gitlab.cern.ch/atlas-mcp/pymomentumvaldiation.git PyMomentumValidation
 setupATLAS -c centos7+batch
 cd PyMomentumValidation
 CMTCONFIG=x86_64-centos7-gcc8-opt ./../lcg_virtualenv/create_lcg_virtualenv venv_PyMomentumValidation LCG_94python3
