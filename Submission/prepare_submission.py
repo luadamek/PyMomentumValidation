@@ -401,7 +401,7 @@ def submit_jobs(tree_name, job_name, n_jobs, queue_flavour, file_flavour, fillin
             for channel in partitions:
                 partition[channel] =  partitions[channel][i]
             assert len(partitions[channel]) == n_jobs
-            hist_filler = HistogramFiller(trees, tree_name, calc_weight, selection_string = "", partitions = partition)
+            hist_filler = HistogramFiller(trees, calc_weight, selection_string = "", partitions = partition)
             filler_list.append(hist_filler)
 
         if not skip_mass_recalc:

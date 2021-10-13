@@ -7,40 +7,57 @@ import time
 import os
 import glob
 import imp
-from root_numpy import fill_hist, fill_profile
-from root_numpy import tree2array
+from root_numpy import fill_hist, fill_profile, tree2array
 
-def write_histograms(histogram_dictionary, outFile):
-    outFile.cd()
+def write_histograms(histogram_dictionary, out_file):
+    '''
+    write the dictionary histogram_dictionary to a rootfile named out_file
+
+    Parameters:
+        histogram_dictionary: dictionary of {string: TH1/TH2/TH3} 
+        out_file: str for output filename
+
+    Returns:
+        None
+    '''
+    out_file.cd()
     for key in histogram_dictionary:
-        if not outFile.cd(key):
-            outFile.mkdir(key)
-        outFile.cd(key)
+        if not out_file.cd(key):
+            out_file.mkdir(key)
+        out_file.cd(key)
         histogram_dictionary[key].Write()
 
-def get_log_bins(minBin, maxBin, nBins):
-    '''Get nBins logarithmically-evenly spaced bins ranging from minBin to maxBin'''
+def get_log_bins(min_bin, max_bin, nbins):
+    '''return a list of nbins + 1 logarithmically evenly spaced bins edges ranging from min_bin to max_bin'''
     bins = []
-    base = (float(maxBin)/float(minBin)) ** (1.0/float(nBins))
-    for i in range(0, nBins + 1):
-        bins.append(minBin * (base) ** i)
+    base = (float(max_bin)/float(min_bin)) ** (1.0/float(nbins))
+    for i in range(0, nbins + 1):
+        bins.append(min_bin * (base) ** i)
     return bins
 
-def get_bins(minBin, maxBin, nBins):
-    '''Get nBins evenly spaced bins ranging from minBin to maxBin'''
+def get_bins(min_bin, max_bin, nbins):
+    '''return a list of nbins + 1 evenly spaced bins edges ranging from min_bin to max_bin'''
     bins = []
-    step = float(maxBin - minBin)/float(nBins)
-    for i in range(0, nBins + 1):
-        bins.append(minBin + (i*step))
+    step = float(max_bin - min_bin)/float(nbins)
+    for i in range(0, nbins + 1):
+        bins.append(min_bin + (i*step))
     return bins
 
-def get_p(Pt, eta):
-    '''Given a value of pT and eta, return the momentum'''
-    return Pt*np.cosh(eta)
+def get_p(pt, eta):
+    '''Given a transverse_momentum pt and pseudorapidity eta, return the momentum'''
+    return pt*np.cosh(eta)
 
 def create_selection_function(template, branches, *args):
     '''
-    Given a function template, and the branches that are needed to do the calculation in the function, create a calculation class instance and return it.
+    Given a function template, the branches that are needed to do the calculation in the function, and up arguments of the function to hold constant, create a calculation class instance and return it.
+
+    parameters:
+        template: a function that takes the data as a structured array or dictionary 
+        branches: a list of str. This represents all of the branch names needed in the data to perform the calculation
+        *args: an optional set of arguments that will be fixed when defining the calculation. i.e. if the template function takes 2 arguments, then args must have length one, and that argument will be passed to template as the second argument
+
+    returns:
+        A Calculation object, defined with template and branches
     '''
     if len(args) > 3:
         raise ValueError("Only up to three variables supported for the template function")
@@ -55,12 +72,20 @@ def create_selection_function(template, branches, *args):
         function = lambda x, y=args[0], z=args[1], w=args[2]: template(x,y,z,w)
 
     function.__name__ = template.__name__ + "_".join([str(arg) for arg in args])
-    selection_function = Calculation(function, branches)
-    return selection_function
+    calculation_function = Calculation(function, branches)
+    return calculation_function
 
 def create_inverse_selection_function(list_of_selections, name = None):
     '''
     Given a list of selections, create a selection that is the logical inverse of all of the selections
+
+    parameters:
+        list_of_selections: list of Calculations, each returning an array of boolean values.
+        optional:
+            name: the name of the seleciton to be returned. Can be retrieved with __name__
+
+    returns:
+        A Calculation object
     '''
     #create the selection function
     branches = []
@@ -83,37 +108,63 @@ def create_inverse_selection_function(list_of_selections, name = None):
 
 class HistogramFiller:
     '''
-    Handle the filling of histograms.
+    Handle the filling of histograms. This object takes a set of TTrees, and handles the booking and filling of histograms. 
+    This assumes that histogram filling is split into channels, originating from different files. A channel could be 
+    all trees with simulated Z->mumu decay events, for example.
+
+    Parameters:
+         trees: a dictionary of str:TTree, where the keys are the channel names
+         weight_calculator: A Calculation class instance that calculates the event weight
+         optional:
+            selection_string: str, a selection to apply when reading the events
+            partitions: a dictionary of channel: tuple. The tuple is of length 2, and describes the first and last entry to be read when filling histograms
     '''
-    def __init__(self, trees, tree_name, weight_calculator, selection_string = "", partitions = None):
-        self.tree_name = tree_name
+    def __init__(self, trees, weight_calculator, selection_string = "", partitions = None):
         self.partitions = partitions
         self.verbose = False
         self.all_selections = []
         self.all_variables =[]
         self.histogram_filling_functions = {}
         self.selection_string = selection_string
-        self.object_counter = 0
         self.weight_calculator = weight_calculator
         self.selections_for_channels = {}
         self.trees = trees
         self.channels = list(trees.keys())
         self.calibrations = {}
-        self.subchannels = {} #dictionary of new_channel to dictionary of old_channel and selections
+        self.subchannels = {} 
 
     def apply_calibration_for_channel(self, channel, calibration, selections = []):
+        '''
+        Whenever filling histograms, apply a calibration for a channel for all events passing a selection
+
+        Arguments:
+            channel: str, the name of the channel to calibrate. If the string is __ALL__, all channels will have the calibration applied
+            calibration: any object that has a .calibrate(data) method. This can later some branch of the TTree with correction
+            optional:
+                 selections: list of Calcualtions, a list of selections to apply before calibrating the data. Only the subset of the data
+                 passing selection will be calibrated.
+        '''
         if channel == "__ALL__":
             for this_chan in self.channels:
                 self.apply_calibration_for_channel(this_chan, calibration, selections = selections)
         else:
             if channel not in self.calibrations: self.calibrations[channel] = []
             self.calibrations[channel].append((calibration, selections))
+
         for s in selections:
             if s.name not in [sel.name for sel in self.all_selections]:
                self.all_selections.append(s)
 
 
     def apply_selection_for_channel(self, channel, selections):
+        '''
+        Whenever filling histograms, apply a set of selections for a channel
+
+        Arguments:
+            channel: str, the name of the channel for the selection to be applied to.
+            If the string is __ALL__, all channels will have the selections applied
+            selections: list of Calculations, the list of selections that will be applied.
+        '''
         if channel == "__ALL__":
             for this_chan in self.channels:
                 self.apply_selection_for_channel(this_chan, selections)
@@ -127,11 +178,19 @@ class HistogramFiller:
                 self.all_selections.append(selection)
 
     def create_subchannel_for_channel(self, subchannel, channel, selections):
-        assert subchannel not in self.subchannels
-        assert subchannel not in self.channels
-        if channel not in self.channels:
-            print("WARNING! Couldn't find the channel {} for subchannel {}".format(channel, subchannel))
-            return
+        '''
+        Whenever filling histograms, define a new channel that is a subset of the original channel.
+
+        Arguments:
+            subchannel: str, the name of the new subchannel
+            channel: str, the name of the channel that the subchannel will be defined from
+            selections: list of Calcualtions: The calculations that are selections which define the new subchannel
+        '''
+
+        if subchannel in self.subchannels: raise ValueError("The subchannel {} already exists as a subchannel".format(subchannel))
+        if subchannel in self.channels: raise ValueError("The subchannel {} already exists as a channel".format(subchannel))
+        if channel not in self.channels: raise ValueError("The channel {} does not exist".format(channel))
+
         self.subchannels[subchannel] = {}
         self.subchannels[subchannel]["original_channel"] = channel
         self.subchannels[subchannel]["selections"] = selections
@@ -140,32 +199,47 @@ class HistogramFiller:
                 self.all_selections.append(selection)
         self.channels.append(subchannel)
 
-    def get_data(self, channel, variables, selections):
+    def get_data(self, channel):
         '''
-        Given a string channel, string filename, a list of calculation variables and a list of calculations selections, return a dictionary keys selection_dict, variable_dict and weights. selection_dict is a dictionary of key selection name to numpy array of bool. variable_dict is a dictionary of string variable name to numpy array variable. weights is a numpy array of floats
+        Get the data for a given channel.
+        
+        Arguments:
+            channel: str, the channel for which to retriever data
+
+        Returns:
+            A, B, C
+            A: Dict of str: np.array. The key the name of a variable to be filled into histograms, and the np.array is the 
+            values to be filled
+
+            B: Dict of str: np.array. They key is the name of a selection to apply, and the np.array is the 
+            array of boolean values, showing whether the event passed selection or not.
         '''
+
+
         print("\n"*2)
         print("Getting branches for channel {}".format(channel))
         calibrations = []
         calib_selections = []
         if channel in self.calibrations:
-            print("Calibrating channel {}".format(channel))
             calibrations += [c[0] for c in self.calibrations[channel]]
             calib_selections += [s[1] for s in self.calibrations[channel]]
-        branches = get_needed_branches(variables, selections, calibrations)
+        branches = get_needed_branches(self.all_variables, self.all_selections, calibrations)
 
         #get the parition of the ttree to be read
         partition = None
         if self.partitions == None:
-            partition = (0, total_entries)
+            partition = (0, total_entries) #read all of the events
         else:
             partition = self.partitions[channel]
-            if self.verbose: print("Found a partition")
 
         tree = self.trees[channel]
 
         print("Reading entries from {} until {}".format(partition[0], partition[1]))
-        result = GetData(partition = partition, bare_branches = branches, channel = channel, tree = tree, treename = self.tree_name, variables=variables, weight_calculator = self.weight_calculator, selections = selections, selection_string = self.selection_string, verbose = self.verbose, calibrations=calibrations, calibration_selections = calib_selections)
+        result = GetData(partition = partition, bare_branches = branches,\
+                         channel = channel, tree = tree, variables=self.all_variables,\
+                         weight_calculator = self.weight_calculator, selections = self.all_selections,\
+                         selection_string = self.selection_string, verbose = self.verbose,\
+                         calibrations=calibrations, calibration_selections = calib_selections)
 
         #Get the selections, variables and weights
         selection_dict = result["selection_dict"]
@@ -173,28 +247,31 @@ class HistogramFiller:
         weights = result["weights"]
 
         if channel in self.selections_for_channels:
-            print("Applying selections for this channell")
+
+            print("Applying selections for channel {}".format(channel))
             selections = self.selections_for_channels[channel]
             total_selection = np.ones(len(weights)) > 0.5
+
             for selection in selections:
                 print("\t Applying {}, with {} events passing".format(selection.name, np.sum(1 * selection_dict[selection.name])))
                 total_selection &= selection_dict[selection.name]
+
             weights = weights[total_selection]
+
             for key in selection_dict:
                 selection_dict[key] = selection_dict[key][total_selection]
             for key in variable_dict:
                 variable_dict[key] = variable_dict[key][total_selection]
 
-        if self.verbose: print("The following selections have been evaluated ")
         for selection in selection_dict:
             print("Selection {} has {} tracks passing".format(selection, np.sum(1 * selection_dict[selection])))
-        if self.verbose: print("The following variables have be evaluated ")
-        for variable in variable_dict:
-            if self.verbose: print(variable)
 
         return variable_dict, selection_dict, weights
 
-    def fill_histograms(self, histogram_name, data, variable, selections = [], bins = 1, range_low = 0.000001, range_high=1. - 0.00001,  xlabel ="", ylabel = "", HistogramPerFile=False, useWeights = True):
+    def _fill_histograms(self, histogram_name, data,\
+                        variable, selections = [], bins = 1,\
+                        range_low = 0.000001, range_high=1. - 0.00001,\
+                        xlabel ="", ylabel = "", useWeights = True):
         '''
         Get the histogram for variable after selections is applied.
         '''
@@ -204,9 +281,14 @@ class HistogramFiller:
         for channel in self.channels:
             if (type(bins) == list):
                 bins_array = array('d',bins)
-                histogram_dictionary[channel] = ROOT.TH1D(histogram_name + channel, histogram_name + channel, len(bins_array)-1, bins_array)
+                histogram_dictionary[channel] = ROOT.TH1D(histogram_name + channel,\
+                                                          histogram_name + channel, len(bins_array)-1,\
+                                                          bins_array)
             else:
-                histogram_dictionary[channel] = ROOT.TH1D(histogram_name + channel, histogram_name + channel, bins, range_low + 0.0000001, range_high - 0.000001)
+                histogram_dictionary[channel] = ROOT.TH1D(histogram_name + channel,\
+                                                          histogram_name + channel, bins,\
+                                                          range_low + 0.0000001, range_high - 0.000001)
+
             histogram_dictionary[channel].GetXaxis().SetTitle(xlabel)
             histogram_dictionary[channel].GetYaxis().SetTitle(ylabel)
             histogram_dictionary[channel].Sumw2()
@@ -218,10 +300,7 @@ class HistogramFiller:
                     total_selection &= selection_dict[selection.name]
                 to_fill = variable_dict[name_to_fill][total_selection]
                 to_weight = weights[total_selection]
-                if self.verbose: print(len(to_fill))
-                if self.verbose: print(len(to_weight))
-                if self.verbose: print(to_fill)
-                if self.verbose: print(to_weight)
+                if self.verbose: print("filling nevents", len(to_fill))
                 if self.verbose: print("Filling Variable " + variable.name)
                 if useWeights:
                     fill_hist(histogram_dictionary[channel], to_fill, to_weight)
@@ -229,19 +308,29 @@ class HistogramFiller:
                     fill_hist(histogram_dictionary[channel], to_fill)
         return histogram_dictionary
 
-    def fill_2d_histograms(self, histogram_name, data, variable_x, variable_y, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", zlabel="",):
-        '''the 2-d histgram with variable_x and variable_y drawn'''
-        name_to_fill_x = variable_x.name
-        name_to_fill_y = variable_y.name
+    def _fill_2d_histograms(self, histogram_name, data,\
+                           variable_x, variable_y, selections = [],\
+                           bins_x = 1, range_low_x = 0.000001,\
+                           range_high_x=1. - 0.00001,  xlabel ="", bins_y=1,\
+                           range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", zlabel="",):
+
+        name_to__fill_x = variable_x.name
+        name_to__fill_y = variable_y.name
         variables = [variable_x, variable_y]
         histogram_dictionary = {}
         for channel in self.channels:
             if (type(bins_x) == list and type(bins_y) == list):
                 bins_array_x = array('d',bins_x)
                 bins_array_y = array('d',bins_y)
-                histogram_dictionary[channel] = ROOT.TH2D(histogram_name + channel, histogram_name + channel, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y)
+                histogram_dictionary[channel] = ROOT.TH2D(histogram_name + channel, histogram_name + channel,\
+                                                          len(bins_array_x)-1, bins_array_x,\
+                                                          len(bins_array_y)-1, bins_array_y)
+
             elif (type(bins_x) != list and type(bins_y) != list):
-                histogram_dictionary[channel] = ROOT.TH2D(histogram_name + channel, histogram_name + channel, bins_x, range_low_x + 0.0000001, range_high_x - 0.000001, bins_y, range_low_y+0.0000001, range_high_y + 0.0000001)
+                histogram_dictionary[channel] = ROOT.TH2D(histogram_name + channel, histogram_name + channel,\
+                                                          bins_x, range_low_x + 0.0000001, range_high_x - 0.000001,\
+                                                          bins_y, range_low_y+0.0000001, range_high_y + 0.0000001)
+
             else:
                 raise ValueError("both of the bins_x and bins_y variables need to be the same type. Both integers, or both lists")
             histogram_dictionary[channel].GetXaxis().SetTitle(xlabel)
@@ -259,19 +348,25 @@ class HistogramFiller:
                 to_weight = weights[total_selection]
                 n_sel = len(to_weight)
                 to_fill = np.zeros((n_sel,2))
-                to_fill[:,0] = variable_dict[name_to_fill_x][total_selection]
-                to_fill[:,1] = variable_dict[name_to_fill_y][total_selection]
-                if self.verbose: print(to_fill)
-                if self.verbose: print(to_weight)
+                to_fill[:,0] = variable_dict[name_to__fill_x][total_selection]
+                to_fill[:,1] = variable_dict[name_to__fill_y][total_selection]
+                if self.verbose: print("filling nevents", len(to_fill))
                 if self.verbose: print("Filling Variable " + variable.name)
                 fill_hist(histogram_dictionary[channel], to_fill, to_weight)
         return histogram_dictionary
 
-    def fill_3d_histograms(self, histogram_name, data, variable_x, variable_y, variable_z, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", bins_z = 1, range_low_z = 0.000001,     range_high_z=1. - 0.00001, zlabel=""):
+    def _fill_3d_histograms(self, histogram_name, data,\
+                            variable_x, variable_y, variable_z,\
+                            selections = [], bins_x = 1, range_low_x = 0.000001,\
+                            range_high_x=1. - 0.00001,  xlabel ="", bins_y=1,\
+                            range_low_y=0.000001, range_high_y=1. - 0.00001,\
+                            ylabel = "", bins_z = 1, range_low_z = 0.000001,\
+                            range_high_z=1. - 0.00001, zlabel=""):
+
         '''the 3-d histgram with variable_x and variable_y on the z and y axes'''
-        name_to_fill_x = variable_x.name
-        name_to_fill_y = variable_y.name
-        name_to_fill_z = variable_z.name
+        name_to__fill_x = variable_x.name
+        name_to__fill_y = variable_y.name
+        name_to__fill_z = variable_z.name
         variables = [variable_x, variable_y, variable_z]
         histogram_dictionary = {}
         for channel in self.channels:
@@ -279,9 +374,17 @@ class HistogramFiller:
                 bins_array_x = array('d',bins_x)
                 bins_array_y = array('d',bins_y)
                 bins_array_z = array('d',bins_z)
-                histogram_dictionary[channel] = ROOT.TH3D(histogram_name + channel, histogram_name + channel, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y, len(bins_array_z)-1, bins_array_z)
+                histogram_dictionary[channel] = ROOT.TH3D(histogram_name + channel, histogram_name + channel,\
+                                                          len(bins_array_x)-1, bins_array_x,\
+                                                          len(bins_array_y)-1, bins_array_y,\
+                                                          len(bins_array_z)-1, bins_array_z)
+
             elif (type(bins_x) != list and type(bins_y) != list) and type(bins_z) != list:
-                histogram_dictionary[channel] = ROOT.TH2D(histogram_name + channel, histogram_name + channel, bins_x, range_low_x + 0.0000001, range_high_x - 0.000001, bins_y, range_low_y+0.0000001, range_high_y + 0.0000001, bins_z, range_low_z+0.0000001, range_high_z + 0.0000001)
+                histogram_dictionary[channel] = ROOT.TH2D(histogram_name + channel, histogram_name + channel,\
+                                                          bins_x, range_low_x + 0.0000001, range_high_x - 0.000001,\
+                                                          bins_y, range_low_y+0.0000001, range_high_y + 0.0000001,\
+                                                          bins_z, range_low_z+0.0000001, range_high_z + 0.0000001)
+
             else:
                 raise ValueError("both of the bins_x and bins_y variables need to be the same type. Both integers, or both lists")
             histogram_dictionary[channel].GetXaxis().SetTitle(xlabel)
@@ -297,31 +400,41 @@ class HistogramFiller:
                 to_weight = weights[total_selection]
                 n_sel = len(to_weight)
                 to_fill = np.zeros((n_sel,3))
-                to_fill[:,0] = variable_dict[name_to_fill_x][total_selection]
-                to_fill[:,1] = variable_dict[name_to_fill_y][total_selection]
-                to_fill[:,2] = variable_dict[name_to_fill_z][total_selection]
-                if self.verbose: print(to_fill)
-                if self.verbose: print(to_weight)
+                to_fill[:,0] = variable_dict[name_to__fill_x][total_selection]
+                to_fill[:,1] = variable_dict[name_to__fill_y][total_selection]
+                to_fill[:,2] = variable_dict[name_to__fill_z][total_selection]
+                if self.verbose: print("filling nevents", len(to_fill))
                 if self.verbose: print("Filling Variable " + variable.name)
                 fill_hist(histogram_dictionary[channel], to_fill, to_weight)
         return histogram_dictionary
 
 
 
-    def fill_2d_tprofile_histograms(self, histogram_name, data, variable_x, variable_y, variable_z, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", zlabel="", error_option=""):
+    def _fill_2d_tprofile_histograms(self, histogram_name, data,\
+                                     variable_x, variable_y, variable_z,\
+                                     selections = [], bins_x = 1,\
+                                     range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="",\
+                                     bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "",\
+                                     zlabel="", error_option=""):
         '''the 2-d histgram with variable_x and variable_y drawn'''
-        name_to_fill_x = variable_x.name
-        name_to_fill_y = variable_y.name
-        name_to_fill_z = variable_z.name
+        name_to__fill_x = variable_x.name
+        name_to__fill_y = variable_y.name
+        name_to__fill_z = variable_z.name
         variables = [variable_x, variable_y, variable_z]
         histogram_dictionary = {}
         for channel in self.channels:
             if (type(bins_x) == list and type(bins_y) == list):
                 bins_array_x = array('d',bins_x)
                 bins_array_y = array('d',bins_y)
-                histogram_dictionary[channel] = ROOT.TProfile2D(histogram_name + channel, histogram_name + channel, len(bins_array_x)-1, bins_array_x, len(bins_array_y)-1, bins_array_y)
+                histogram_dictionary[channel] = ROOT.TProfile2D(histogram_name + channel, histogram_name + channel,\
+                                                                len(bins_array_x)-1, bins_array_x,\
+                                                                len(bins_array_y)-1, bins_array_y)
+
             elif (type(bins_x) != list and type(bins_y) != list):
-                histogram_dictionary[channel] = ROOT.TProfile2D(histogram_name + channel, histogram_name + channel, bins_x, range_low_x + 0.0000001, range_high_x - 0.000001, bins_y, range_low_y+0.0000001, range_high_y + 0.0000001)
+                histogram_dictionary[channel] = ROOT.TProfile2D(histogram_name + channel, histogram_name + channel,\
+                                                                bins_x, range_low_x + 0.0000001, range_high_x - 0.000001,\
+                                                                bins_y, range_low_y+0.0000001, range_high_y + 0.0000001)
+
             else:
                 raise ValueError("both of the bins_x and bins_y variables need to be the same type. Both integers, or both lists")
             histogram_dictionary[channel].GetXaxis().SetTitle(xlabel)
@@ -340,20 +453,22 @@ class HistogramFiller:
                 to_weight = weights[total_selection]
                 n_sel = len(to_weight)
                 to_fill = np.zeros((n_sel,3))
-                to_fill[:,0] = variable_dict[name_to_fill_x][total_selection]
-                to_fill[:,1] = variable_dict[name_to_fill_y][total_selection]
-                to_fill[:,2] = variable_dict[name_to_fill_z][total_selection]
-                if self.verbose: print(to_fill)
-                if self.verbose: print(to_weight)
+                to_fill[:,0] = variable_dict[name_to__fill_x][total_selection]
+                to_fill[:,1] = variable_dict[name_to__fill_y][total_selection]
+                to_fill[:,2] = variable_dict[name_to__fill_z][total_selection]
+                if self.verbose: print("filling nevents", len(to_fill))
                 if self.verbose: print("Filling Variable " + variable.name)
                 fill_profile(histogram_dictionary[channel], to_fill, to_weight)
         return histogram_dictionary
 
-    def fill_tprofile_histograms(self, histogram_name, data, variable_x, variable_y, selections = [], bins = 1, range_low = 0.000001, range_high=1. - 0.00001,  xlabel ="", ylabel="", option=""):
+    def _fill_tprofile_histograms(self, histogram_name, data,\
+                                  variable_x, variable_y, selections = [],\
+                                  bins = 1, range_low = 0.000001, range_high=1. - 0.00001,\
+                                  xlabel ="", ylabel="", option=""):
         '''Get a TProfile histogram with variable_y profiled against variable_x, after selections selections have been applied'''
 
-        name_to_fill_x = variable_x.name
-        name_to_fill_y = variable_y.name
+        name_to__fill_x = variable_x.name
+        name_to__fill_y = variable_y.name
         variables = [variable_x, variable_y]
         histogram_dictionary = {}
         for channel in self.channels:
@@ -372,22 +487,26 @@ class HistogramFiller:
                 to_weight = weights[total_selection]
                 n_sel = len(to_weight)
                 to_fill = np.zeros((n_sel,2))
-                to_fill[:,0] = variable_dict[name_to_fill_x][total_selection]
-                to_fill[:,1] = variable_dict[name_to_fill_y][total_selection]
-                if self.verbose: print(to_fill)
-                if self.verbose: print(to_weight)
+                to_fill[:,0] = variable_dict[name_to__fill_x][total_selection]
+                to_fill[:,1] = variable_dict[name_to__fill_y][total_selection]
+                if self.verbose: print("filling nevents", len(to_fill))
                 if self.verbose: print("Filling Variable " + variable.name)
-                if self.verbose: print("Filling Histogram")
                 fill_profile(histogram_dictionary[channel], to_fill, to_weight)
-                if self.verbose: print("Finished filling histogram")
 
         histogram_dictionary[channel].GetXaxis().SetTitle(xlabel)
         histogram_dictionary[channel].GetYaxis().SetTitle(ylabel)
         return histogram_dictionary
 
-    def book_histogram_fill(self, histogram_name, variable, selections = [], bins = 1, range_low = 0.000001, range_high=1. - 0.00001,  xlabel ="", ylabel = "", HistogramPerFile=False, useWeights = True):
+    def book_histogram_fill(self, histogram_name, variable, selections = [], bins = 1, range_low = 0.000001,\
+                            range_high=1. - 0.00001,  xlabel ="", ylabel = "", useWeights = True):
+
         if histogram_name not in self.histogram_filling_functions:
-            self.histogram_filling_functions[histogram_name] = lambda data : self.fill_histograms(histogram_name, data, variable, selections = selections, bins = bins, range_low = range_low, range_high=range_high,  xlabel = xlabel, ylabel = ylabel, HistogramPerFile=HistogramPerFile, useWeights = useWeights)
+            self.histogram_filling_functions[histogram_name] = lambda data : self._fill_histograms(histogram_name, data, variable,\
+                                                                                                   selections = selections, bins = bins,\
+                                                                                                   range_low = range_low,\
+                                                                                                   range_high=range_high,  xlabel = xlabel,\
+                                                                                                   ylabel = ylabel,\
+                                                                                                   useWeights = useWeights)
         else:
             raise ValueError("histogram name already exists")
         for selection in selections:
@@ -397,9 +516,19 @@ class HistogramFiller:
         if variable.name not in [var.name for var in self.all_variables]:
             self.all_variables.append(variable)
 
-    def book_2dhistogram_fill(self, histogram_name, variable_x, variable_y, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", zlabel=""):
+    def book_2dhistogram_fill(self, histogram_name,\
+            variable_x, variable_y, selections = [],\
+            bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="",\
+            bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", zlabel=""):
+
         if histogram_name not in self.histogram_filling_functions:
-            self.histogram_filling_functions[histogram_name] = lambda data : self.fill_2d_histograms(histogram_name, data, variable_x, variable_y, selections = selections, bins_x = bins_x, range_low_x =range_low_x, range_high_x=range_high_x,  xlabel =xlabel, bins_y=bins_y, range_low_y=range_low_y, range_high_y=range_high_y, ylabel = ylabel, zlabel=zlabel)
+            self.histogram_filling_functions[histogram_name] =\
+                    lambda data : self._fill_2d_histograms(histogram_name, data, \
+                                                           variable_x, variable_y, selections = selections,\
+                                                           bins_x = bins_x, range_low_x =range_low_x,\
+                                                           range_high_x=range_high_x,  xlabel =xlabel,\
+                                                           bins_y=bins_y, range_low_y=range_low_y, \
+                                                           range_high_y=range_high_y, ylabel = ylabel, zlabel=zlabel)
         else:
             raise ValueError("histogram name already exists")
 
@@ -415,7 +544,7 @@ class HistogramFiller:
 
     def book_3dhistogram_fill(self, histogram_name, variable_x, variable_y,variable_z, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", bins_z=1, range_low_z=0.000001, range_high_z=1. - 0.00001, zlabel=""):
         if histogram_name not in self.histogram_filling_functions:
-            self.histogram_filling_functions[histogram_name] = lambda data : self.fill_3d_histograms(histogram_name, data, variable_x, variable_y,variable_z, selections = selections, bins_x = bins_x, range_low_x =range_low_x, range_high_x=range_high_x,  xlabel =xlabel, bins_y=bins_y, range_low_y=range_low_y, range_high_y=range_high_y, ylabel = ylabel, bins_z=bins_z, range_low_z=range_low_z, range_high_z=range_high_z, zlabel=zlabel)
+            self.histogram_filling_functions[histogram_name] = lambda data : self._fill_3d_histograms(histogram_name, data, variable_x, variable_y,variable_z, selections = selections, bins_x = bins_x, range_low_x =range_low_x, range_high_x=range_high_x,  xlabel =xlabel, bins_y=bins_y, range_low_y=range_low_y, range_high_y=range_high_y, ylabel = ylabel, bins_z=bins_z, range_low_z=range_low_z, range_high_z=range_high_z, zlabel=zlabel)
         else:
             raise ValueError("histogram name already exists")
 
@@ -434,7 +563,7 @@ class HistogramFiller:
 
     def book_tprofile_fill(self, histogram_name,  variable_x, variable_y, selections = [], bins = 1, range_low = 0.000001, range_high=1. - 0.00001,  xlabel ="", ylabel = ""):
         if histogram_name not in self.histogram_filling_functions:
-            self.histogram_filling_functions[histogram_name] = lambda data : self.fill_tprofile_histograms(histogram_name, data, variable_x, variable_y, selections = selections, bins = bins, range_low = range_low, range_high=range_high,  xlabel =xlabel, ylabel=ylabel)
+            self.histogram_filling_functions[histogram_name] = lambda data : self._fill_tprofile_histograms(histogram_name, data, variable_x, variable_y, selections = selections, bins = bins, range_low = range_low, range_high=range_high,  xlabel =xlabel, ylabel=ylabel)
         else:
             raise ValueError("histogram name already exists")
 
@@ -450,7 +579,7 @@ class HistogramFiller:
 
     def book_2dtprofile_fill(self, histogram_name, variable_x, variable_y, variable_z, selections = [], bins_x = 1, range_low_x = 0.000001, range_high_x=1. - 0.00001,  xlabel ="", bins_y=1, range_low_y=0.000001, range_high_y=1. - 0.00001, ylabel = "", zlabel="", error_option=""):
         if histogram_name not in self.histogram_filling_functions:
-            self.histogram_filling_functions[histogram_name] = lambda data : self.fill_2d_tprofile_histograms(histogram_name, data, variable_x, variable_y, variable_z, selections = selections, bins_x = bins_x, range_low_x =range_low_x, range_high_x=range_high_x,  xlabel =xlabel, bins_y=bins_y, range_low_y=range_low_y, range_high_y=range_high_y, ylabel = ylabel, zlabel=zlabel, error_option=error_option)
+            self.histogram_filling_functions[histogram_name] = lambda data : self._fill_2d_tprofile_histograms(histogram_name, data, variable_x, variable_y, variable_z, selections = selections, bins_x = bins_x, range_low_x =range_low_x, range_high_x=range_high_x,  xlabel =xlabel, bins_y=bins_y, range_low_y=range_low_y, range_high_y=range_high_y, ylabel = ylabel, zlabel=zlabel, error_option=error_option)
         else:
             raise ValueError("histogram name already exists")
 
@@ -473,7 +602,7 @@ class HistogramFiller:
             if channel not in self.subchannels:
                 print("Dumping for channel {}".format(channel))
                 data[channel] = {}
-                data[channel] = self.get_data(channel, self.all_variables, self.all_selections)
+                data[channel] = self.get_data(channel)
 
         for subchannel in self.subchannels:
             print("Getting the data for subchannel {}".format(subchannel))
@@ -502,13 +631,14 @@ class HistogramFiller:
         return histograms
 
 
-import os
-import psutil
-process = psutil.Process(os.getpid())
 
 def branchDresser(branches):
-    '''this is a function that dresses branches with variable length arrays. See http://scikit-hep.org/root_numpy/reference/generated/root_numpy.tree2array.html for details. You need to define a maximum length and what filler variables to use. Fortunately, there are no vector branches in any EOP trees.'''
-    #rename the cov matrix branches like this in order to always take the q/p component [("Neg_ID_TrackCovMatrix", -1.0)]
+    '''
+    This is a function that dresses branches with variable length arrays. 
+    See http://scikit-hep.org/root_numpy/reference/generated/root_numpy.tree2array.html for details. 
+    You need to define a maximum length and what filler variables to use. 
+    '''
+
     clean_branches = []
     for b in branches:
         found = False
@@ -518,12 +648,14 @@ def branchDresser(branches):
                 if b == this_branchname:
                     clean_branches.append(("{}_{}_TrackCovMatrix".format(charge, location), -1.0, 15))
                     found = True
+
         for charge in ["Pos", "Neg"]:
             for location in ["ID", "ME", "CB"]:
                 this_branchname = "{}_{}_TrackPars".format(charge, location)
                 if b == this_branchname:
                     clean_branches.append(("{}_{}_TrackPars".format(charge, location), -1.0, 5))
                     found = True
+
         if not found: clean_branches.append(b)
 
     return clean_branches
@@ -543,9 +675,12 @@ def getIsData(filename):
     '''
     Return true if the file is a data file. Otherwise, return false because the file is simulation.
     '''
-    return ("Data" in filename.split("/")[-1] or "data" in filename.split("/")[-1] or "Data" in filename.split("/")[-2] or "data" in filename.split("/")[-2])
+    return ("Data" in filename.split("/")[-1] or\
+            "data" in filename.split("/")[-1] or\
+            "Data" in filename.split("/")[-2] or\
+            "data" in filename.split("/")[-2])
 
-def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, treename = None, variables = [], weight_calculator = None, selections = [], selection_string = "",  verbose = False, calibrations = [], calibration_selections = []):
+def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, variables = [], weight_calculator = None, selections = [], selection_string = "",  verbose = False, calibrations = [], calibration_selections = []):
     '''
     A function for retrieving data
     partition -- a tuple of length 2. Retrieve tree entries from partition[0] until partition[1]
@@ -628,37 +763,16 @@ def GetData(partition = (0, 0), bare_branches = [], channel = "", tree = None, t
                 new_matrix[:,index_to_index[ind][1], index_to_index[ind][0]] = data[key][:,ind]
             data[key] = new_matrix
 
-            #cov matrix seems to have units of MeV
-
-            # new need to check the units of the cov matrix
-            if "ID" in key and "Pos" in key:
-               p = data["Pos_ID_Pt"]*np.cosh(data["Pos_ID_Eta"])
-               p_GeV = p
-               p_MeV = p_GeV * 1000.0
-               p_KeV = p_MeV * 1000.0
-
-               cov_el = new_matrix[:, 4, 4] ** 0.5
-
-               print(data["Pos_ID_Pt"])
-               print(data["Pos_ID_Eta"])
-               print("GeV? ", 100.0 * cov_el/(1/p_GeV))
-               print("MeV? ", 100.0 * cov_el/(1/p_MeV))
-               print("KeV? ", 100.0 * cov_el/(1/p_KeV))
-
     if data is None:
         raise ValueError("Could not retrieve the data.")
 
-
     #only apply the calibrations with the corresponding selections
-    print(calibrations)
-
     for c, c_sels in zip(calibrations, calibration_selections):
-        print("Applying calibration")
-        print(c)
+        print("Appling calibration")
         data_calib = c.calibrate(data)
         passes = np.ones(get_data_length(data))>0
         for c_sel in c_sels:
-            print("Applying {} for calibration".format(c_sel.name))
+            print("Applying calibration selection {}".format(c_sel.name))
             passes &= c_sel.eval(data)
         for name in data:
             data[name][passes] = data_calib[name][passes]
@@ -697,18 +811,9 @@ def get_needed_branches(variables, selections, calibrations):
     '''given a list of variables and selections, get all of the branches that should be read from the tree'''
     branches = []
 
-    for variable in variables:
-        for branch in variable.branches:
-            if branch not in branches:
-                branches.append(branch)
-
-    for selection in selections:
-        for branch in selection.branches:
-            if branch not in branches:
-                branches.append(branch)
-
-    for calibration in calibrations:
-        for branch in calibration.branches:
+    objects = variables + selections + calibrations
+    for obj in objects:
+        for branch in obj.branches:
             if branch not in branches:
                 branches.append(branch)
 
